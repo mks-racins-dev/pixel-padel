@@ -55,6 +55,24 @@ h1{margin:0;font-size:calc(var(--u)*17);line-height:1.1;color:#f7c993;text-shado
 .big{font-family:"Press Start 2P",monospace;font-size:calc(var(--u)*9);padding:calc(var(--u)*6);background:#4f9a5b;color:#fff;border:calc(var(--u)*2) solid #0f0c13;box-shadow:inset 0 calc(var(--u)*-2.5) 0 #2f6b3a}
 .big:hover{filter:brightness(1.1)}
 .big.alt{background:#3a3146;box-shadow:inset 0 calc(var(--u)*-2.5) 0 #2a2333}
+.tabs{display:flex;gap:calc(var(--u)*3)}
+.tabs button{flex:1;font-size:calc(var(--u)*5.5);padding:calc(var(--u)*4) calc(var(--u)*2);background:#211b29;color:#c9bba6;border:calc(var(--u)*1.5) solid #0f0c13}
+.tabs button[aria-selected="true"]{background:#f2c14e;color:#17131c;box-shadow:inset 0 calc(var(--u)*-1.5) 0 #b88a25}
+.secs{height:calc(var(--u)*114)}
+.sec{display:flex;flex-direction:column;gap:calc(var(--u)*5)}
+.sec[hidden]{display:none}
+.pl{display:grid;grid-template-columns:calc(var(--u)*72) 1fr;gap:calc(var(--u)*6);align-items:start}
+#prevC{width:calc(var(--u)*72);height:calc(var(--u)*90);background:#3f6b45;box-shadow:0 0 0 calc(var(--u)*1.5) #0f0c13,inset 0 calc(var(--u)*-14) 0 #2f63b0}
+.popts{display:flex;flex-direction:column;gap:calc(var(--u)*3.5)}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--u)*4)}
+.o2{display:grid;grid-template-columns:calc(var(--u)*25) 1fr;align-items:center;gap:calc(var(--u)*2)}
+.o2>span{font-size:calc(var(--u)*3.5);color:#c9bba6}
+.popts .seg{gap:calc(var(--u)*2)}
+.popts .seg button{font-size:calc(var(--u)*3.5);padding:calc(var(--u)*3) calc(var(--u)*1)}
+.popts .sw{gap:calc(var(--u)*1.5)}
+.popts .sw button{flex:0 0 auto;width:calc(var(--u)*9);height:calc(var(--u)*9);padding:0;border:var(--u) solid #0f0c13;box-shadow:none;font-size:calc(var(--u)*5);color:#c9bba6;line-height:1}
+.popts .sw button[aria-pressed="true"]{box-shadow:0 0 0 var(--u) #fff1c1}
+#styleInfo{font-size:calc(var(--u)*7.5)}
 .help{font-size:calc(var(--u)*8.5);line-height:1.05;color:#d9ccb6}
 .help b{color:#f7c993;font-weight:normal}
 .btns{display:flex;gap:calc(var(--u)*4)}
@@ -106,19 +124,19 @@ h1{margin:0;font-size:calc(var(--u)*17);line-height:1.1;color:#f7c993;text-shado
     <div id="menuBox" class="panel">
       <h1 class="px">PIXEL PADEL</h1>
       <div class="sub">sunset club · glass walls in play</div>
+      <div class="tabs" id="tabs">
+        <button class="px" data-sec="play" aria-selected="true">PLAY</button>
+        <button class="px" data-sec="player" aria-selected="false">PLAYER</button>
+        <button class="px" data-sec="help" aria-selected="false">HOW TO</button>
+      </div>
+      <div class="secs">
+      <div class="sec" data-sec="play">
       <div class="opt"><span class="px">MODE</span>
         <div class="seg" data-key="mode">
           <button data-v="1v1" aria-pressed="true">1 VS 1</button>
           <button data-v="2v2" aria-pressed="false">2 VS 2</button>
           <button data-v="pvp" aria-pressed="false">2 PLAYERS</button>
           <button data-v="online" aria-pressed="false">ONLINE</button>
-        </div></div>
-      <div class="opt"><span class="px">STYLE</span>
-        <div class="seg" data-key="style">
-          <button data-v="allround" aria-pressed="true">ALL-ROUND</button>
-          <button data-v="speed" aria-pressed="false">SPEEDSTER</button>
-          <button data-v="power" aria-pressed="false">POWER</button>
-          <button data-v="sniper" aria-pressed="false">SNIPER</button>
         </div></div>
       <div class="opt"><span class="px">CPU</span>
         <div class="seg" data-key="diff">
@@ -136,8 +154,41 @@ h1{margin:0;font-size:calc(var(--u)*17);line-height:1.1;color:#f7c993;text-shado
           <button data-v="on" aria-pressed="true">BOUNCE MARK</button>
           <button data-v="off" aria-pressed="false">OFF</button>
         </div></div>
+      </div>
+      <div class="sec" data-sec="player" hidden>
+        <div class="pl">
+          <canvas id="prevC" width="24" height="30" aria-label="Player preview"></canvas>
+          <div class="popts">
+            <div class="pair">
+              <div class="o2"><span class="px">LOOK</span><div class="seg" data-look="gender"><button data-v="boy">BOY</button><button data-v="girl">GIRL</button></div></div>
+              <div class="o2"><span class="px">HAND</span><div class="seg" data-look="hand"><button data-v="right">RIGHT</button><button data-v="left">LEFT</button></div></div>
+            </div>
+            <div class="o2"><span class="px">STYLE</span>
+              <div class="seg" data-key="style">
+                <button data-v="allround">ALL-ROUND</button>
+                <button data-v="speed">SPEEDSTER</button>
+                <button data-v="power">POWER</button>
+                <button data-v="sniper">SNIPER</button>
+              </div></div>
+            <div class="pair">
+              <div class="o2"><span class="px">SKIN</span><div class="seg sw" data-look="skin"></div></div>
+              <div class="o2"><span class="px">HAIR</span><div class="seg sw" data-look="hair"></div></div>
+            </div>
+            <div class="pair">
+              <div class="o2"><span class="px">SHIRT</span><div class="seg sw" data-look="shirt"></div></div>
+              <div class="o2"><span class="px">BOTTOM</span><div class="seg sw" data-look="shorts"></div></div>
+            </div>
+            <div class="pair">
+              <div class="o2"><span class="px">RACKET</span><div class="seg sw" data-look="frame"></div></div>
+              <div class="o2"><span class="px">BAND</span><div class="seg sw" data-look="band"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="help" id="styleInfo"></div>
+      </div>
+      <div class="sec" data-sec="help" hidden><div class="help" id="help"></div></div>
+      </div>
       <button class="big" id="playBtn">PLAY ▸</button>
-      <div class="help" id="help"></div>
     </div>
   </div>
 
@@ -413,15 +464,26 @@ function sfx(k,v){if(net&&net.role==='host'&&!demo&&k!=='point'&&k!=='lose'&&k!=
 
 /* ---------------- game state ---------------- */
 const settings={mode:'1v1',diff:'normal',games:3,assist:'on',style:'allround'};
+/* ---------------- custom player ---------------- */
+const PAL={skin:['#f6d2b4','#e8b48a','#c98d62','#b97a52','#8d5a3b','#5e3a26'],hair:['#1f1a17','#4a2c1a','#7a3a22','#d9b26a','#e86a3a','#8e6cc1'],
+  shirt:['#e4572e','#f2c14e','#3fa7a8','#4f9a5b','#8e6cc1','#f4ead2'],shorts:['#2d2a3a','#3b5b8c','#f4ead2','#1f2a44','#b8483a','#4f9a5b'],
+  frame:['#f2c14e','#e4572e','#3fa7a8','#f4ead2','#8e6cc1','#2d2a3a'],band:['none','#f4ead2','#e4572e','#f2c14e','#3fa7a8','#8e6cc1']};
+const LOOK_DEF={gender:'boy',hand:'right',skin:'#e8b48a',hair:'#4a2c1a',shirt:'#e4572e',shorts:'#2d2a3a',frame:'#f2c14e',band:'#f4ead2'};
+const HEX=/^#[0-9a-f]{6}$/i;
+function cleanLook(d){const o={...LOOK_DEF};if(d&&typeof d==='object'){if(d.gender==='girl'||d.gender==='boy')o.gender=d.gender;if(d.hand==='left'||d.hand==='right')o.hand=d.hand;for(const k of['skin','hair','shirt','shorts','frame'])if(HEX.test(d[k]))o[k]=d[k];if(d.band==='none'||HEX.test(d.band))o.band=d.band}return o}
+function mkLook(d){d=cleanLook(d);const g=d.gender==='girl';return{id:'c'+Object.values(d).join(''),skin:d.skin,hair:d.hair,shirt:d.shirt,shorts:d.shorts,frame:d.frame,band:d.band==='none'?null:d.band,skirt:g,tail:g,hand:d.hand}}
+let myLookData={...LOOK_DEF};
+try{const s=JSON.parse(localStorage.getItem('pixelpadel-player')||'null');if(s){myLookData=cleanLook(s.look);if(STYLES[s.style])settings.style=s.style}}catch(e){}
+function saveLook(){try{localStorage.setItem('pixelpadel-player',JSON.stringify({look:myLookData,style:settings.style}))}catch(e){}}
 let floatTxt=null,floats=[];let players=[],ball,R0,state='menu',stateT=0,afterState=null,score,demo=true,paused=false,marker=null,trail=[],shake=0,spectators=[],time=0,lastWinner=-1;
 function mkPlayer(team,look,ctrl,homeX){return{team,look,ctrl,homeX,x:homeX,y:team===0?-8:8,vx:0,vy:0,tx:homeX,ty:team===0?-8:8,swingT:0,swingType:'drive',swingReq:null,hitDone:true,think:0,anim:0,flip:false,willMiss:false,missLeg:-1,mvx:0,mvy:0,energy:0,charging:null,charge:0,power:1,reqPower:1,serveAim:0.5,sk:STYLES.allround}}
 function newMatch(isDemo){
   demo=isDemo;
-  const m=demo?'2v2':settings.mode;
-  if(m==='1v1')players=[mkPlayer(0,LOOKS.p1,'h1',0),mkPlayer(1,LOOKS.o1,'ai',0)];
-  else if(m==='2v2')players=[mkPlayer(0,LOOKS.p1,demo?'ai':'h1',2.4),mkPlayer(0,LOOKS.p2,'ai',-2.4),mkPlayer(1,LOOKS.o1,'ai',-2.4),mkPlayer(1,LOOKS.o2,'ai',2.4)];
-  else if(m==='online'){const g=net&&net.role==='guest';players=[mkPlayer(0,LOOKS.p1,g?'net':'h1',0),mkPlayer(1,LOOKS.o1,g?'h1':'net',0)]}
-  else players=[mkPlayer(0,LOOKS.p1,'h1',0),mkPlayer(1,LOOKS.o1,'h2',0)];
+  const m=demo?'2v2':settings.mode;const me=mkLook(myLookData);
+  if(m==='1v1')players=[mkPlayer(0,me,'h1',0),mkPlayer(1,LOOKS.o1,'ai',0)];
+  else if(m==='2v2')players=[mkPlayer(0,me,demo?'ai':'h1',2.4),mkPlayer(0,LOOKS.p2,'ai',-2.4),mkPlayer(1,LOOKS.o1,'ai',-2.4),mkPlayer(1,LOOKS.o2,'ai',2.4)];
+  else if(m==='online'){const g=net&&net.role==='guest';const lk=net?(g?(net.looks||[]):[myLookData,net.guestLook]):[];players=[mkPlayer(0,lk[0]?mkLook(lk[0]):LOOKS.p1,g?'net':'h1',0),mkPlayer(1,lk[1]?mkLook(lk[1]):LOOKS.o1,g?'h1':'net',0)]}
+  else players=[mkPlayer(0,me,'h1',0),mkPlayer(1,LOOKS.o1,'h2',0)];
   const ks=Object.keys(STYLES);for(const p of players)p.sk=isHuman(p)?STYLES[settings.style]:STYLES[ks[Math.floor(Math.random()*ks.length)]];
   if(m==='online'&&net){const sty=net.role==='host'?[settings.style,net.guestStyle]:net.styles||[];players.forEach((p,i)=>p.sk=STYLES[sty[i]]||STYLES.allround)}
   score={pts:[0,0],games:[0,0],winner:-1};
@@ -685,7 +747,9 @@ function drawPlayer(p){
   const leg=moving?(Math.floor(p.anim)%2)+1:0;
   const img=getSprite(p.look,p.team===0?'back':'front',pose,leg);
   const dx=x-12,dy=y-29;
-  if(p.flip){ctx.save();ctx.translate(dx+24,dy);ctx.scale(-1,1);ctx.drawImage(img,0,0);ctx.restore()}else ctx.drawImage(img,dx,dy);
+  /* idle: racket in the natural hand (facing camera mirrors it); swinging: toward the ball */
+  const fl=pose==='idle'?((p.team===1)!==(p.look.hand==='left')):p.flip;
+  if(fl){ctx.save();ctx.translate(dx+24,dy);ctx.scale(-1,1);ctx.drawImage(img,0,0);ctx.restore()}else ctx.drawImage(img,dx,dy);
   if(!demo){const full=p.energy>=100;const bx=x-7,by=dy-4;R(ctx,bx-1,by-1,16,4,'#17131c');R(ctx,bx,by,14,2,'#3a3146');const w=Math.round(14*p.energy/100);if(w>0)R(ctx,bx,by,w,2,full?((Math.floor(time*8)%2)?'#fff1c1':'#ff8a5c'):'#f2c14e');
     if(p.charging){const h=Math.round(16*p.charge);R(ctx,x+9,dy+10,4,18,'#17131c');R(ctx,x+10,dy+11,2,16,'#3a3146');if(h>0)R(ctx,x+10,dy+27-h,2,h,p.charge>sweet(p)?'#e4572e':p.charge>0.35?'#f2c14e':'#9fd38a');const sy=dy+27-Math.round(16*sweet(p));R(ctx,x+8,sy,6,1,'#fff1c1')}}
   if(isHuman(p)&&!demo){const c=p.ctrl==='h1'?'#ff8a5c':'#6fd3d2';const ty=dy-11;R(ctx,x-2,ty,5,1,c);R(ctx,x-1,ty+1,3,1,c);R(ctx,x,ty+2,1,1,c);
@@ -777,11 +841,28 @@ function showEnd(){
 }
 function setHelp(){
   const m=settings.mode,st=STYLES[settings.style],bar=v=>'■'.repeat(v)+'□'.repeat(5-v);
-  $('help').innerHTML='<b>'+st.name+'</b> SPD '+bar(st.spd)+' PWR '+bar(st.pow)+' ACC '+bar(st.acc)+(m==='pvp'?' (both players)':'')+'<br>'+(m==='pvp'
+  $('styleInfo').innerHTML='<b>'+st.name+'</b> &nbsp;SPD '+bar(st.spd)+' PWR '+bar(st.pow)+' ACC '+bar(st.acc)+'<br>'+(myLookData.hand==='left'?'Left':'Right')+'-handed · saved on this device';
+  $('help').innerHTML=(m==='pvp'
     ?'<b>P1</b> (near): WASD · F hit · G lob · R vibora &nbsp; <b>P2</b> (far): arrows · K hit · L lob · O vibora<br>Hold to power up, tap for a soft drop. Past the white line = risk of overhit. Full energy = vibora. Serve: move, then hold hit + left/right to aim.<br>Ball must bounce before their walls; then glass is in play. 2nd bounce = point.'
     :'<b>Move</b> WASD / arrows · <b>Hit</b> Space/J · <b>Lob</b> K/Shift · <b>Vibora</b> L/E · hold left/right to aim<br><b>Hold</b> hit for power, tap for a soft drop. Past the white line = risk of overhit. <b>Serve:</b> move into place, hold hit + left/right to aim, release. Hits fill energy; full bar = vibora (gives the other side +30).<br>Ball must bounce before their walls; then glass is in play. 2nd bounce = point. Golden point at 40–40.'+(m==='2v2'?' Mia covers the left side.':''))+(m==='online'?'<br><b>Online:</b> host shares a 4-letter code, the other player joins. Host plays the near side.':'');
 }
-document.querySelectorAll('.seg').forEach(seg=>{seg.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;seg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));const k=seg.dataset.key;settings[k]=k==='games'?+b.dataset.v:b.dataset.v;setHelp()})});
+document.querySelectorAll('.sw').forEach(sw=>{for(const c of PAL[sw.dataset.look]){const b=document.createElement('button');b.dataset.v=c;b.setAttribute('aria-label',sw.dataset.look+' '+c);if(c==='none'){b.textContent='×';b.style.background='#17131c'}else b.style.background=c;sw.appendChild(b)}});
+function press(seg,v){seg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===String(v)?'true':'false'))}
+document.querySelectorAll('.seg').forEach(seg=>{
+  press(seg,seg.dataset.look?myLookData[seg.dataset.look]:settings[seg.dataset.key]);
+  seg.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const v=b.dataset.v;press(seg,v);
+    if(seg.dataset.look){myLookData={...myLookData,[seg.dataset.look]:v};saveLook();if(demo&&players[0])players[0].look=mkLook(myLookData)}
+    else{const k=seg.dataset.key;settings[k]=k==='games'?+v:v;if(k==='style')saveLook()}
+    setHelp()})});
+document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#tabs button').forEach(x=>x.setAttribute('aria-selected',x===b?'true':'false'));
+  document.querySelectorAll('.sec').forEach(s=>s.hidden=s.dataset.sec!==b.dataset.sec)}));
+const prevG=$('prevC').getContext('2d');prevG.imageSmoothingEnabled=false;
+function drawPreview(){
+  if($('menu').hidden||document.querySelector('.sec[data-sec="player"]').hidden)return;
+  const lk=mkLook(myLookData),front=Math.floor(time/1.8)%2===0,img=getSprite(lk,front?'front':'back','idle',0);
+  prevG.clearRect(0,0,24,30);
+  if(front!==(lk.hand==='left')){prevG.save();prevG.translate(24,0);prevG.scale(-1,1);prevG.drawImage(img,0,0);prevG.restore()}else prevG.drawImage(img,0,0)}
 const coarse=matchMedia('(pointer:coarse)').matches;
 function showGameUI(){initAudio();$('menu').hidden=true;$('online').hidden=true;$('end').hidden=true;$('pause').hidden=true;paused=false;$('hud').hidden=false;$('touch').hidden=!(coarse&&settings.mode!=='pvp');$('msg').classList.remove('show')}
 function startGame(){
@@ -831,14 +912,14 @@ function joinGame(){
   netClose();$('codeShow').textContent='';onStatus('Joining '+code+'…');
   loadPeer(()=>{const peer=new Peer();const n={role:'guest',peer,conn:null,inp:{mx:9,my:9},inT:0,snap:null,snapAt:0,hk:''};net=n;
     peer.on('open',()=>{if(net!==n)return;const c=peer.connect(NET_PREFIX+code,{reliable:true,serialization:'json'});n.conn=c;bindConn(c);
-      c.on('open',()=>{c.send({t:'hello',style:settings.style});onStatus('Connected! Waiting for host…')})});
+      c.on('open',()=>{c.send({t:'hello',style:settings.style,look:myLookData});onStatus('Connected! Waiting for host…')})});
     peer.on('error',e=>{if(net!==n)return;onStatus(e.type==='peer-unavailable'?'No game found with code '+code+'.':'Network error: '+e.type)});
   })}
-function startOnline(){showGameUI();newMatch(false);netSend({t:'start',styles:[settings.style,net.guestStyle],games:settings.games})}
+function startOnline(){showGameUI();newMatch(false);netSend({t:'start',styles:[settings.style,net.guestStyle],looks:[myLookData,net.guestLook],games:settings.games})}
 function onNet(m){
   if(!net||!m)return;
   if(net.role==='host'){
-    if(m.t==='hello'){net.guestStyle=STYLES[m.style]?m.style:'allround';startOnline();return}
+    if(m.t==='hello'){net.guestStyle=STYLES[m.style]?m.style:'allround';net.guestLook=m.look?cleanLook(m.look):null;startOnline();return}
     if(m.t==='bye'){handleLeft();return}
     if(m.t==='again'){if(state==='over')startOnline();return}
     const p=players.find(q=>q.ctrl==='net');if(!p||demo)return;
@@ -847,7 +928,7 @@ function onNet(m){
     else if(m.t==='u'){if(p.charging===m.a)releaseCharge(p)}
     else if(m.t==='v')tryVibora(p);
   }else{
-    if(m.t==='start'){settings.games=m.games;net.styles=m.styles;net.snap=null;net.hk='';showGameUI();newMatch(false)}
+    if(m.t==='start'){settings.games=m.games;net.styles=m.styles;net.looks=Array.isArray(m.looks)?m.looks:[];net.snap=null;net.hk='';showGameUI();newMatch(false)}
     else if(m.t==='s'){if(!demo)applySnap(m)}
     else if(m.t==='msg')showMsg(m.b,m.s);
     else if(m.t==='hide')$('msg').classList.remove('show');
@@ -900,7 +981,7 @@ function frame(now){const dt=Math.min(0.05,(now-last)/1000);last=now;
   if(net&&net.role==='guest'&&!demo)guestTick(dt);
   else if((!paused||(net&&!demo))&&state!=='over'){acc+=dt;while(acc>=STEP){update(STEP);acc-=STEP}}
   if(net&&net.role==='host'&&!demo&&net.conn&&net.conn.open){net.sendT-=dt;if(net.sendT<=0){net.sendT=1/30;netSend(mkSnap())}}
-  render();requestAnimationFrame(frame)}
+  render();drawPreview();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 </script>
 </body>
