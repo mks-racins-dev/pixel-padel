@@ -21,10 +21,11 @@ export function buildBg(){
   for(const[cx,cy,w]of[[60,18,40],[150,10,28],[300,22,36],[430,14,30]]){R(g,cx,cy,w,3,'#f3c2b6');R(g,cx+5,cy-2,w-12,2,'#f8d6c9');R(g,cx+3,cy+3,w-6,1,'#d9a3b1')}
   for(const[bx,by]of[[110,28],[118,25],[350,16]]){R(g,bx,by,2,1,'#4a3a5a');R(g,bx+2,by+1,1,1,'#4a3a5a');R(g,bx+3,by,2,1,'#4a3a5a')}
   const T=TOWNS[settings.loc]||TOWNS.sunset;
-  skyline(g,T,T.far,T.farL);if(settings.loc==='ru')skyline(g,{land:'kremlin'});
   let x=0;while(x<W){const w=10+S.rnd()*18,h=18+S.rnd()*20;R(g,x,64-h,w,h,T.far);for(let k=0;k<w*h/30;k++)R(g,x+1+S.rnd()*(w-2),64-h+2+S.rnd()*(h-4),1,1,T.farL);if(S.rnd()<0.3)R(g,x+w/2,64-h-6,1,6,T.far);x+=w}
+  // landmarks go in front of the far silhouette strip so they are not hidden by it
+  skyline(g,T,T.far,T.farL);if(settings.loc==='ru')skyline(g,{land:'kremlin'});
   const pals=T.pals;
-  x=-6;let i=0;while(x<W+6){const w=T.w[0]+Math.floor(S.rnd()*T.w[1]),h=T.h[0]+Math.floor(S.rnd()*T.h[1]);building(g,x,66,w,h,pals[(i*2+1)%pals.length],T);x+=w+(S.rnd()<0.3?3:0);i++}
+  x=-6;let i=0;while(x<W+6){const w=T.w[0]+Math.floor(S.rnd()*T.w[1]),h=T.h[0]+Math.floor(S.rnd()*T.h[1]);building(g,x,66,w,h,pals[pals.length===5?(i*2+1)%5:(i*3+1)%pals.length],T);x+=w+(S.rnd()<0.3?3:0);i++}
   // club billboard
   const bw=96,bx=240-bw/2,by=6;R(g,bx+12,by+18,2,26,'#2f2d38');R(g,bx+bw-14,by+18,2,26,'#2f2d38');R(g,bx-2,by-2,bw+4,22,'#17131c');R(g,bx,by,bw,18,'#2b2540');R(g,bx,by,bw,1,'#4a3f58');
   txt(g,LC0.city,240-txtW(LC0.city,2)/2,by+2,'#f7c993',2);txt(g,'PADEL CLUB',240-txtW('PADEL CLUB')/2,by+13,'#ff8a5c');

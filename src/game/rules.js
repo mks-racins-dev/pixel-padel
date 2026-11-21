@@ -1,3 +1,4 @@
+import { slowMo } from '../render/fx.ts';
 import { rand, seedSim } from '../core/rng.ts';
 import { matchStart } from '../core/analytics.ts';
 import { S } from '../state.js';
@@ -57,7 +58,7 @@ export function aimVel(x0,y0,z0,tx,ty,spd,clear){
   }return v;
 }
 export function gauss(){return(rand()+rand()+rand()-1.5)*1.15}
-export function launch(tx,ty,spd,clear){const v=aimVel(S.ball.x,S.ball.y,S.ball.z,tx,ty,spd,clear);S.ball.vx=v.vx;S.ball.vy=v.vy;S.ball.vz=v.vz;S.ball.held=false;S.ball.rolling=false;S.ball.out=false;S.ball.spin=0;S.ball.vib=false}
+export function launch(tx,ty,spd,clear){const v=aimVel(S.ball.x,S.ball.y,S.ball.z,tx,ty,spd,clear);S.ball.vx=v.vx;S.ball.vy=v.vy;S.ball.vz=v.vz;S.ball.held=false;S.ball.rolling=false;S.ball.out=false;S.ball.spin=0;S.ball.vib=false;S.ball.kick=false;S.ball.slice=false;S.ball.porTres=false}
 export function serveTarget(p,power){const dir=p.team===0?1:-1,bx=S.R0.boxX;return{tx:bx*(0.5+p.serveAim*3.6),ty:dir*(3.8+power*2.8)}}
 export function doServe(p,power){
   const dir=p.team===0?1:-1;
@@ -83,11 +84,18 @@ export function performHit(p,type,aimX,power){
   power=power==null?1:Math.max(0,Math.min(1,power));
   const dir=p.team===0?1:-1;const human=isHuman(p);const D=diffOf(p);
   const offWall=S.R0.backWall===p.team&&type!=='vibora';if(offWall&&type!=='lob')power=Math.max(power,0.5);
-  let ty,spd,clear=1.05,smash=false,vib=false,tx=aimX;
+  let ty,spd,clear=1.05,smash=false,vib=false,tx=aimX,shot=null;
   if(type==='vibora'){vib=true;tx=(Math.abs(aimX)>0.5?Math.sign(aimX):(rand()<0.5?-1:1))*4.3;ty=dir*(7.4+rand()*1.2);spd=25;clear=0.98}
   else if(type==='lob'){ty=dir*(6.6+power*2.9);spd=7.6;clear=2.6}
-  else if(S.ball.z>1.75&&power>0.55){ty=dir*(3.6+rand()*2.4);spd=22;clear=0.97;smash=true}
-  else{ty=dir*(1.9+power*7.0);spd=8+power*10;if(power<0.3)clear=1.02}
+  else if(S.ball.z>1.75&&power>0.55){smash=true;
+    // por tres: a full-power smash from near the net kicks up and out over the side fence
+    if(power>=0.92&&S.ball.z>2&&Math.abs(p.y)<4.5){shot='portres';tx=Math.sign(aimX||p.x||1)*2.4;ty=dir*3.6;spd=24;clear=0.97}
+    else{ty=dir*(3.6+rand()*2.4);spd=22;clear=0.97}}
+  // bandeja: a controlled sliced overhead that keeps the ball deep and low
+  else if(S.ball.z>1.6&&type==='drive'){shot='bandeja';ty=dir*(6.6+power*1.8);spd=11+power*3;clear=1.15}
+  else{ty=dir*(1.9+power*7.0);spd=8+power*10;if(power<0.3)clear=1.02;
+    // chiquita: a soft dipping ball at the feet of a team waiting at the net, played from the back
+    if(type==='drive'&&power<0.3&&Math.abs(p.y)>5.5){shot='chiquita';ty=dir*(2.4+power*2.5);clear=0.98}}
   if(!vib)spd*=powK(p);
   if(offWall&&type!=='lob')spd*=1.12;
   const e=(vib?0.15:(human?0.3:D.err))*(1.45-0.15*p.sk.acc);tx+=gauss()*e;ty+=gauss()*e*(power<0.3?0.35:0.75);
@@ -96,6 +104,9 @@ export function performHit(p,type,aimX,power){
   tx=Math.max(-4.7,Math.min(4.7,tx));
   launch(tx,ty,spd,clear);
   if(vib){S.ball.spin=Math.sign(tx);S.ball.vib=true}
+  if(shot==='portres'){S.ball.kick=true;S.ball.porTres=true}
+  if(shot==='bandeja')S.ball.slice=true;
+  if(shot&&shot!=='portres')S.floats.push({x:p.x,y:p.y,t:0.9,text:shot==='bandeja'?'BANDEJA':'CHIQUITA',c:shot==='bandeja'?'#f7c993':'#9be37a'});
   S.R0.lastTeam=p.team;S.R0.bounces=0;S.R0.serve=false;S.R0.net=false;S.R0.hits++;S.R0.backWall=-1;
   if(offWall){S.R0.wallShot=true;p.energy=Math.min(100,p.energy+10);S.floats.push({x:p.x,y:p.y,t:1,text:'OFF THE WALL!',c:'#6fd3d2'});sfx('glass',1)}
   p.hitDone=true;if(p.swingT<0.12)p.swingT=0.2;
@@ -124,7 +135,7 @@ export function onEvent(t,a,c,back){
     else if(r.serve&&!c)return serveFault('SERVE INTO FENCE');
     if(back&&c&&r.bounces>=1&&a!==r.lastTeam)r.backWall=a;
   }else if(t==='out'){
-    if(r.bounces>=1)endPoint(r.lastTeam,'OUT OF THE CAGE!');else if(r.serve)serveFault('SERVE OUT');else endPoint(1-r.lastTeam,'OUT');
+    if(r.bounces>=1)endPoint(r.lastTeam,S.ball.porTres?'POR TRES!':'OUT OF THE CAGE!');else if(r.serve)serveFault('SERVE OUT');else endPoint(1-r.lastTeam,'OUT');
   }else if(t==='net')r.net=true;
 }
 export function teamName(t,short){if(S.demo)return t?'BLUE':'RED';const m=settings.mode;if(m==='online')return t===myTeam()?'YOU':'RIVAL';if(m==='pvp')return t?'P2':'P1';if(m==='2v2')return t?(short?'CPU':'LEO & IVY'):(short?'YOU':'YOU & MIA');return t?'CPU':'YOU'}
@@ -140,7 +151,7 @@ export function endPoint(team,reason){
   S.score.pts[team]++;for(const q of teamOf(team))q.energy=Math.min(100,q.energy+8);
   let small='POINT · '+teamName(team);
   if(S.score.pts[team]>=4){S.score.games[team]++;S.score.pts=[0,0];small='GAME · '+teamName(team);
-    if(S.score.games[team]>=settings.games&&!S.demo){S.score.winner=team}
+    if(S.score.games[team]>=settings.games&&!S.demo){S.score.winner=team;slowMo(1.4,0.3)}
     if(S.demo&&S.score.games[team]>=6)S.score.games=[0,0];}
   const human0=teamOf(team).some(isHuman);
   if(!S.demo)sfx(settings.mode==='pvp'?'point':settings.mode==='online'?(team===myTeam()?'point':'lose'):human0?'point':'lose');

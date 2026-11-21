@@ -28,6 +28,20 @@ describe('ball physics', () => {
   });
 });
 
+describe('spin shots', () => {
+  const peak = b => { let m = 0, bounced = false; for (let t = 0; t < 1.5; t += STEP) stepBall(b, STEP, e => { if (e === 'floor') bounced = true }), bounced && (m = Math.max(m, b.z)); return m };
+  it('bandeja slice stays lower after the bounce than a flat ball', () => {
+    const flat = peak(ballAt({ y: 6, z: 0.5, vy: 6, vz: -4 }));
+    const slice = peak(ballAt({ y: 6, z: 0.5, vy: 6, vz: -4, slice: true }));
+    expect(slice).toBeLessThan(flat * 0.6);
+  });
+  it('por tres kicks the ball out over the side fence', () => {
+    const ev = run(ballAt({ x: 2.4, y: 3, z: 0.3, vy: 15, vz: -5, kick: true }), 1).map(e => e[0]);
+    expect(ev[0]).toBe('floor');
+    expect(ev).toContain('out');
+  });
+});
+
 describe('scoring rules', () => {
   beforeEach(() => {
     newMatch(true, 42);

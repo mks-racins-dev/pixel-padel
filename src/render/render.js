@@ -1,3 +1,4 @@
+import { cameraOffset, drawFx } from './fx.ts';
 import { S } from '../state.js';
 import { L, P, R, ctx, shade, txt, txtW } from '../core/gfx.js';
 import { sweet } from '../game/constants.js';
@@ -53,6 +54,7 @@ export function drawServeAim(){
 }
 export function render(){
   ctx.save();
+  {const o=cameraOffset();if(o.x||o.y)ctx.translate(o.x,o.y)}
   if(S.shake>0)ctx.translate(Math.round((Math.random()-0.5)*3),Math.round((Math.random()-0.5)*3));
   ctx.drawImage(S.BG,0,0);
   drawSpectators();drawMascot();
@@ -65,6 +67,7 @@ export function render(){
   ctx.drawImage(S.NET,0,0);
   if(!ballFar)drawBallShadow();
   drawGroup(near,!ballFar);
+  drawFx(ctx);
   ctx.drawImage(S.FRONT,0,0);
   for(const f of(S.floatTxt?[S.floatTxt]:[]).concat(S.floats)){const q=P(f.x,f.y,2.2);const rise=Math.round((1.1-f.t)*14);const w=txtW(f.text,f===S.floatTxt?2:1);const sc=f===S.floatTxt?2:1;R(ctx,q.x-w/2-2,q.y-rise-2,w+4,5*sc+4,'rgba(23,19,28,0.75)');txt(ctx,f.text,Math.round(q.x-w/2),Math.round(q.y-rise),f.c,sc)}
   ctx.restore();

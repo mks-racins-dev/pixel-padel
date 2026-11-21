@@ -1,4 +1,6 @@
 import './style.css';
+import { simTime, updateFx } from './render/fx.ts';
+import { pollPads } from './input/input.js';
 import { startSession } from './core/analytics.ts';
 import { S } from './state.js';
 import { curLoc } from './content/venues.js';
@@ -44,7 +46,7 @@ newMatch(true);
 S.last=performance.now();
 export function frame(now){const dt=Math.min(0.05,(now-S.last)/1000);S.last=now;
   if(S.net&&S.net.role==='guest'&&!S.demo)guestTick(dt);
-  else if((!S.paused||(S.net&&!S.demo))&&S.state!=='over'){S.acc+=dt;while(S.acc>=STEP){update(STEP);S.acc-=STEP}}
+  else if((!S.paused||(S.net&&!S.demo))&&S.state!=='over'){S.acc+=simTime(dt);while(S.acc>=STEP){update(STEP);S.acc-=STEP}}
   if(S.net&&S.net.role==='host'&&!S.demo&&S.net.conn&&S.net.conn.open){S.net.sendT-=dt;if(S.net.sendT<=0){S.net.sendT=1/30;netSend(mkSnap())}}
-  updMascot(dt);render();drawPreview();requestAnimationFrame(frame)}
+  pollPads();updMascot(dt);updateFx(dt);render();drawPreview();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
