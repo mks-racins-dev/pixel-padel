@@ -1,3 +1,4 @@
+import { isPractice, PR } from '../game/practice.js';
 import { cameraOffset, drawFx } from './fx.ts';
 import { S } from '../state.js';
 import { L, P, R, ctx, shade, txt, txtW } from '../core/gfx.js';
@@ -63,6 +64,7 @@ export function render(){
   const far=S.players.filter(p=>p.y>=0).sort((a,b)=>b.y-a.y),near=S.players.filter(p=>p.y<0).sort((a,b)=>b.y-a.y);
   const ballFar=S.ball.y>=0;
   if(ballFar)drawBallShadow();
+  if(isPractice())drawMachine();
   drawGroup(far,ballFar);
   ctx.drawImage(S.NET,0,0);
   if(!ballFar)drawBallShadow();
@@ -76,4 +78,14 @@ export function drawGroup(list,withBall){
   let drawn=!withBall;
   for(const p of list){if(!drawn&&S.ball.y>p.y){drawBall();drawn=true}drawPlayer(p)}
   if(!drawn)drawBall();
+}
+
+/** The practice ball machine behind the far baseline. */
+function drawMachine(){
+  const p=P(PR.x,9.6,0);const x=Math.round(p.x),y=Math.round(p.y);
+  ctx.fillStyle='rgba(16,12,40,0.3)';ctx.fillRect(x-7,y-1,14,2);
+  R(ctx,x-6,y-9,12,8,'#3a3a44');R(ctx,x-6,y-9,12,1,'#6d6680');R(ctx,x-5,y-1,2,2,'#1c1a22');R(ctx,x+3,y-1,2,2,'#1c1a22');
+  R(ctx,x-4,y-15,8,6,'#e4572e');R(ctx,x-4,y-15,8,1,'#ff8a5c');
+  for(let k=0;k<5;k++)R(ctx,x-3+k*1.5,y-17+(k%2),1,1,'#e2ef3c');
+  R(ctx,x-1,y-7,3,3,'#1c1a22');R(ctx,x,y-6,1,1,S.state==='play'?'#9be37a':'#e4572e');
 }

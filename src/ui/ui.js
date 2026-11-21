@@ -1,3 +1,4 @@
+import { isPractice, practiceHud } from '../game/practice.js';
 import { matchEnd, matchQuit } from '../core/analytics.ts';
 import { S } from '../state.js';
 import { initAudio, sfx } from '../audio/sfx.js';
@@ -21,6 +22,7 @@ export function updateEnergy(){
 }
 export function updateHud(){
   if(!S.score)return;
+  if(isPractice())return practiceHud();
   $('r0').querySelector('.nm').textContent=teamName(0);$('r1').querySelector('.nm').textContent=teamName(1);
   $('r0').querySelector('.g').textContent=S.score.games[0];$('r1').querySelector('.g').textContent=S.score.games[1];
   $('r0').querySelector('.pt').textContent=PT[S.score.pts[0]]||'0';$('r1').querySelector('.pt').textContent=PT[S.score.pts[1]]||'0';
@@ -44,7 +46,7 @@ export function setHelp(){
   $('styleInfo').innerHTML='<b>'+st.name+'</b> &nbsp;SPD '+bar(st.spd)+' PWR '+bar(st.pow)+' ACC '+bar(st.acc)+'<br>'+(S.myLookData.hand==='left'?'Left':'Right')+'-handed · saved on this device';
   $('help').innerHTML=(m==='pvp'
     ?'<b>P1</b> (near): WASD · F hit · G lob · R vibora &nbsp; <b>P2</b> (far): arrows · K hit · L lob · O vibora<br>Hold to power up, tap for a soft drop. Past the white line = risk of overhit. Full energy = vibora. Serve: move, then hold hit + left/right to aim.<br>Ball must bounce before their walls; then glass is in play: let it come off the back glass for a boosted wall shot. 2nd bounce = point.'
-    :'<b>Move</b> WASD / arrows · <b>Hit</b> Space/J · <b>Lob</b> K/Shift · <b>Vibora</b> L/E · hold left/right to aim<br><b>Hold</b> hit for power, tap for a soft drop. Past the white line = risk of overhit. <b>Serve:</b> move into place, hold hit + left/right to aim, release. Hits fill energy; full bar = vibora (gives the other side +30).<br>Ball must bounce before their walls; then glass is in play: let it come off the back glass for a boosted wall shot. 2nd bounce = point. Golden point at 40–40.'+(m==='2v2'?' Mia covers the left side.':''))+'<br><b>Shots:</b> high ball + hit = <b>bandeja</b> (sliced, stays low); high ball + strong hit = smash; max-power smash near the net = <b>por tres</b> (kicks out over the fence); soft hit from the back = <b>chiquita</b>. <b>Gamepad:</b> A hit · B lob · Y vibora · Start pause.'+(m==='online'?'<br><b>Online:</b> host shares a 4-letter code, the other player joins. Host plays the near side.':'');
+    :'<b>Move</b> WASD / arrows · <b>Hit</b> Space/J · <b>Lob</b> K/Shift · <b>Vibora</b> L/E · hold left/right to aim<br><b>Hold</b> hit for power, tap for a soft drop. Past the white line = risk of overhit. <b>Serve:</b> move into place, hold hit + left/right to aim, release. Hits fill energy; full bar = vibora (gives the other side +30).<br>Ball must bounce before their walls; then glass is in play: let it come off the back glass for a boosted wall shot. 2nd bounce = point. Golden point at 40–40.'+(m==='2v2'?' Mia covers the left side.':''))+'<br><b>Shots:</b> high ball + hit = <b>bandeja</b> (sliced, stays low); high ball + strong hit = smash; max-power smash near the net = <b>por tres</b> (kicks out over the fence); soft hit from the back = <b>chiquita</b>. <b>Gamepad:</b> A hit · B lob · Y vibora · Start pause.'+(m==='practice'?'<br><b>Practice:</b> a ball machine feeds you balls through 5 short drills: rally, back glass, lob, overheads, vibora. Progress is saved on this device.':'')+(m==='online'?'<br><b>Online:</b> host shares a 4-letter code, the other player joins. Host plays the near side.':'');
 }
 export function press(seg,v){seg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===String(v)?'true':'false'))}
 export const coarse=matchMedia('(pointer:coarse)').matches;

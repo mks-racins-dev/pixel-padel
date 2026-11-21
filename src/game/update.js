@@ -33,13 +33,14 @@ export function update(dt){
       p.vx=locked?0:i.mx/l*SPEED_H*movK(p)*sc;p.vy=locked?0:i.my/l*SPEED_H*movK(p)*sc;
       if(p.charging)p.charge=Math.min(1,p.charge+dt/0.75);
       if(S.state==='play'&&p.swingReq&&p.swingT<=0.06){if(p.swingReq==='vibora'&&p.energy<100){p.swingReq=null}else{p.swingT=0.3;p.swingType=p.swingReq;p.power=p.reqPower;p.hitDone=false;p.swingReq=null}}
+      p.wantBack=p.team===0?i.my<-0.3:i.my>0.3;
       if(p.swingT>0&&!p.hitDone&&canHit(p)){const aim=i.mx<-0.3?-3.7:i.mx>0.3?3.7:(-Math.sign(p.x||0.1)*2.2+(rand()-0.5)*1.2);performHit(p,p.swingType,aim,p.power)}
     }else{
       const D=diffOf(p);
       if(S.state==='serve'||S.state==='between'){p.vx*=0.8;p.vy*=0.8}else{
         const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy);
         if(d>0.06){const v=Math.min(D.spd*movK(p),d*7);p.vx=dx/d*v;p.vy=dy/d*v}else{p.vx=p.vy=0}}
-      if(canHit(p)){if(p.missLeg!==S.R0.hits){p.missLeg=S.R0.hits;p.willMiss=rand()<D.miss}if(!p.willMiss){const s=aiShot(p);p.swingT=0.3;p.swingType=s.type;performHit(p,s.type,s.aimX,s.power)}}
+      if(canHit(p)){if(p.missLeg!==S.R0.hits){p.missLeg=S.R0.hits;p.willMiss=rand()<D.miss}if(!p.willMiss){const s=aiShot(p);p.swingT=0.3;p.swingType=s.type;p.wantBack=!!s.back;performHit(p,s.type,s.aimX,s.power)}}
     }
     if(p.swingT>0)p.swingT-=dt;
     p.x=Math.max(-4.7,Math.min(4.7,p.x+p.vx*dt));p.y=Math.max(lim[0],Math.min(lim[1],p.y+p.vy*dt));

@@ -53,6 +53,19 @@ Everything that affects a rally (ball, rules, AI) uses the seeded RNG in `src/co
 - Hold hit/lob longer for more power; a quick tap plays a soft drop shot near the net
 - 2-player mode: P1 WASD + F/G (R = vibora), P2 arrows + K/L (O = vibora)
 
+## Shots
+
+- **Bandeja**: hit a high ball softly for a sliced overhead that stays low after the bounce.
+- **Smash**: hit a high ball hard. At max power near the net it becomes a **por tres** and kicks out over the side fence.
+- **Chiquita**: a soft hit from the back of the court dips at the feet of players at the net.
+- **Wall shot**: let the ball come off your back glass after the bounce, then hit it for extra pace.
+- **Contrapared**: when the ball gets past you, hold back (towards your own wall) and hit: the ball goes into your back glass and rebounds over the net.
+- Gamepads work too: A hit, B lob, Y vibora, Start pause.
+
+## Practice
+
+Pick **PRACTICE** in the menu. A ball machine feeds you balls through five short drills (rally, back glass, lob, overheads, vibora). It doubles as the tutorial, and progress is saved on your device.
+
 ## Rules
 
 Serve diagonally into the box. The ball must bounce before touching the other side's walls; after the bounce the glass is in play. Second bounce = point. Golden point at 40-40.

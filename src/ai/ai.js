@@ -2,7 +2,7 @@ import { rand } from '../core/rng.ts';
 import { S } from '../state.js';
 import { SPEED_H, movK, sweet } from '../game/constants.js';
 import { stepBall } from '../game/physics.js';
-import { diffOf, isHuman, teamOf } from '../game/rules.js';
+import { canContrapared, diffOf, isHuman, teamOf } from '../game/rules.js';
 import { settings } from '../game/settings.js';
 
 /* ---------------- AI ---------------- */
@@ -43,9 +43,10 @@ export function aiShot(p){
   const opp=teamOf(1-p.team);let type='drive';
   const oppNet=opp.some(q=>Math.abs(q.y)<4.8);
   if(S.ball.z<1.6&&rand()<(oppNet?0.45:0.16))type='lob';
+  const back=canContrapared(p)&&Math.abs(S.ball.y)>8.6&&rand()<0.35;
   let bx=0,bs=-1;for(const x of[-3.8,-1.8,0,1.8,3.8]){const d=Math.min(...opp.map(q=>Math.abs(q.x-x)))+rand()*1.3;if(d>bs){bs=d;bx=x}}
-  if(p.energy>=100&&rand()<0.7)return{type:'vibora',aimX:bx,power:1};
+  if(p.energy>=100&&rand()<0.7)return{type:'vibora',aimX:bx,power:1,back:false};
   let power=rand()<0.15?sweet(p)+rand()*(1-sweet(p)):0.5+rand()*(sweet(p)-0.5);
   if(type==='drive'&&opp.every(q=>Math.abs(q.y)>6.8)&&rand()<0.28)power=0.08+rand()*0.14;
-  return{type,aimX:bx,power};
+  return{type,aimX:bx,power,back};
 }

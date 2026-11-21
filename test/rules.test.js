@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { S } from '../src/state.js';
-import { newMatch, onEvent } from '../src/game/rules.js';
+import { newMatch, onEvent, contraparedVel, canContrapared } from '../src/game/rules.js';
 import { stepBall } from '../src/game/physics.js';
 import { update, STEP } from '../src/game/update.js';
 import { HL, BACK_H } from '../src/game/constants.js';
@@ -39,6 +39,26 @@ describe('spin shots', () => {
     const ev = run(ballAt({ x: 2.4, y: 3, z: 0.3, vy: 15, vz: -5, kick: true }), 1).map(e => e[0]);
     expect(ev[0]).toBe('floor');
     expect(ev).toContain('out');
+  });
+});
+
+describe('contrapared', () => {
+  it('finds a shot off your own back glass that lands in the other court', () => {
+    newMatch(true, 3);
+    const p = S.players[0]; // near side, team 0
+    Object.assign(S.ball, { x: 1, y: -8.8, z: 0.9, vx: 0, vy: -3, vz: 0, held: false });
+    expect(canContrapared(p)).toBe(true);
+    const v = contraparedVel(p, 0);
+    expect(v).not.toBeNull();
+    expect(v.vy).toBeLessThan(0); // hit backwards, into our own wall
+    const b = { ...S.ball, ...v, out: false, rolling: false, spin: 0 };
+    const ev = run(b, 3);
+    const wall = ev.findIndex(e => e[0] === 'wall'), floor = ev.findIndex(e => e[0] === 'floor');
+    expect(wall).toBeGreaterThanOrEqual(0);
+    expect(ev[wall][1]).toBe(0);      // our own wall
+    expect(floor).toBeGreaterThan(wall);
+    expect(ev[floor][1]).toBe(1);     // lands on the far side
+    expect(ev.some(e => e[0] === 'net')).toBe(false);
   });
 });
 
