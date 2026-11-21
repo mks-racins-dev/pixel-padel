@@ -17,17 +17,27 @@ function row(c, slot) {
 export function renderDailyTab() {
   const box = document.getElementById('dailyBox');
   if (!box) return;
-  const st = chState(), cup = cupFor(), cs = cupState();
-  const city = (LOCS[cup[0].venue] || {}).city || '';
-  const best = cs.champion ? 'CHAMPION ★' : cs.best ? ROUNDS[cs.best - 1] + ' WON' : 'NOT PLAYED YET';
+  const st = chState();
   box.innerHTML = `
     <div class="dhead"><span class="px">DAILY</span><span>NEW IN ${hm(msToNextDay())}</span></div>
     ${dailySet(st.day).map(c => row(c, st.daily[c.id])).join('')}
     <div class="dhead"><span class="px">WEEKLY</span><span>RESETS MONDAY</span></div>
     ${weeklySet(st.week).map(c => row(c, st.weekly[c.id])).join('')}
-    <div class="dhead"><span class="px">WEEKLY CUP · ${city}</span><span>BEST: ${best}</span></div>
+    <div class="help">Challenges count in every mode (online: for the host only). Rewards are added automatically.</div>`;
+}
+
+export function renderCupTab() {
+  const box = document.getElementById('cupBox');
+  if (!box) return;
+  const cup = cupFor(), cs = cupState();
+  const city = (LOCS[cup[0].venue] || {}).city || '';
+  const best = cs.champion ? 'CHAMPION ★' : cs.best ? ROUNDS[cs.best - 1] + ' WON' : 'NOT PLAYED YET';
+  box.innerHTML = `
+    <div class="mtitle px">WEEKLY CUP · ${city}</div>
+    <div class="help">Three knockout rounds, the same for every player this week. Lose once and the run ends; try again any time. Win it for a 150 XP bonus.</div>
     <div class="dcup">${cup.map((e, i) => `<span class="cev ${i < RUN.round ? 'won' : i === RUN.round ? 'next' : ''}">${e.round}<i>${e.opp}</i></span>`).join('')}</div>
-    <button class="big" id="cupPlay">${RUN.round ? 'CONTINUE CUP: ' + cup[RUN.round].round : 'PLAY THE WEEKLY CUP'} ▸</button>`;
+    <div class="dhead"><span>BEST THIS WEEK</span><span class="px">${best}</span></div>
+    <button class="big" data-primary id="cupPlay">${RUN.round ? 'CONTINUE: ' + cup[RUN.round].round : 'PLAY THE CUP'} ▸</button>`;
   document.getElementById('cupPlay').onclick = () => { initAudio(); startCup(false); startGame() };
 }
 

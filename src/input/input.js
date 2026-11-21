@@ -1,3 +1,4 @@
+import { menuMove, menuPrimary } from '../ui/menu.js';
 import { S } from '../state.js';
 import { sweet } from '../game/constants.js';
 import { isHuman } from '../game/rules.js';
@@ -27,7 +28,7 @@ export function tryVibora(p){if(S.state==='serve'&&S.R0.server===p){p.swingReq='
 // Standard mapping: A = hit, B/X = lob, Y/RB/RT = vibora, Start = pause / menu confirm.
 // Player 1 uses the first connected pad; in 2-player mode player 2 uses the second.
 const PAD={drive:[0],lob:[1,2],vib:[3,5,7],start:[9]};
-const padPrev=[{},{}];
+const padPrev=[{},{}];let padNavPrev=0;
 function pads(){try{return[...(navigator.getGamepads?navigator.getGamepads():[])].filter(g=>g&&g.connected)}catch(e){return[]}}
 function padSlot(p){return settings.mode==='pvp'&&p.ctrl==='h2'?1:0}
 function padOf(p){return p.ctrl==='net'?null:pads()[padSlot(p)]||null}
@@ -46,6 +47,10 @@ export function pollPads(){
   ps.slice(0,2).forEach((g,slot)=>{
     const prev=padPrev[slot],now={};for(const k in PAD)now[k]=down(g,PAD[k]);padPrev[slot]=now;
     const pressed=k=>now[k]&&!prev[k],released=k=>!now[k]&&prev[k];
+    // up/down on the stick or d-pad moves through the main menu
+    const vy=down(g,[12])?-1:down(g,[13])?1:Math.abs(g.axes[1]||0)>0.6?Math.sign(g.axes[1]):0;
+    if(slot===0&&vy&&vy!==padNavPrev&&document.getElementById('menu')&&!document.getElementById('menu').hidden)menuMove(vy);
+    if(slot===0)padNavPrev=vy;
     if(pressed('start')){menuConfirm(true);return}
     if(pressed('drive')&&slot===0&&menuConfirm(false))return;
     if(S.demo||S.paused)return;
@@ -58,7 +63,7 @@ export function pollPads(){
 /** Start / A on menus: play, play again, pause and resume. Returns true if the press was used. */
 function menuConfirm(start){
   const vis=id=>{const e=document.getElementById(id);return!!e&&!e.hidden};
-  if(vis('menu')){document.getElementById('playBtn').click();return true}
+  if(vis('menu'))return menuPrimary();
   if(vis('end')){document.getElementById('againBtn').click();return true}
   if(vis('pause')||(start&&!S.demo&&S.state!=='menu')){togglePause();return true}
   return false;

@@ -1,9 +1,8 @@
-import { renderDailyTab } from './dailyTab.js';
 import { emit } from '../meta/events.ts';
 import { takeRecent } from '../meta/challenges.ts';
 import { finishCupMatch, startCup } from '../meta/cup.ts';
 import { CAREER, finishCareerMatch, leaveCareer } from '../meta/career.ts';
-import { renderCareerTab } from './careerTab.js';
+import { buildMenu, renderMenu } from './menu.js';
 import { isPractice, practiceHud } from '../game/practice.js';
 import { matchEnd, matchQuit } from '../core/analytics.ts';
 import { S } from '../state.js';
@@ -73,7 +72,7 @@ export function startGame(){
   if(CAREER.active&&CAREER.kind==='cup')startCup(false); // next round, or round 1 after a run ended
   if(CAREER.active)setLoc(CAREER.event.venue);
   showGameUI();newMatch(false)}
-export function toMenu(){matchQuit();leaveCareer();renderCareerTab();netClose();$('online').hidden=true;S.paused=false;$('pause').hidden=true;$('end').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('menu').hidden=false;hideMsg();newMatch(true)}
+export function toMenu(){matchQuit();leaveCareer();renderMenu();netClose();$('online').hidden=true;S.paused=false;$('pause').hidden=true;$('end').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('menu').hidden=false;hideMsg();newMatch(true)}
 export function togglePause(){if(S.net&&!S.demo){$('pause').hidden=!$('pause').hidden;return}S.paused=!S.paused;$('pause').hidden=!S.paused}
 
 function cupSummary(r){
@@ -93,20 +92,17 @@ function careerSummary(r){
 
 /** One-time side effects (DOM wiring, saved settings). Called from main.js. */
 export function setup(){
+  buildMenu();
   document.querySelectorAll('.sw').forEach(sw=>{for(const c of PAL[sw.dataset.look]){const b=document.createElement('button');b.dataset.v=c;b.setAttribute('aria-label',sw.dataset.look+' '+c);if(c==='none'){b.textContent='×';b.style.background='#17131c'}else b.style.background=c;sw.appendChild(b)}});
   document.querySelectorAll('.seg').forEach(seg=>{
     press(seg,seg.dataset.look?S.myLookData[seg.dataset.look]:settings[seg.dataset.key]);
+    if(!seg.dataset.key&&!seg.dataset.look)return; // segs with their own handler (sound)
     seg.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const v=b.dataset.v;press(seg,v);
       if(seg.dataset.look){S.myLookData={...S.myLookData,[seg.dataset.look]:v};saveLook();if(S.demo&&S.players[0])S.players[0].look=mkLook(S.myLookData)}
       else if(seg.dataset.key==='loc'){setLoc(v);try{localStorage.setItem('pixelpadel-venue',v)}catch(e){}}
       else{const k=seg.dataset.key;settings[k]=k==='games'?+v:v;if(k==='style')saveLook()}
       setHelp()})});
-  document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{
-    document.querySelectorAll('#tabs button').forEach(x=>x.setAttribute('aria-selected',x===b?'true':'false'));
-    $('playBtn').hidden=b.dataset.sec==='career'||b.dataset.sec==='daily';if(b.dataset.sec==='career')renderCareerTab();if(b.dataset.sec==='daily')renderDailyTab();
-    document.querySelectorAll('.sec').forEach(s=>s.hidden=s.dataset.sec!==b.dataset.sec)}));
   prevG.imageSmoothingEnabled=false;
-  $('playBtn').onclick=()=>{leaveCareer();startGame()};
   $('againBtn').onclick=startGame;
   $('menuBtn').onclick=toMenu;
   $('quitBtn').onclick=toMenu;

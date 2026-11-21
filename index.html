@@ -33,51 +33,59 @@
   </div>
 
   <div id="menu" class="overlay">
-    <div id="menuBox" class="panel">
-      <h1 class="px">PIXEL PADEL</h1>
-      <div class="sub" id="sub">sunset club · glass walls in play</div>
-      <div class="tabs" id="tabs">
-        <button class="px" data-sec="play" aria-selected="true">PLAY</button>
-        <button class="px" data-sec="career" aria-selected="false">CAREER</button>
-        <button class="px" data-sec="daily" aria-selected="false">DAILY</button>
-        <button class="px" data-sec="player" aria-selected="false">PLAYER</button>
-        <button class="px" data-sec="help" aria-selected="false">HOW TO</button>
+    <nav class="mnav" aria-label="Main menu">
+      <h1 class="px">PIXEL<br>PADEL</h1>
+      <div class="mlv"><span class="px" id="mLevel">LV 1</span><span class="cxp"><span id="mXp"></span></span></div>
+      <button class="mi px" data-p="career">CAREER</button>
+      <button class="mi px" data-p="quick">QUICK MATCH</button>
+      <button class="mi px" data-p="daily">DAILY<i id="mDaily"></i></button>
+      <button class="mi px" data-p="cup">WEEKLY CUP</button>
+      <button class="mi px" data-p="practice">PRACTICE<i id="mPractice"></i></button>
+      <button class="mi px" data-p="online">ONLINE</button>
+      <div class="msep"></div>
+      <button class="mi px small" data-p="player">PLAYER</button>
+      <button class="mi px small" data-p="help">HOW TO PLAY</button>
+      <button class="mi px small" data-p="options">OPTIONS</button>
+    </nav>
+    <section class="mpanel">
+      <div class="mp" data-p="career"><div id="careerBox"></div></div>
+
+      <div class="mp" data-p="quick" hidden>
+        <div class="mtitle px">QUICK MATCH</div>
+        <div class="qgrid">
+          <div class="qopts">
+            <div class="opt"><span class="px">MODE</span>
+              <div class="seg" data-key="mode">
+                <button data-v="1v1">1 VS 1</button><button data-v="2v2">2 VS 2</button><button data-v="pvp">2 PLAYERS</button>
+              </div></div>
+            <div class="opt"><span class="px">CPU</span><div class="step" data-key="diff"></div></div>
+            <div class="opt"><span class="px">LENGTH</span><div class="step" data-key="games"></div></div>
+            <span class="px qlab">VENUE</span>
+            <div class="seg cards" data-key="loc" id="venueCards"></div>
+          </div>
+          <div class="qside">
+            <div class="mcard">
+              <span class="px mcard-t">MATCH CARD</span>
+              <div class="help" id="qSummary"></div>
+              <div class="help" id="sub">sunset club · glass walls in play</div>
+            </div>
+            <button class="big" data-primary id="quickStart">START ▸</button>
+          </div>
+        </div>
       </div>
-      <div class="secs">
-      <div class="sec" data-sec="play">
-      <div class="opt"><span class="px">MODE</span>
-        <div class="seg" data-key="mode">
-          <button data-v="1v1" aria-pressed="true">1 VS 1</button>
-          <button data-v="2v2" aria-pressed="false">2 VS 2</button>
-          <button data-v="pvp" aria-pressed="false">2 PLAYERS</button>
-          <button data-v="online" aria-pressed="false">ONLINE</button>
-          <button data-v="practice" aria-pressed="false">PRACTICE</button>
-        </div></div>
-      <div class="opt"><span class="px">VENUE</span>
-        <div class="seg venue" data-key="loc">
-          <button data-v="sunset">SUNSET</button><button data-v="lv">LATVIA</button><button data-v="ee">ESTONIA</button><button data-v="lt">LITHUANIA</button>
-          <button data-v="es">SPAIN</button><button data-v="by">BELARUS</button><button data-v="us">USA</button><button data-v="ru">RUSSIA</button>
-        </div></div>
-      <div class="opt"><span class="px">CPU</span>
-        <div class="seg" data-key="diff">
-          <button data-v="easy" aria-pressed="false">EASY</button>
-          <button data-v="normal" aria-pressed="true">NORMAL</button>
-          <button data-v="hard" aria-pressed="false">HARD</button>
-        </div></div>
-      <div class="opt"><span class="px">MATCH</span>
-        <div class="seg" data-key="games">
-          <button data-v="3" aria-pressed="true">FIRST TO 3</button>
-          <button data-v="6" aria-pressed="false">FIRST TO 6</button>
-        </div></div>
-      <div class="opt"><span class="px">ASSIST</span>
-        <div class="seg" data-key="assist">
-          <button data-v="on" aria-pressed="true">BOUNCE MARK</button>
-          <button data-v="off" aria-pressed="false">OFF</button>
-        </div></div>
+
+      <div class="mp" data-p="daily" hidden><div id="dailyBox"></div></div>
+      <div class="mp" data-p="cup" hidden><div id="cupBox"></div></div>
+      <div class="mp" data-p="practice" hidden><div id="practiceBox"></div></div>
+
+      <div class="mp" data-p="online" hidden>
+        <div class="mtitle px">ONLINE</div>
+        <div class="help">Play 1 vs 1 against a friend over the internet. One of you hosts and gets a 4-letter code, the other types it in to join. The host plays the near side.</div>
+        <button class="big" data-primary id="onlineStart">HOST OR JOIN ▸</button>
       </div>
-      <div class="sec" data-sec="career" hidden><div id="careerBox"></div></div>
-      <div class="sec" data-sec="daily" hidden><div id="dailyBox"></div></div>
-      <div class="sec" data-sec="player" hidden>
+
+      <div class="mp" data-p="player" hidden>
+        <div class="mtitle px">PLAYER</div>
         <div class="pl">
           <canvas id="prevC" width="24" height="30" aria-label="Player preview"></canvas>
           <div class="popts">
@@ -108,10 +116,19 @@
         </div>
         <div class="help" id="styleInfo"></div>
       </div>
-      <div class="sec" data-sec="help" hidden><div class="help" id="help"></div></div>
+
+      <div class="mp" data-p="help" hidden><div class="mtitle px">HOW TO PLAY</div><div class="help" id="help"></div></div>
+
+      <div class="mp" data-p="options" hidden>
+        <div class="mtitle px">OPTIONS</div>
+        <div class="opt"><span class="px">ASSIST</span>
+          <div class="seg" data-key="assist"><button data-v="on">BOUNCE MARK</button><button data-v="off">OFF</button></div></div>
+        <div class="opt"><span class="px">SOUND</span>
+          <div class="seg" id="soundSeg"><button data-v="on">ON</button><button data-v="off">OFF</button></div></div>
       </div>
-      <button class="big" id="playBtn">PLAY ▸</button>
-    </div>
+
+      <div class="mhint">▲▼ CHOOSE · ENTER / A PLAY</div>
+    </section>
   </div>
 
   <div id="online" class="overlay" hidden>

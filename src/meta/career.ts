@@ -61,7 +61,7 @@ export function finishCareerMatch(won: boolean, gamesWon: number): CareerResult 
   const e = CAREER.event!; const p = profile(); const unlocked: string[] = [];
   const first = won && !p.career.won.includes(e.id);
   if (first) { p.career.won.push(e.id); saveProfile() }
-  const xp = won ? 60 + 25 * e.tier + (e.final ? 40 : 0) - (first ? 0 : 35) : 20 + 8 * gamesWon;
+  const xp = won ? xpForWin(e) - (first ? 0 : 35) : 20 + 8 * gamesWon;
   const before = new Set(profile().unlocked);
   const levels = addXp(xp);
   let tierDone: string | undefined;
@@ -71,3 +71,6 @@ export function finishCareerMatch(won: boolean, gamesWon: number): CareerResult 
   if (won) CAREER.event = nextEvent();
   return { xp, levels, unlocked, tierDone, won, last };
 }
+
+/** XP for winning an event the first time. */
+export function xpForWin(e: { tier: number; final?: boolean }) { return 60 + 25 * e.tier + (e.final ? 40 : 0) }
