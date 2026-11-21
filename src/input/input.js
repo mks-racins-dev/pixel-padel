@@ -1,5 +1,7 @@
 import { menuMove, menuPrimary } from '../ui/menu.js';
 import { S } from '../state.js';
+import { startCharge, releaseCharge, tryVibora } from '../game/actions.js';
+export { startCharge, releaseCharge, tryVibora };
 import { sweet } from '../game/constants.js';
 import { isHuman } from '../game/rules.js';
 import { settings } from '../game/settings.js';
@@ -20,9 +22,6 @@ export const isGuest=()=>!!(S.net&&S.net.role==='guest'&&!S.demo);
 export function actStart(p,a){if(isGuest())netSend({t:'d',a});else startCharge(p,a)}
 export function actRelease(p,a){if(isGuest())netSend({t:'u',a});else if(p.charging===a)releaseCharge(p)}
 export function actVib(p){if(isGuest())netSend({t:'v'});else tryVibora(p)}
-export function startCharge(p,type){if(p.charging)return;p.charging=type;p.charge=0}
-export function releaseCharge(p){if(!p.charging)return;p.swingReq=p.charging;p.reqPower=Math.max(0.06,p.charge);p.charging=null;p.charge=0}
-export function tryVibora(p){if(S.state==='serve'&&S.R0.server===p){p.swingReq='drive';p.reqPower=sweet(p);return}if(p.energy>=100){p.swingReq='vibora';p.reqPower=1}else{S.floats.push({x:p.x,y:p.y,t:0.7,text:'NOT READY',c:'#c9bba6'})}}
 
 /* ---------------- gamepad ---------------- */
 // Standard mapping: A = hit, B/X = lob, Y/RB/RT = vibora, Start = pause / menu confirm.

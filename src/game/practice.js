@@ -1,13 +1,10 @@
-import { emit } from '../meta/events.ts';
+import { H } from '../sim/hooks.js';
+import { settings } from './config.js';
 // Practice mode: a ball machine on the far side feeds you balls, and a short series of drills
 // teaches the game step by step. Drills run on the normal rules and physics; only the scoring is different.
 import { S } from '../state.js';
 import { rand } from '../core/rng.ts';
-import { track } from '../core/analytics.ts';
 import { launch } from './rules.js';
-import { settings } from './settings.js';
-import { showMsg, hideMsg } from '../ui/ui.js';
-import { sfx } from '../audio/sfx.js';
 
 /**
  * Each drill: how the machine feeds (target and flight), how many good shots are needed,
@@ -49,7 +46,7 @@ function beginDrill(i) {
   const d = DRILLS[i];
   S.state = 'between'; S.afterState = () => feed(); S.stateT = 2.6;
   S.ball.held = true;
-  showMsg(`DRILL ${i + 1}/${DRILLS.length} · ${d.name}`, d.tip);
+  H.showMsg(`DRILL ${i + 1}/${DRILLS.length} · ${d.name}`, d.tip);
   practiceHud();
 }
 
@@ -63,7 +60,7 @@ function feed() {
   const f = d.feed();
   launch(f.tx, f.ty, f.spd, f.clear);
   S.state = 'play';
-  sfx('hit', 0.6);
+  H.sfx('hit', 0.6);
   practiceHud();
 }
 
@@ -71,28 +68,28 @@ function feed() {
 export function practiceLanded(land) {
   const d = DRILLS[PR.drill];
   const good = d.ok({ shot: S.R0.lastShot, offWall: S.R0.lastOffWall }, land);
-  S.state = 'between'; S.stateT = 0.9; S.afterState = () => { hideMsg(); next() };
-  if (good) { PR.done++; S.floats.push({ x: land.x, y: land.y, t: 0.9, text: `${PR.done}/${d.need}`, c: '#9be37a' }); sfx('point') }
+  S.state = 'between'; S.stateT = 0.9; S.afterState = () => { H.hideMsg(); next() };
+  if (good) { PR.done++; S.floats.push({ x: land.x, y: land.y, t: 0.9, text: `${PR.done}/${d.need}`, c: '#9be37a' }); H.sfx('point') }
   else S.floats.push({ x: land.x, y: land.y, t: 0.9, text: 'IN · TRY THE DRILL SHOT', c: '#f7c993' });
   practiceHud();
 }
 
 /** The rally ended without a good landing (missed, out, net...). */
 export function practiceMiss(reason) {
-  S.state = 'between'; S.stateT = 1.1; S.afterState = () => { hideMsg(); next() };
-  showMsg(reason, 'TRY AGAIN');
+  S.state = 'between'; S.stateT = 1.1; S.afterState = () => { H.hideMsg(); next() };
+  H.showMsg(reason, 'TRY AGAIN');
 }
 
 function next() {
   const d = DRILLS[PR.drill];
   if (PR.done < d.need) return feed();
-  track('drill_done', { drill: d.id });
-  emit({ type: 'drill', id: d.id });
+  H.track('drill_done', { drill: d.id });
+  H.emit({ type: 'drill', id: d.id });
   const done = new Set(saved().done || []); done.add(d.id); save({ done: [...done] });
   if (PR.drill + 1 < DRILLS.length) return beginDrill(PR.drill + 1);
-  track('practice_complete', {});
+  H.track('practice_complete', {});
   S.state = 'between'; S.stateT = 3; S.afterState = () => beginDrill(Math.floor(rand() * DRILLS.length));
-  showMsg('PRACTICE COMPLETE!', 'Free play: drills now repeat at random. Quit from the pause menu.');
+  H.showMsg('PRACTICE COMPLETE!', 'Free play: drills now repeat at random. Quit from the pause menu.');
 }
 
 export function practiceHud() {

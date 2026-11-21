@@ -1,4 +1,5 @@
 import './style.css';
+import './sim/clientHooks.js';
 import { simTime, updateFx } from './render/fx.ts';
 import { pollPads } from './input/input.js';
 import { startSession } from './core/analytics.ts';

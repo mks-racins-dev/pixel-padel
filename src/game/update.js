@@ -1,11 +1,10 @@
+import { H } from '../sim/hooks.js';
 import { rand } from '../core/rng.ts';
 import { S } from '../state.js';
 import { aiPlan, aiShot } from '../ai/ai.js';
 import { SPEED_H, SVC, movK } from './constants.js';
 import { stepBall } from './physics.js';
 import { canHit, diffOf, doServe, endPoint, isHuman, onEvent, performHit, soundOnly, teamOf } from './rules.js';
-import { inputOf } from '../input/input.js';
-import { hideMsg, updateEnergy } from '../ui/ui.js';
 
 /* ---------------- update ---------------- */
 export const STEP=1/120;
@@ -21,13 +20,13 @@ export function update(dt){
     if(S.state==='play'&&S.ball.rolling&&S.R0.bounces>=1)endPoint(S.R0.lastTeam,'DOUBLE BOUNCE');
   }else if(S.state==='between'){
     stepBall(S.ball,dt,soundOnly);
-    S.stateT-=dt;if(S.stateT<=0&&S.afterState){const f=S.afterState;S.afterState=null;hideMsg();f()}
+    S.stateT-=dt;if(S.stateT<=0&&S.afterState){const f=S.afterState;S.afterState=null;H.hideMsg();f()}
   }
   for(const t of[0,1]){const m=teamOf(t);if(m.some(q=>!isHuman(q))){const q0=m.find(q=>!isHuman(q));q0.think-=dt;if(q0.think<=0){q0.think=0.08+rand()*0.06;if(S.state==='play')aiPlan(t);else for(const q of m)if(!isHuman(q)&&S.state!=='serve'){q.tx=q.x;q.ty=q.y}}}}
   for(const p of S.players){
     const lim=p.team===0?[-9.7,-0.5]:[0.5,9.7];
     if(isHuman(p)){
-      const i=inputOf(p);const l=Math.hypot(i.mx,i.my)||1;const sc=Math.min(1,Math.hypot(i.mx,i.my));
+      const i=H.inputOf(p);const l=Math.hypot(i.mx,i.my)||1;const sc=Math.min(1,Math.hypot(i.mx,i.my));
       const serving=S.state==='serve'&&S.R0.server===p,locked=serving&&p.charging;
       if(locked&&i.mx)p.serveAim=Math.max(0,Math.min(1,p.serveAim+i.mx*S.R0.boxX*dt*1.1));
       p.vx=locked?0:i.mx/l*SPEED_H*movK(p)*sc;p.vy=locked?0:i.my/l*SPEED_H*movK(p)*sc;
@@ -52,5 +51,5 @@ export function update(dt){
   for(const s of S.spectators)if(s.cheer>0)s.cheer-=dt;
   if(S.floatTxt){S.floatTxt.t-=dt;if(S.floatTxt.t<=0)S.floatTxt=null}
   for(const f of S.floats)f.t-=dt;S.floats=S.floats.filter(f=>f.t>0);
-  if(!S.demo&&S.score)updateEnergy();
+  if(!S.demo&&S.score)H.updateEnergy();
 }

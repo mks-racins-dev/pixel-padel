@@ -40,6 +40,24 @@ Every push to `main` runs CI and deploys `dist/` to GitHub Pages.
 
 Everything that affects a rally (ball, rules, AI) uses the seeded RNG in `src/core/rng.ts`, and the simulation runs at a fixed 120 Hz step. The same seed and the same inputs give the same match. Cosmetic randomness (mascot, sounds, screen shake) uses `Math.random` and never changes the outcome. This is the base for replays and server-checked online play.
 
+### Game server (online play)
+
+Online matches run on a small game server on Cloudflare Workers (`server/`). It runs the same simulation code as the browser: players send only their inputs and draw the snapshots the server sends back, so nobody can fake a point. Each match is its own Durable Object; a lobby object pairs players for quick matches.
+
+```sh
+npm run server:dev                                  # local server on http://localhost:8787
+VITE_SERVER_URL=ws://localhost:8787 npm run dev     # game that uses the local server
+```
+
+Without `VITE_SERVER_URL` the game falls back to peer-to-peer online play (PeerJS).
+
+**Deploying (one time):**
+1. Create a free Cloudflare account, then run `npx wrangler login` and `npm run server:deploy`. Wrangler prints the server address, e.g. `https://pixel-padel-server.<your-subdomain>.workers.dev`.
+2. In the GitHub repository settings, add the variable `SERVER_URL` = that address with `wss://` instead of `https://`. The next push builds the game with online play through the server.
+3. Optional, for automatic server deploys from CI: add the secrets `CLOUDFLARE_API_TOKEN` (a token with the "Edit Cloudflare Workers" template) and `CLOUDFLARE_ACCOUNT_ID`.
+
+Allowed pages are set in `server/wrangler.toml` (`ALLOWED_ORIGINS`).
+
 ### Analytics
 
 `src/core/analytics.ts` records sessions, returning days and match start/end/quit. By default nothing leaves the browser. To collect events, set the `ANALYTICS_URL` repository variable (or `VITE_ANALYTICS_URL` locally); events are POSTed there in small anonymous batches.

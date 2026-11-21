@@ -1,0 +1,22 @@
+# Cloudflare Workers config for the Pixel Padel game server.
+# Deploy: npx wrangler deploy --config server/wrangler.toml   (after `npx wrangler login`)
+name = "pixel-padel-server"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+
+[[durable_objects.bindings]]
+name = "LOBBY"
+class_name = "Lobby"
+
+[[durable_objects.bindings]]
+name = "MATCH"
+class_name = "Match"
+
+# SQLite-backed Durable Objects are available on the free Workers plan.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Lobby", "Match"]
+
+[vars]
+# Pages allowed to connect (comma-separated). Empty = allow all.
+ALLOWED_ORIGINS = "https://mks-racins-dev.github.io,http://localhost:5173,http://localhost:4173"

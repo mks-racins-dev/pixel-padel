@@ -9,12 +9,15 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm test && npm run build"
+    "check": "npm run typecheck && npm test && npm run build",
+    "server:dev": "wrangler dev --config server/wrangler.toml",
+    "server:deploy": "wrangler deploy --config server/wrangler.toml"
   },
   "devDependencies": {
     "jsdom": "^25.0.1",
     "typescript": "^5.9.3",
     "vite": "^8.3.8",
-    "vitest": "^5.1.1"
+    "vitest": "^5.1.1",
+    "wrangler": "^4.166.0"
   }
 }

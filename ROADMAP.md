@@ -6,7 +6,7 @@ The plan assumes one developer working part-time, plus a hired pixel artist and 
 
 Status key: ✅ done · 🟡 partly done · ⬜ not started
 
-Last updated: 2026-11-21
+Last updated: 2026-11-21 (Phase 3 started)
 
 ---
 
@@ -80,18 +80,18 @@ Last updated: 2026-11-21
 
 ---
 
-## Phase 3: Real online play ⬜
+## Phase 3: Real online play 🟡
 
 **Goal:** a fair, competitive online mode.
 
 | Item | Notes |
 |---|---|
-| Server-run matches | The server runs the simulation using the seeded code from Phase 0; players' games predict locally. Possible stacks: Node.js with Colyseus, or Cloudflare Durable Objects. |
-| Matchmaking and rankings | Glicko-2 skill rating, ranked seasons, casual and private rooms |
+| Server-run matches | ✅ Cloudflare Workers + Durable Objects; the server runs the same simulation code, players send inputs only. Quick match (lobby) and private rooms with codes. Built and tested locally; deploying needs a Cloudflare account. |
+| Matchmaking and rankings | 🟡 random pairing and private rooms done; Glicko-2 skill rating and ranked seasons to do |
 | Online 2 vs 2 | You and a friend, or you plus an AI partner |
 | Accounts | Steam login on PC, guest accounts on web; friends, clubs, leaderboards by country and city |
 | Weekly Cup leaderboard | Shared results, replacing the local "best this week" |
-| Server-side checks | The server validates inputs so players can't declare points won; challenges use server time instead of the device clock |
+| Server-side checks | 🟡 matches are server-run (inputs only, clamped, rate-limited); challenges still use the device clock |
 | Cloud saves | Move the local profile to the account |
 
 **Gate:** a closed beta with 200+ players, average connection delay under 120 ms in Europe, matchmaking in under 60 seconds.

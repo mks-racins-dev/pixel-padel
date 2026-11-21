@@ -3,7 +3,7 @@ import { S } from '../state.js';
 import { SPEED_H, movK, sweet } from '../game/constants.js';
 import { stepBall } from '../game/physics.js';
 import { canContrapared, diffOf, isHuman, teamOf } from '../game/rules.js';
-import { settings } from '../game/settings.js';
+import { settings } from '../game/config.js';
 
 /* ---------------- AI ---------------- */
 export const wallPref={leg:null,on:false};

@@ -1,6 +1,6 @@
 import { S } from '../state.js';
 import { STYLES } from './constants.js';
-import { settings } from './settings.js';
+import { settings } from './config.js';
 
 /* ---------------- custom player ---------------- */
 export const PAL={skin:['#f6d2b4','#e8b48a','#c98d62','#b97a52','#8d5a3b','#5e3a26'],hair:['#1f1a17','#4a2c1a','#7a3a22','#d9b26a','#e86a3a','#8e6cc1'],

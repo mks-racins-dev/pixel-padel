@@ -1,4 +1,6 @@
 import { S } from '../state.js';
+import { mkSnap, r3 } from '../sim/snapshot.js';
+export { mkSnap, r3 };
 import { initAudio, sfx } from '../audio/sfx.js';
 import { LOCS } from '../content/venues.js';
 import { $ } from '../core/gfx.js';
@@ -11,17 +13,48 @@ import { mascotReact } from '../render/mascot.js';
 import { showEnd, showGameUI, showMsg, toMenu, updateEnergy, updateHud } from '../ui/ui.js';
 
 export const NET_PREFIX='pixelpadel-v1-';
-export function myTeam(){return S.net&&S.net.role==='guest'?1:0}
+/** Game server address (wss://...). Without it, online play falls back to peer-to-peer (PeerJS). */
+export const SERVER_URL=(import.meta.env&&import.meta.env.VITE_SERVER_URL||'').replace(/\/$/,'');
+export const useServer=()=>!!SERVER_URL;
+
+/** A WebSocket with the same small interface as a PeerJS connection: on(), send(obj), open, close(). */
+export function wsConn(url){
+  const ws=new WebSocket(url),h={data:[],close:[],error:[],open:[]};
+  const c={open:false,on(e,f){h[e].push(f)},send(o){if(c.open)ws.send(JSON.stringify(o))},close(){try{ws.close()}catch(e){}}};
+  ws.onopen=()=>{c.open=true;h.open.forEach(f=>f())};
+  ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(_){return}h.data.forEach(f=>f(m))};
+  ws.onclose=()=>{const was=c.open;c.open=false;h.close.forEach(f=>f(was))};
+  ws.onerror=()=>h.error.forEach(f=>f());
+  return c;
+}
+/** Connect to a match room on the game server. mode: 'create' | 'join' | 'quick'. */
+export function joinServerRoom(code,mode){
+  netClose();
+  const n={role:'guest',server:true,code,mode,conn:null,inp:{mx:9,my:9},inT:0,snap:null,snapAt:0,hk:'',team:null};S.net=n;
+  const c=wsConn(SERVER_URL+'/room/'+code);n.conn=c;bindConn(c);
+  c.on('open',()=>c.send({t:'hello',mode,style:settings.style,look:S.myLookData,loc:settings.loc}));
+  c.on('error',()=>{if(S.net===n)onStatus('Could not reach the game server.')});
+}
+/** Find a random opponent: the lobby pairs two waiting players and gives them a room code. */
+export function quickMatch(){
+  netClose();$('codeShow').textContent='';onStatus('Connecting…');
+  const c=wsConn(SERVER_URL+'/quick'),n={role:'lobby',conn:c};S.net=n;
+  c.on('data',m=>{if(S.net!==n)return;if(m.t==='wait')onStatus('Looking for an opponent…');else if(m.t==='go'){S.net=null;c.close();onStatus('Opponent found! Starting…');joinServerRoom(m.code,'quick')}});
+  c.on('close',()=>{if(S.net===n){S.net=null;onStatus('Connection lost. Try again.')}});
+  c.on('error',()=>{if(S.net===n)onStatus('Could not reach the game server.')});
+}
+export function myTeam(){return S.net&&S.net.role==='guest'?(S.net.team??1):0}
 export function netSend(o){if(S.net&&S.net.conn&&S.net.conn.open)try{S.net.conn.send(o)}catch(e){}}
 export function onStatus(t){$('onStatus').textContent=t}
 export function loadPeer(cb){if(window.Peer)return cb();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=cb;sc.onerror=()=>onStatus('Could not load the networking library. Check your connection.');document.head.appendChild(sc)}
 export function mkCode(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ';let c='';for(let i=0;i<4;i++)c+=A[Math.floor(Math.random()*A.length)];return c}
 export function netClose(){if(!S.net)return;netSend({t:'bye'});const n=S.net;S.net=null;setTimeout(()=>{try{n.conn&&n.conn.close()}catch(e){}try{n.peer&&n.peer.destroy()}catch(e){}},150)}
-export function handleLeft(){if(!S.net)return;const n=S.net;S.net=null;try{n.peer.destroy()}catch(e){}
+export function handleLeft(){if(!S.net)return;const n=S.net;S.net=null;try{n.peer&&n.peer.destroy()}catch(e){}try{n.conn&&n.conn.close()}catch(e){}
   if(!S.demo){S.paused=true;$('msgBig').textContent='RIVAL LEFT';$('msgSmall').textContent='back to menu…';$('msg').classList.add('show');setTimeout(()=>{$('msg').classList.remove('show');toMenu()},2200)}
   else{$('codeShow').textContent='';onStatus('Connection closed.')}}
 export function bindConn(c){c.on('data',onNet);c.on('close',()=>{if(S.net&&S.net.conn===c)handleLeft()});c.on('error',()=>{})}
 export function hostGame(){
+  if(useServer()){const code=mkCode();joinServerRoom(code,'create');$('codeShow').textContent=code;onStatus('Opening a room…');return}
   netClose();$('codeShow').textContent='';onStatus('Opening a room…');
   loadPeer(()=>{const code=mkCode();const peer=new Peer(NET_PREFIX+code);
     const n={role:'host',peer,conn:null,remoteIn:{mx:0,my:0},fx:[],code,sendT:0,guestStyle:'allround'};S.net=n;
@@ -31,6 +64,7 @@ export function hostGame(){
   })}
 export function joinGame(){
   const code=$('codeIn').value.trim().toUpperCase();if(!/^[A-Z]{4}$/.test(code)){onStatus('Enter the 4-letter code.');return}
+  if(useServer()){$('codeShow').textContent='';onStatus('Joining '+code+'…');joinServerRoom(code,'join');return}
   netClose();$('codeShow').textContent='';onStatus('Joining '+code+'…');
   loadPeer(()=>{const peer=new Peer();const n={role:'guest',peer,conn:null,inp:{mx:9,my:9},inT:0,snap:null,snapAt:0,hk:''};S.net=n;
     peer.on('open',()=>{if(S.net!==n)return;const c=peer.connect(NET_PREFIX+code,{reliable:true,serialization:'json'});n.conn=c;bindConn(c);
@@ -50,20 +84,18 @@ export function onNet(m){
     else if(m.t==='u'){if(p.charging===m.a)releaseCharge(p)}
     else if(m.t==='v')tryVibora(p);
   }else{
-    if(m.t==='start'){settings.games=m.games;S.net.styles=m.styles;S.net.looks=Array.isArray(m.looks)?m.looks:[];if(LOCS[m.loc])setLoc(m.loc);S.net.snap=null;S.net.hk='';showGameUI();newMatch(false)}
+    if(m.t==='start'){if(m.team===0||m.team===1)S.net.team=m.team;settings.games=m.games;S.net.styles=m.styles;S.net.looks=Array.isArray(m.looks)?m.looks:[];if(LOCS[m.loc])setLoc(m.loc);S.net.snap=null;S.net.hk='';showGameUI();newMatch(false)}
     else if(m.t==='s'){if(!S.demo)applySnap(m)}
     else if(m.t==='msg')showMsg(m.b,m.s);
     else if(m.t==='hide')$('msg').classList.remove('show');
-    else if(m.t==='pt'){for(const sp of S.spectators)sp.cheer=1.6;mascotReact();sfx(m.w===1?'point':'lose')}
+    else if(m.t==='pt'){for(const sp of S.spectators)sp.cheer=1.6;mascotReact();sfx(m.w===myTeam()?'point':'lose')}
     else if(m.t==='end'){S.score=S.net.snap?S.net.snap.sc:S.score;showEnd()}
     else if(m.t==='full')onStatus('That room is already full.');
+    else if(m.t==='joined'){if(S.net.mode==='create')onStatus('Share this code. Waiting for your rival…');else onStatus('Connected! Starting…')}
+    else if(m.t==='nogame'){onStatus('No game found with code '+S.net.code+'.');netClose()}
     else if(m.t==='bye')handleLeft();
   }
 }
-export const r3=v=>Math.round(v*1000)/1000;
-export function mkSnap(){return{t:'s',st:S.state,b:[r3(S.ball.x),r3(S.ball.y),r3(S.ball.z),r3(S.ball.vx),r3(S.ball.vy),r3(S.ball.vz),S.ball.held?1:0,S.ball.out?1:0,S.ball.vib?1:0,S.ball.spin||0],
-  P:S.players.map(p=>[r3(p.x),r3(p.y),r3(p.vx),r3(p.vy),r3(p.swingT),p.swingType,p.flip?1:0,r3(p.anim),Math.round(p.energy),p.charging||0,r3(p.charge),r3(p.serveAim)]),
-  sc:S.score,r:[S.players.indexOf(S.R0.server),S.R0.boxX,S.R0.serve?1:0],mk:S.marker,ft:S.floatTxt,fl:S.floats,sh:r3(Math.max(0,S.shake)),fx:S.net.fx.splice(0)}}
 export function applySnap(m){
   S.net.snap=m;S.net.snapAt=performance.now();if(S.state!=='over')S.state=m.st;
   const b=m.b;S.ball.x=b[0];S.ball.y=b[1];S.ball.z=b[2];S.ball.vx=b[3];S.ball.vy=b[4];S.ball.vz=b[5];S.ball.held=!!b[6];S.ball.out=!!b[7];S.ball.vib=!!b[8];S.ball.spin=b[9];
@@ -88,6 +120,7 @@ export function guestTick(dt){
 /** One-time side effects (DOM wiring, saved settings). Called from main.js. */
 export function setup(){
   $('hostBtn').onclick=()=>{initAudio();hostGame()};
+  if(useServer()){$('quickBtn').hidden=false;$('quickBtn').onclick=()=>{initAudio();quickMatch()}}
   $('joinBtn').onclick=()=>{initAudio();joinGame()};
   $('codeIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')joinGame()});
   $('codeIn').addEventListener('keyup',e=>e.stopPropagation());
