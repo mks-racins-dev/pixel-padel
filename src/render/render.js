@@ -1,3 +1,4 @@
+import { trailColor } from '../meta/profile.ts';
 import { isPractice, PR } from '../game/practice.js';
 import { cameraOffset, drawFx } from './fx.ts';
 import { S } from '../state.js';
@@ -27,7 +28,7 @@ export function drawPlayer(p){
 export function drawBallShadow(){if(S.ball.out&&S.ball.z>4)return;const g0=P(S.ball.x,S.ball.y,0);ctx.fillStyle='rgba(16,12,40,'+Math.max(0.12,0.4-S.ball.z*0.05)+')';ctx.fillRect(Math.round(g0.x)-1,Math.round(g0.y),3,1)}
 export function drawBall(){
   const p=P(S.ball.x,S.ball.y,S.ball.z);const x=Math.round(p.x),y=Math.round(p.y)-2;
-  for(let i=0;i<S.trail.length;i++){const t=S.trail[i];ctx.fillStyle=S.ball.vib?'rgba(255,120,70,'+(0.25+i*0.12)+')':'rgba(226,239,60,'+(0.12+i*0.07)+')';ctx.fillRect(t.x,t.y,1,1)}
+  for(let i=0;i<S.trail.length;i++){const t=S.trail[i];ctx.fillStyle=S.ball.vib?'rgba(255,120,70,'+(0.25+i*0.12)+')':trailColor(i,S.time);ctx.fillRect(t.x,t.y,1,1)}
   const o='#1c1a22';R(ctx,x-1,y-2,3,1,o);R(ctx,x-1,y+2,3,1,o);R(ctx,x-2,y-1,1,3,o);R(ctx,x+2,y-1,1,3,o);
   R(ctx,x-1,y-1,3,3,'#e2ef3c');R(ctx,x-1,y-1,1,1,'#fbffb8');R(ctx,x+1,y+1,1,1,'#a9b82a');
 }

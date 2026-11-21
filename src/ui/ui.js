@@ -1,3 +1,5 @@
+import { CAREER, finishCareerMatch, leaveCareer } from '../meta/career.ts';
+import { renderCareerTab } from './careerTab.js';
 import { isPractice, practiceHud } from '../game/practice.js';
 import { matchEnd, matchQuit } from '../core/analytics.ts';
 import { S } from '../state.js';
@@ -5,7 +7,7 @@ import { initAudio, sfx } from '../audio/sfx.js';
 import { $ } from '../core/gfx.js';
 import { STYLES } from '../game/constants.js';
 import { PAL, mkLook, saveLook } from '../game/player.js';
-import { isHuman, newMatch, teamName } from '../game/rules.js';
+import { isHuman, matchGames, newMatch, teamName } from '../game/rules.js';
 import { setLoc, settings } from '../game/settings.js';
 import { actRelease, actStart, actVib, touchIn } from '../input/input.js';
 import { myTeam, netClose, netSend, onStatus, startOnline } from '../net/online.js';
@@ -28,7 +30,7 @@ export function updateHud(){
   $('r0').querySelector('.pt').textContent=PT[S.score.pts[0]]||'0';$('r1').querySelector('.pt').textContent=PT[S.score.pts[1]]||'0';
   const st=(S.score.games[0]+S.score.games[1])%2;$('r0').classList.toggle('serving',st===0);$('r1').classList.toggle('serving',st===1);
   const gp=S.score.pts[0]===3&&S.score.pts[1]===3;
-  $('info').textContent=gp?'GOLDEN POINT!':'FIRST TO '+settings.games+' GAMES';
+  $('info').textContent=gp?'GOLDEN POINT!':'FIRST TO '+matchGames()+' GAMES';
 }
 export function showMsg(big,small){if(S.demo)return;if(S.net&&S.net.role==='host')netSend({t:'msg',b:big,s:small||''});$('msgBig').textContent=big;$('msgSmall').textContent=small||'';$('msg').classList.add('show')}
 export function hideMsg(){if(S.net&&S.net.role==='host'&&!S.demo)netSend({t:'hide'});$('msg').classList.remove('show')}
@@ -39,6 +41,8 @@ export function showEnd(){
   if(S.net&&S.net.role==='host')netSend({t:'end'});
   $('endTitle').textContent=settings.mode==='pvp'?(w===0?'PLAYER 1 WINS!':'PLAYER 2 WINS!'):(human?'YOU WIN!':(on?'RIVAL WINS':'CPU WINS'));
   $('endScore').textContent=S.score.games[0]+' – '+S.score.games[1];
+  $('againBtn').textContent='REMATCH';$('endInfo').innerHTML='';
+  if(CAREER.active){const r=finishCareerMatch(human,S.score.games[0]);$('endInfo').innerHTML=careerSummary(r);$('againBtn').textContent=r.last&&r.won?'PLAY AGAIN':r.won?'NEXT MATCH':'RETRY'}
   $('end').hidden=false;$('touch').hidden=true;sfx(human||settings.mode==='pvp'?'win':'lose');
 }
 export function setHelp(){
@@ -56,9 +60,19 @@ export function startGame(){
     if(S.net&&S.net.conn&&S.net.conn.open){if(S.net.role==='host')startOnline();else{netSend({t:'again'});$('endTitle').textContent='WAITING FOR HOST…'}}
     else{initAudio();$('menu').hidden=true;$('end').hidden=true;$('online').hidden=false;$('codeShow').textContent='';onStatus('Host to get a code, or type a friend\'s code and join.')}
     return}
+  if(CAREER.active)setLoc(CAREER.event.venue);
   showGameUI();newMatch(false)}
-export function toMenu(){matchQuit();netClose();$('online').hidden=true;S.paused=false;$('pause').hidden=true;$('end').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('menu').hidden=false;hideMsg();newMatch(true)}
+export function toMenu(){matchQuit();leaveCareer();renderCareerTab();netClose();$('online').hidden=true;S.paused=false;$('pause').hidden=true;$('end').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('menu').hidden=false;hideMsg();newMatch(true)}
 export function togglePause(){if(S.net&&!S.demo){$('pause').hidden=!$('pause').hidden;return}S.paused=!S.paused;$('pause').hidden=!S.paused}
+
+function careerSummary(r){
+  const bits=['+'+r.xp+' XP'];
+  if(r.levels)bits.push('LEVEL UP! +'+r.levels+' SKILL POINT'+(r.levels>1?'S':''));
+  if(r.tierDone)bits.push(r.tierDone+' COMPLETE!');
+  for(const u of r.unlocked)bits.push('UNLOCKED: '+u);
+  if(r.won&&r.last)bits.push('YOU WON THE WHOLE CAREER!');
+  return bits.join('<br>');
+}
 
 /** One-time side effects (DOM wiring, saved settings). Called from main.js. */
 export function setup(){
@@ -72,9 +86,10 @@ export function setup(){
       setHelp()})});
   document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{
     document.querySelectorAll('#tabs button').forEach(x=>x.setAttribute('aria-selected',x===b?'true':'false'));
+    $('playBtn').hidden=b.dataset.sec==='career';if(b.dataset.sec==='career')renderCareerTab();
     document.querySelectorAll('.sec').forEach(s=>s.hidden=s.dataset.sec!==b.dataset.sec)}));
   prevG.imageSmoothingEnabled=false;
-  $('playBtn').onclick=startGame;
+  $('playBtn').onclick=()=>{leaveCareer();startGame()};
   $('againBtn').onclick=startGame;
   $('menuBtn').onclick=toMenu;
   $('quitBtn').onclick=toMenu;

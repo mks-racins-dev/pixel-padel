@@ -87,3 +87,28 @@ h1{margin:0;font-size:calc(var(--u)*17);line-height:1.1;color:#f7c993;text-shado
 #tLob{right:calc(var(--u)*64);bottom:calc(var(--u)*34);background:rgba(79,154,91,.75);color:#fff}
 #rotate{display:none;position:fixed;inset:0;background:#17131c;color:#f4ead2;align-items:center;justify-content:center;text-align:center;font-size:28px;padding:24px;z-index:9}
 @media (orientation:portrait) and (pointer:coarse){#rotate{display:flex}}
+
+/* career tab */
+.clevel{display:grid;grid-template-columns:auto 1fr auto;gap:calc(var(--u)*5);align-items:center;font-size:calc(var(--u)*8);color:#d9ccb6}
+.clevel .px{font-size:calc(var(--u)*7);color:#f7c993}
+.cxp{height:calc(var(--u)*5);background:#211b29;border:calc(var(--u)*1) solid #0f0c13}
+.cxp span{display:block;height:100%;background:#6fd3d2}
+.cgrid{display:grid;grid-template-columns:calc(var(--u)*118) 1fr;gap:calc(var(--u)*8)}
+.cstats{display:flex;flex-direction:column;gap:calc(var(--u)*2)}
+.cstats .help{font-size:calc(var(--u)*7.5)}
+.cstat{display:grid;grid-template-columns:calc(var(--u)*44) 1fr calc(var(--u)*12);align-items:center;font-size:calc(var(--u)*7.5);color:#d9ccb6}
+.cbar{color:#f2c14e;letter-spacing:calc(var(--u)*-0.5);font-size:calc(var(--u)*6)}
+.cstat button,.clink{font-family:"Press Start 2P",monospace;font-size:calc(var(--u)*5);background:#4f9a5b;color:#fff;border:calc(var(--u)*1) solid #0f0c13;padding:calc(var(--u)*1.5) 0}
+.clink{background:#3a3146;padding:calc(var(--u)*2);margin-top:calc(var(--u)*1)}
+.cstat button:disabled,.clink:disabled{opacity:.35}
+.ctiers{display:flex;flex-direction:column;gap:calc(var(--u)*2.5)}
+.ctier{display:grid;grid-template-columns:calc(var(--u)*46) 1fr 1fr 1fr;gap:calc(var(--u)*2);align-items:center;font-size:calc(var(--u)*7);color:#d9ccb6}
+.ctier b{font-weight:normal;color:#f7c993;font-size:calc(var(--u)*6.5)}
+.ctier.locked{opacity:.45}
+.cev{background:#211b29;border:calc(var(--u)*1) solid #0f0c13;padding:calc(var(--u)*1.5) calc(var(--u)*2);line-height:1;display:flex;flex-direction:column}
+.cev i{font-style:normal;font-size:calc(var(--u)*5.5);color:#9a8fa8}
+.cev.won{background:#2f4a33;color:#bfe8b0}
+.cev.next{background:#e4572e;color:#fff}
+.cev.next i{color:#ffd9c8}
+.ctrail button:disabled{opacity:.4}
+#endInfo{text-align:center;color:#9be37a}

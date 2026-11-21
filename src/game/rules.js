@@ -1,3 +1,5 @@
+import { CAREER, oppDiff } from '../meta/career.ts';
+import { careerSkills } from '../meta/profile.ts';
 import { isPractice, practiceLanded, practiceMiss, startPractice, stopPractice } from './practice.js';
 import { slowMo } from '../render/fx.ts';
 import { rand, seedSim } from '../core/rng.ts';
@@ -16,15 +18,17 @@ import { showEnd, showMsg, updateHud } from '../ui/ui.js';
 export function newMatch(isDemo,seed){
   seedSim(seed ?? (Date.now() ^ (Math.random()*0x7fffffff)));
   S.demo=isDemo;
-  if(!isDemo)matchStart({mode:settings.mode,diff:settings.diff,venue:settings.loc,games:settings.games,style:settings.style});
+  const career=CAREER.active&&!isDemo;
+  if(!isDemo)matchStart({career:career?CAREER.event.id:null,mode:career?'career':settings.mode,diff:settings.diff,venue:settings.loc,games:settings.games,style:settings.style});
   stopPractice();
-  const m=S.demo?'2v2':settings.mode;const me=mkLook(S.myLookData);
+  const m=S.demo?'2v2':career?'1v1':settings.mode;const me=mkLook(S.myLookData);
   if(m==='practice')S.players=[mkPlayer(0,me,'h1',0)];
   else if(m==='1v1')S.players=[mkPlayer(0,me,'h1',0),mkPlayer(1,LOOKS.o1,'ai',0)];
   else if(m==='2v2')S.players=[mkPlayer(0,me,S.demo?'ai':'h1',2.4),mkPlayer(0,LOOKS.p2,'ai',-2.4),mkPlayer(1,LOOKS.o1,'ai',-2.4),mkPlayer(1,LOOKS.o2,'ai',2.4)];
   else if(m==='online'){const g=S.net&&S.net.role==='guest';const lk=S.net?(g?(S.net.looks||[]):[S.myLookData,S.net.guestLook]):[];S.players=[mkPlayer(0,lk[0]?mkLook(lk[0]):LOOKS.p1,g?'net':'h1',0),mkPlayer(1,lk[1]?mkLook(lk[1]):LOOKS.o1,g?'h1':'net',0)]}
   else S.players=[mkPlayer(0,me,'h1',0),mkPlayer(1,LOOKS.o1,'h2',0)];
   const ks=Object.keys(STYLES);for(const p of S.players)p.sk=isHuman(p)?STYLES[settings.style]:STYLES[ks[Math.floor(rand()*ks.length)]];
+  if(career){S.players[0].sk=careerSkills(STYLES[settings.style]);S.players[1].sk=STYLES[CAREER.event.style]||STYLES.allround}
   if(m==='online'&&S.net){const sty=S.net.role==='host'?[settings.style,S.net.guestStyle]:S.net.styles||[];S.players.forEach((p,i)=>p.sk=STYLES[sty[i]]||STYLES.allround)}
   S.score={pts:[0,0],games:[0,0],winner:-1};
   S.ball={x:0,y:-9,z:1,vx:0,vy:0,vz:0,held:true,out:false,rolling:false};
@@ -34,7 +38,7 @@ export function newMatch(isDemo,seed){
   setupServe(false);updateHud();
 }
 export function teamOf(t){return S.players.filter(p=>p.team===t)}
-export function diffOf(p){return DIFF[S.demo?'normal':(p.team===0&&settings.mode==='2v2'?'normal':settings.diff)]}
+export function diffOf(p){if(CAREER.active&&!S.demo&&p.team===1)return careerDiff();return DIFF[S.demo?'normal':(p.team===0&&settings.mode==='2v2'?'normal':settings.diff)]}
 export function isHuman(p){return p.ctrl==='h1'||p.ctrl==='h2'||p.ctrl==='net'}
 export function setupServe(second){
   const g=S.score.games[0]+S.score.games[1];
@@ -102,7 +106,7 @@ export function performHit(p,type,aimX,power){
     // chiquita: a soft dipping ball at the feet of a team waiting at the net, played from the back
     if(type==='drive'&&power<0.3&&Math.abs(p.y)>5.5){shot='chiquita';ty=dir*(2.4+power*2.5);clear=0.98}}
   if(!vib)spd*=powK(p);
-  if(offWall&&type!=='lob')spd*=1.12;
+  if(offWall&&type!=='lob')spd*=1.12+(p.sk.wall||0)*0.06;
   const e=(vib?0.15:(human?0.3:D.err))*(1.45-0.15*p.sk.acc);tx+=gauss()*e;ty+=gauss()*e*(power<0.3?0.35:0.75);
   if(!vib&&overhit(p,power)){if(type==='lob'||rand()<0.5)ty=dir*(HL+1.5);else{clear=0.3;ty=dir*2}S.floatTxt={x:p.x,y:p.y,t:0.9,text:'OVERHIT!',c:'#e4572e'}}
   if(!human&&!vib)clear-=rand()*D.err*0.22;
@@ -115,7 +119,7 @@ export function performHit(p,type,aimX,power){
   if(shot&&shot!=='portres')S.floats.push({x:p.x,y:p.y,t:0.9,text:SHOT_LABEL[shot][0],c:SHOT_LABEL[shot][1]});
   S.R0.lastShot=shot||(smash?'smash':type);S.R0.lastOffWall=offWall;
   S.R0.lastTeam=p.team;S.R0.bounces=0;S.R0.serve=false;S.R0.net=false;S.R0.hits++;S.R0.backWall=-1;
-  if(offWall){S.R0.wallShot=true;p.energy=Math.min(100,p.energy+10);S.floats.push({x:p.x,y:p.y,t:1,text:'OFF THE WALL!',c:'#6fd3d2'});sfx('glass',1)}
+  if(offWall){S.R0.wallShot=true;p.energy=Math.min(100,p.energy+10+Math.round((p.sk.wall||0)*4));S.floats.push({x:p.x,y:p.y,t:1,text:'OFF THE WALL!',c:'#6fd3d2'});sfx('glass',1)}
   p.hitDone=true;if(p.swingT<0.12)p.swingT=0.2;
   if(vib){p.energy=0;for(const q of teamOf(1-p.team))q.energy=Math.min(100,q.energy+30);S.floatTxt={x:p.x,y:p.y,t:1.1,text:'VIBORA!',c:'#ff8a5c'};for(const q of teamOf(1-p.team))S.floats.push({x:q.x,y:q.y,t:1.1,text:'+30',c:'#f2c14e'});S.shake=0.25;sfx('vibora')}
   else{p.energy=Math.min(100,p.energy+(smash?20:14));sfx(smash?'smash':'hit',0.55+power*0.45);if(smash)S.shake=0.18}
@@ -146,7 +150,7 @@ export function onEvent(t,a,c,back){
     if(r.bounces>=1)endPoint(r.lastTeam,S.ball.porTres?'POR TRES!':'OUT OF THE CAGE!');else if(r.serve)serveFault('SERVE OUT');else endPoint(1-r.lastTeam,'OUT');
   }else if(t==='net')r.net=true;
 }
-export function teamName(t,short){if(S.demo)return t?'BLUE':'RED';const m=settings.mode;if(m==='online')return t===myTeam()?'YOU':'RIVAL';if(m==='pvp')return t?'P2':'P1';if(m==='2v2')return t?(short?'CPU':'LEO & IVY'):(short?'YOU':'YOU & MIA');return t?'CPU':'YOU'}
+export function teamName(t,short){if(S.demo)return t?'BLUE':'RED';if(CAREER.active)return t?CAREER.event.opp:'YOU';const m=settings.mode;if(m==='online')return t===myTeam()?'YOU':'RIVAL';if(m==='pvp')return t?'P2':'P1';if(m==='2v2')return t?(short?'CPU':'LEO & IVY'):(short?'YOU':'YOU & MIA');return t?'CPU':'YOU'}
 export function serveFault(reason){
   S.state='between';
   if(S.R0.faults===0){showMsg('FAULT',reason+' · 2ND SERVE');S.stateT=1.1;S.afterState=()=>setupServe(true)}
@@ -160,7 +164,7 @@ export function endPoint(team,reason){
   S.score.pts[team]++;for(const q of teamOf(team))q.energy=Math.min(100,q.energy+8);
   let small='POINT · '+teamName(team);
   if(S.score.pts[team]>=4){S.score.games[team]++;S.score.pts=[0,0];small='GAME · '+teamName(team);
-    if(S.score.games[team]>=settings.games&&!S.demo){S.score.winner=team;slowMo(1.4,0.3)}
+    if(S.score.games[team]>=matchGames()&&!S.demo){S.score.winner=team;slowMo(1.4,0.3)}
     if(S.demo&&S.score.games[team]>=6)S.score.games=[0,0];}
   const human0=teamOf(team).some(isHuman);
   if(!S.demo)sfx(settings.mode==='pvp'?'point':settings.mode==='online'?(team===myTeam()?'point':'lose'):human0?'point':'lose');
@@ -189,3 +193,8 @@ export function contraparedVel(p,aimX){
   }
   return best;
 }
+
+/** Games needed to win the current match. */
+export function matchGames(){return CAREER.active&&!S.demo&&CAREER.event?CAREER.event.games:settings.games}
+let cdKey=null,cdVal=null;
+function careerDiff(){const e=CAREER.event;if(cdKey!==e.id){cdKey=e.id;cdVal=oppDiff(e.skill,DIFF.easy,DIFF.hard)}return cdVal}
