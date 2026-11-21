@@ -51,6 +51,10 @@ VITE_SERVER_URL=ws://localhost:8787 npm run dev     # game that uses the local s
 
 Without `VITE_SERVER_URL` the game falls back to peer-to-peer online play (PeerJS).
 
+With a server, every player quietly gets an anonymous **guest account** (an id and a random token kept in the browser; the server stores only a hash of the token). It is used for the nickname, a cloud backup of the profile, the server clock for daily challenges, and the **ranked ladder**: *Find an opponent* matches are ranked with Glicko-2 in monthly seasons, private rooms are friendly. Server API: see the comment at the top of `server/worker.js`.
+
+After changing anything in `server/`, deploy it again with `npm run server:deploy` (or let CI do it once the Cloudflare secrets are set). The `v2` migration in `server/wrangler.toml` creates the account and ladder storage on the next deploy.
+
 **Deploying (one time):**
 1. Create a free Cloudflare account, then run `npx wrangler login` and `npm run server:deploy`. Wrangler prints the server address, e.g. `https://pixel-padel-server.<your-subdomain>.workers.dev`.
 2. In the GitHub repository settings, add the variable `SERVER_URL` = that address with `wss://` instead of `https://`. The next push builds the game with online play through the server.

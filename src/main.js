@@ -3,6 +3,9 @@ import './sim/clientHooks.js';
 import { simTime, updateFx } from './render/fx.ts';
 import { pollPads } from './input/input.js';
 import { startSession } from './core/analytics.ts';
+import { SERVER_URL } from './net/online.js';
+import { initAccount, onAccountChange } from './net/account.ts';
+import { renderMenu } from './ui/menu.js';
 import { S } from './state.js';
 import { curLoc } from './content/venues.js';
 import { $, H, W, mulberry } from './core/gfx.js';
@@ -22,6 +25,7 @@ import { setup as setupUiUi } from './ui/ui.js';
 import { setup as setupNetOnline } from './net/online.js';
 
 startSession();
+if (SERVER_URL) { onAccountChange(renderMenu); initAccount(SERVER_URL) }
 
 // one-time setup of each module, in the original top-to-bottom order
 setupCoreGfx();

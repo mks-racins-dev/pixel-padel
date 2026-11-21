@@ -1,3 +1,4 @@
+import { wsAuth } from './account.ts';
 import { S } from '../state.js';
 import { mkSnap, r3 } from '../sim/snapshot.js';
 export { mkSnap, r3 };
@@ -31,14 +32,14 @@ export function wsConn(url){
 export function joinServerRoom(code,mode){
   netClose();
   const n={role:'guest',server:true,code,mode,conn:null,inp:{mx:9,my:9},inT:0,snap:null,snapAt:0,hk:'',team:null};S.net=n;
-  const c=wsConn(SERVER_URL+'/room/'+code);n.conn=c;bindConn(c);
+  const q=wsAuth(),c=wsConn(SERVER_URL+'/room/'+code+(q?'?'+q:''));n.conn=c;bindConn(c);
   c.on('open',()=>c.send({t:'hello',mode,style:settings.style,look:S.myLookData,loc:settings.loc}));
   c.on('error',()=>{if(S.net===n)onStatus('Could not reach the game server.')});
 }
 /** Find a random opponent: the lobby pairs two waiting players and gives them a room code. */
 export function quickMatch(){
   netClose();$('codeShow').textContent='';onStatus('Connecting…');
-  const c=wsConn(SERVER_URL+'/quick'),n={role:'lobby',conn:c};S.net=n;
+  const q=wsAuth(),c=wsConn(SERVER_URL+'/quick'+(q?'?'+q:'')),n={role:'lobby',conn:c};S.net=n;
   c.on('data',m=>{if(S.net!==n)return;if(m.t==='wait')onStatus('Looking for an opponent…');else if(m.t==='go'){S.net=null;c.close();onStatus('Opponent found! Starting…');joinServerRoom(m.code,'quick')}});
   c.on('close',()=>{if(S.net===n){S.net=null;onStatus('Connection lost. Try again.')}});
   c.on('error',()=>{if(S.net===n)onStatus('Could not reach the game server.')});
@@ -84,13 +85,15 @@ export function onNet(m){
     else if(m.t==='u'){if(p.charging===m.a)releaseCharge(p)}
     else if(m.t==='v')tryVibora(p);
   }else{
-    if(m.t==='start'){if(m.team===0||m.team===1)S.net.team=m.team;settings.games=m.games;S.net.styles=m.styles;S.net.looks=Array.isArray(m.looks)?m.looks:[];if(LOCS[m.loc])setLoc(m.loc);S.net.snap=null;S.net.hk='';showGameUI();newMatch(false)}
+    if(m.t==='start'){if(m.team===0||m.team===1)S.net.team=m.team;S.net.names=Array.isArray(m.names)?m.names:[];S.net.ranked=!!m.ranked;settings.games=m.games;S.net.styles=m.styles;S.net.looks=Array.isArray(m.looks)?m.looks:[];if(LOCS[m.loc])setLoc(m.loc);S.net.snap=null;S.net.hk='';showGameUI();newMatch(false)}
     else if(m.t==='s'){if(!S.demo)applySnap(m)}
     else if(m.t==='msg')showMsg(m.b,m.s);
     else if(m.t==='hide')$('msg').classList.remove('show');
     else if(m.t==='pt'){for(const sp of S.spectators)sp.cheer=1.6;mascotReact();sfx(m.w===myTeam()?'point':'lose')}
     else if(m.t==='end'){S.score=S.net.snap?S.net.snap.sc:S.score;showEnd()}
     else if(m.t==='full')onStatus('That room is already full.');
+    else if(m.t==='rating'){const d=Math.round(m.after-m.before);const line='RANKED RATING: '+Math.round(m.before)+' → '+Math.round(m.after)+' ('+(d>=0?'+':'')+d+')';
+      const el=$('endInfo');if(el)el.innerHTML=(el.innerHTML?el.innerHTML+'<br>':'')+line}
     else if(m.t==='joined'){if(S.net.mode==='create')onStatus('Share this code. Waiting for your rival…');else onStatus('Connected! Starting…')}
     else if(m.t==='nogame'){onStatus('No game found with code '+S.net.code+'.');netClose()}
     else if(m.t==='bye')handleLeft();

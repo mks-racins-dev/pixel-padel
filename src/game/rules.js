@@ -150,7 +150,7 @@ export function onEvent(t,a,c,back){
     if(r.bounces>=1)endPoint(r.lastTeam,S.ball.porTres?'POR TRES!':'OUT OF THE CAGE!');else if(r.serve)serveFault('SERVE OUT');else endPoint(1-r.lastTeam,'OUT');
   }else if(t==='net')r.net=true;
 }
-export function teamName(t,short){if(S.demo)return t?'BLUE':'RED';if(CAREER.active)return t?CAREER.event.opp:'YOU';const m=settings.mode;if(m==='online')return t===H.myTeam()?'YOU':'RIVAL';if(m==='pvp')return t?'P2':'P1';if(m==='2v2')return t?(short?'CPU':'LEO & IVY'):(short?'YOU':'YOU & MIA');return t?'CPU':'YOU'}
+export function teamName(t,short){if(S.demo)return t?'BLUE':'RED';if(CAREER.active)return t?CAREER.event.opp:'YOU';const m=settings.mode;if(m==='online')return t===H.myTeam()?'YOU':((S.net&&S.net.names&&S.net.names[t])||'RIVAL');if(m==='pvp')return t?'P2':'P1';if(m==='2v2')return t?(short?'CPU':'LEO & IVY'):(short?'YOU':'YOU & MIA');return t?'CPU':'YOU'}
 export function serveFault(reason){
   S.state='between';
   if(S.R0.faults===0){H.showMsg('FAULT',reason+' · 2ND SERVE');S.stateT=1.1;S.afterState=()=>setupServe(true)}

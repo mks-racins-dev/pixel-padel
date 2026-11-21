@@ -33,9 +33,13 @@ export const WEEKLY: Challenge[] = [
   { id: 'w_cup', text: 'REACH THE WEEKLY CUP FINAL', need: 1, xp: 150, count: () => 0 },   // reported by the cup
 ];
 
-export const dayNumber = (t = Date.now()) => Math.floor((t - new Date(t).getTimezoneOffset() * 6e4) / 864e5);
-export const weekNumber = (t = Date.now()) => Math.floor((dayNumber(t) + 3) / 7); // weeks start on Monday
-export function msToNextDay(t = Date.now()) { const d = new Date(t); d.setHours(24, 0, 0, 0); return d.getTime() - t }
+let clockOffset = 0;
+/** Use the game server's clock (ms difference) so changing the device date does not refresh challenges. */
+export function setClockOffset(ms: number) { if (isFinite(ms)) clockOffset = ms }
+export const now = () => Date.now() + clockOffset;
+export const dayNumber = (t = now()) => Math.floor((t - new Date(t).getTimezoneOffset() * 6e4) / 864e5);
+export const weekNumber = (t = now()) => Math.floor((dayNumber(t) + 3) / 7); // weeks start on Monday
+export function msToNextDay(t = now()) { const d = new Date(t); d.setHours(24, 0, 0, 0); return d.getTime() - t }
 
 function pick<T>(pool: T[], n: number, seed: number): T[] {
   const r = mulberry(seed), a = pool.slice();
@@ -49,7 +53,7 @@ interface Slot { n: number; done: boolean; extra?: string[] }
 export interface ChallengeState { day: number; week: number; daily: Record<string, Slot>; weekly: Record<string, Slot> }
 
 /** Current challenge progress, reset when the day or week changes. */
-export function chState(t = Date.now()): ChallengeState {
+export function chState(t = now()): ChallengeState {
   const p = profile() as any;
   const ok = (o: any) => o && typeof o === 'object' && !Array.isArray(o);
   const st: ChallengeState = ok(p.ch) && ok(p.ch.daily) && ok(p.ch.weekly) ? p.ch : { day: -1, week: -1, daily: {}, weekly: {} };
@@ -74,7 +78,7 @@ let onComplete: ((c: Challenge) => void) | null = null;
 /** Lets the game show a pop-up when a challenge completes mid-match. */
 export function onChallengeComplete(fn: (c: Challenge) => void) { onComplete = fn }
 
-export function handle(e: GameEvent, t = Date.now()) {
+export function handle(e: GameEvent, t = now()) {
   const st = chState(t);
   for (const c of dailySet(st.day)) bump(DAILY, st.daily, c, c.count(e));
   for (const c of weeklySet(st.week)) {
@@ -89,7 +93,7 @@ export function handle(e: GameEvent, t = Date.now()) {
   saveProfile();
 }
 /** The weekly cup reports reaching the final through this. */
-export function cupFinalReached(t = Date.now()) {
+export function cupFinalReached(t = now()) {
   const st = chState(t), c = weeklySet(st.week).find(x => x.id === 'w_cup');
   if (c) { bump(WEEKLY, st.weekly, c, 1); saveProfile() }
 }

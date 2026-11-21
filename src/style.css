@@ -188,3 +188,14 @@ h1{margin:0;font-size:calc(var(--u)*17);line-height:1.1;color:#f7c993;text-shado
 .pd.next{box-shadow:inset 0 0 0 calc(var(--u)*1) #e4572e}
 .dcup{margin-top:calc(var(--u)*2)}
 .qopts .seg[data-key="mode"] button{font-size:calc(var(--u)*4.5);white-space:nowrap;padding-left:0;padding-right:0}
+
+/* player name, online ladder */
+.mrow{display:flex;justify-content:space-between;align-items:center;gap:calc(var(--u)*6)}
+.namebox{display:flex;align-items:center;gap:calc(var(--u)*3)}
+.namebox .px{font-size:calc(var(--u)*5);color:#c9bba6}
+#nameIn{width:calc(var(--u)*66);font-family:"Press Start 2P",monospace;font-size:calc(var(--u)*5.5);text-transform:uppercase;background:#17131c;color:#f2c14e;border:calc(var(--u)*1.5) solid #0f0c13;padding:calc(var(--u)*2.5) calc(var(--u)*3)}
+#nameMsg{font-style:normal;font-size:calc(var(--u)*7);color:#9be37a;min-width:calc(var(--u)*30)}
+.lme{display:flex;justify-content:space-between;align-items:baseline;background:#211b29;border:calc(var(--u)*1.5) solid #0f0c13;padding:calc(var(--u)*3) calc(var(--u)*5);font-size:calc(var(--u)*8.5);color:#d9ccb6}
+.lme b{font-weight:normal;font-size:calc(var(--u)*6);color:#f2c14e}
+.ltable{display:grid;grid-template-columns:calc(var(--u)*14) 1fr auto auto;column-gap:calc(var(--u)*8);row-gap:calc(var(--u)*1);font-size:calc(var(--u)*8);color:#d9ccb6;max-height:calc(var(--u)*60);overflow:auto}
+.ltable .px{font-size:calc(var(--u)*4.5);color:#9a8fa8;align-self:center}

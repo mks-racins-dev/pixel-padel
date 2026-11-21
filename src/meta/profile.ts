@@ -11,6 +11,8 @@ export interface Profile {
   career: { won: string[] };   // ids of won career events
   unlocked: string[];      // cosmetic ids (trails)
   trail: string;           // equipped trail
+  name: string;            // nickname shown to opponents and on the leaderboard ('' = not chosen yet)
+  updatedAt: number;       // last change, for picking the newer of the local and cloud save
   ch?: unknown;            // daily/weekly challenge progress (shape checked by challenges.ts)
   cup?: unknown;           // weekly cup best result (shape checked by cup.ts)
 }
@@ -21,7 +23,7 @@ export const MAX_LEVEL = 30;
 export const MAX_ALLOC = 8;     // points per stat
 export const PER_POINT = 0.25;  // stat gain per point (styles use a 1–5 scale)
 
-const fresh = (): Profile => ({ v: VERSION, xp: 0, level: 1, points: 0, alloc: { spd: 0, pow: 0, acc: 0, wall: 0 }, career: { won: [] }, unlocked: ['classic'], trail: 'classic' });
+const fresh = (): Profile => ({ v: VERSION, xp: 0, level: 1, points: 0, alloc: { spd: 0, pow: 0, acc: 0, wall: 0 }, career: { won: [] }, unlocked: ['classic'], trail: 'classic', name: '', updatedAt: 0 });
 
 let cur: Profile | null = null;
 
@@ -38,6 +40,8 @@ export function migrate(raw: unknown): Profile {
   if (Array.isArray(r.career?.won)) p.career.won = r.career!.won.filter(x => typeof x === 'string');
   if (Array.isArray(r.unlocked)) p.unlocked = [...new Set(['classic', ...r.unlocked.filter(x => typeof x === 'string')])];
   p.trail = typeof r.trail === 'string' && p.unlocked.includes(r.trail) ? r.trail : 'classic';
+  if (typeof r.name === 'string') p.name = r.name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+  p.updatedAt = num(r.updatedAt, 0, 1e15, 0);
   if (r.ch && typeof r.ch === 'object') p.ch = r.ch;
   if (r.cup && typeof r.cup === 'object') p.cup = r.cup;
   return p;
@@ -47,7 +51,17 @@ export function profile(): Profile {
   if (!cur) { let raw = null; try { raw = JSON.parse(localStorage.getItem(KEY) || 'null') } catch (e) {} cur = migrate(raw) }
   return cur;
 }
-export function saveProfile() { try { localStorage.setItem(KEY, JSON.stringify(profile())) } catch (e) {} }
+const saveListeners: (() => void)[] = [];
+/** Called after every local save (the cloud sync listens). */
+export function onProfileSave(fn: () => void) { saveListeners.push(fn) }
+export function saveProfile(touch = true) {
+  const p = profile();
+  if (touch) p.updatedAt = Date.now();
+  try { localStorage.setItem(KEY, JSON.stringify(p)) } catch (e) {}
+  if (touch) for (const f of saveListeners) f();
+}
+/** Replaces the local profile with one from the cloud. */
+export function adoptProfile(raw: unknown) { cur = migrate(raw); saveProfile(false) }
 export function resetProfileCache() { cur = null }
 
 /** XP needed to go from `level` to the next one. */

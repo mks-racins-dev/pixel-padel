@@ -80,12 +80,14 @@
 
       <div class="mp" data-p="online" hidden>
         <div class="mtitle px">ONLINE</div>
-        <div class="help">Play 1 vs 1 against a friend over the internet. One of you hosts and gets a 4-letter code, the other types it in to join. The host plays the near side.</div>
-        <button class="big" data-primary id="onlineStart">HOST OR JOIN ▸</button>
+        <div class="help" id="onlineInfo">Play 1 vs 1 against a friend over the internet. One of you hosts and gets a 4-letter code, the other types it in to join. The host plays the near side.</div>
+        <div id="ladderBox"></div>
+        <button class="big" data-primary id="onlineStart">PLAY ONLINE ▸</button>
       </div>
 
       <div class="mp" data-p="player" hidden>
-        <div class="mtitle px">PLAYER</div>
+        <div class="mrow"><div class="mtitle px">PLAYER</div>
+          <label class="namebox"><span class="px">NAME</span><input id="nameIn" maxlength="10" autocomplete="off" spellcheck="false" placeholder="YOUR NAME"><i id="nameMsg"></i></label></div>
         <div class="pl">
           <canvas id="prevC" width="24" height="30" aria-label="Player preview"></canvas>
           <div class="popts">

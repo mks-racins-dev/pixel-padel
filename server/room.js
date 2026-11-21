@@ -35,7 +35,7 @@ Object.assign(H, {
   showMsg: (b, s) => current && current.broadcast({ t: 'msg', b, s: s || '' }),
   hideMsg: () => current && current.broadcast({ t: 'hide' }),
   pointWon: w => current && current.broadcast({ t: 'pt', w }),
-  showEnd: () => { S.state = 'over'; if (current) { current.broadcast(mkSnap()); current.broadcast({ t: 'end' }) } },
+  showEnd: () => { S.state = 'over'; if (current) { current.broadcast(mkSnap()); current.broadcast({ t: 'end' }); current.finished(S.score.winner) } },
   inputOf: p => (current && current.players[p.team] ? current.players[p.team].input : { mx: 0, my: 0 }),
   myTeam: () => 0,
 });
@@ -44,12 +44,16 @@ const clamp1 = v => Math.max(-1, Math.min(1, +v || 0));
 
 export class MatchRoom {
   /**
-   * @param {{ code: string, kind: 'quick'|'private', seed?: number, now?: () => number }} opts
+   * @param {{ code: string, kind: 'quick'|'private', seed?: number,
+   *           onResult?: (r: { winner: {id:string,name:string}, loser: {id:string,name:string}, reason: string }) => void }} opts
+   *   onResult is called once per ranked match (quick match, two different signed-in players).
    */
   constructor(opts) {
     this.code = opts.code;
     this.kind = opts.kind;
     this.seed = opts.seed;
+    this.onResult = opts.onResult;
+    this.reported = false;
     this.players = [];      // [{ send, team, style, look, loc, input, msgs, msgT }]
     this.fx = [];
     this.started = false;
@@ -76,11 +80,11 @@ export class MatchRoom {
   broadcast(o) { const s = JSON.stringify(o); for (const p of this.players) p.send(s) }
 
   /* ---- connections ---- */
-  /** A player connected. `send` takes a string. Returns their team, or -1 if refused. */
-  join(send) {
+  /** A player connected. `send` takes a string; `who` is the signed-in player, if any. Returns their team, or -1 if refused. */
+  join(send, who = {}) {
     if (this.closed) { send(JSON.stringify({ t: 'bye' })); return -1 } // someone left: this room is finished
     if (this.players.length >= 2) { send(JSON.stringify({ t: 'full' })); return -1 }
-    const p = { send, team: this.players.length, style: 'allround', look: null, loc: 'sunset', input: { mx: 0, my: 0 }, hello: false, msgs: 0, msgT: 0 };
+    const p = { send, team: this.players.length, id: who.id || null, name: who.name || null, style: 'allround', look: null, loc: 'sunset', input: { mx: 0, my: 0 }, hello: false, msgs: 0, msgT: 0 };
     this.players.push(p);
     return p.team;
   }
@@ -88,6 +92,8 @@ export class MatchRoom {
   /** A player disconnected: the match is over for the other one. */
   leaveRoom(team) {
     const gone = this.players.find(p => p.team === team);
+    // quitting a ranked match that is still running counts as a loss
+    if (gone && this.started && this.run(() => S.state) !== 'over') { const other = this.players.find(p => p !== gone); if (other) this.report(other, gone, 'left') }
     this.players = this.players.filter(p => p !== gone);
     for (const p of this.players) p.send(JSON.stringify({ t: 'bye' }));
     this.started = false;
@@ -95,6 +101,23 @@ export class MatchRoom {
   }
 
   get empty() { return this.players.length === 0 }
+
+  get ranked() { const [a, b] = this.players; return this.kind === 'quick' && !!a?.id && !!b?.id && a.id !== b.id }
+  report(w, l, reason) {
+    if (this.reported || this.kind !== 'quick' || !w.id || !l.id || w.id === l.id) return; // ranked = quick match between two signed-in players
+    this.reported = true;
+    this.onResult?.({ winner: { id: w.id, name: w.name }, loser: { id: l.id, name: l.name }, reason });
+  }
+  /** Called when the match ends normally. */
+  finished(winTeam) {
+    const w = this.players.find(p => p.team === winTeam), l = this.players.find(p => p.team !== winTeam);
+    if (w && l) this.report(w, l, 'played');
+  }
+  /** Sends each player their own rating change. */
+  sendRatings(res) {
+    if (!res) return;
+    for (const p of this.players) if (res[p.id]) p.send(JSON.stringify({ t: 'rating', season: res.season, ...res[p.id] }));
+  }
 
   message(team, raw, nowSec = 0) {
     const p = this.players.find(q => q.team === team);
@@ -136,8 +159,9 @@ export class MatchRoom {
       Object.assign(settings, { mode: 'online', games: 3, loc });
       newMatch(false, seed);
     });
-    this.started = true; this.acc = 0; this.snapT = 0;
-    for (const p of this.players) p.send(JSON.stringify({ t: 'start', team: p.team, styles: [a.style, b.style], looks: [a.look, b.look], loc, games: 3 }));
+    this.started = true; this.acc = 0; this.snapT = 0; this.reported = false;
+    const names = [a.name, b.name], ranked = this.ranked;
+    for (const p of this.players) p.send(JSON.stringify({ t: 'start', team: p.team, styles: [a.style, b.style], looks: [a.look, b.look], names, ranked, loc, games: 3 }));
   }
 
   /** Advance real time by `dt` seconds: fixed simulation steps plus snapshots at 30 Hz. */

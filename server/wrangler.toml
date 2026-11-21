@@ -12,10 +12,22 @@ class_name = "Lobby"
 name = "MATCH"
 class_name = "Match"
 
+[[durable_objects.bindings]]
+name = "PLAYER"
+class_name = "Player"
+
+[[durable_objects.bindings]]
+name = "LADDER"
+class_name = "LadderDO"
+
 # SQLite-backed Durable Objects are available on the free Workers plan.
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Lobby", "Match"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Player", "LadderDO"]
 
 [vars]
 # Pages allowed to connect (comma-separated). Empty = allow all.

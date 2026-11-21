@@ -12,6 +12,8 @@ import { renderCareerTab } from './careerTab.js';
 import { renderDailyTab, renderCupTab } from './dailyTab.js';
 import { initAudio } from '../audio/sfx.js';
 import { startGame, setHelp } from './ui.js';
+import { useServer } from '../net/online.js';
+import { account, ladder as getLadder, setName } from '../net/account.ts';
 
 const $ = id => document.getElementById(id);
 const QUICK_MODES = ['1v1', '2v2', 'pvp'];
@@ -48,10 +50,13 @@ function renderPanel(id) {
   else if (id === 'cup') renderCupTab();
   else if (id === 'practice') renderPractice();
   else if (id === 'quick') renderQuick();
+  else if (id === 'online') renderOnline();
+  else if (id === 'player') { const n = $('nameIn'); if (n && document.activeElement !== n) n.value = profile().name || '' }
 }
 
 /** Refreshes the list badges and the open panel (after a match, on load). */
 export function renderMenu() {
+  ladderAt = 0; // results may have changed since the last visit (e.g. a ranked match)
   const p = profile();
   $('mLevel').textContent = 'LV ' + p.level;
   $('mXp').style.width = (p.level >= MAX_LEVEL ? 100 : Math.round(100 * p.xp / xpToNext(p.level))) + '%';
@@ -69,6 +74,26 @@ function renderQuick() {
   for (const el of document.querySelectorAll('#menu .step')) el.querySelector('.sv').textContent = STEPS[el.dataset.key].label(settings[el.dataset.key]);
   const st = STYLES[settings.style];
   $('qSummary').innerHTML = [MODE_NAME[settings.mode], 'CPU: ' + settings.diff.toUpperCase(), 'FIRST TO ' + settings.games + ' GAMES', 'YOUR STYLE: ' + st.name, 'BOUNCE MARK: ' + (settings.assist === 'on' ? 'ON' : 'OFF')].join('<br>');
+}
+
+let ladderAt = 0, ladderData = null;
+function renderOnline() {
+  const box = $('ladderBox');
+  if (!useServer()) { box.innerHTML = ''; return }
+  $('onlineInfo').innerHTML = '<b>FIND AN OPPONENT</b> plays a <b>ranked</b> match against a random player. <b>HOST</b> / <b>JOIN</b> with a code are friendly matches.';
+  const draw = () => {
+    const d = ladderData;
+    if (!d) { box.innerHTML = '<div class="help">Loading the ladder…</div>'; return }
+    const me = d.me, name = profile().name || account()?.name || '—';
+    box.innerHTML = `<div class="dhead"><span class="px">RANKED · SEASON ${d.season}</span><span>${d.players} PLAYERS</span></div>
+      <div class="lme"><b class="px">${name}</b><span>${me ? `RATING ${me.r} ±${me.rd} · ${me.w}W ${me.l}L${me.rank ? ' · RANK #' + me.rank : ' · NOT RANKED YET'}` : 'PLAY A RANKED MATCH TO GET A RATING'}</span></div>
+      <div class="ltable">${d.top.length ? d.top.map(r => `<span class="px">${r.rank}</span><span>${r.name}</span><span>${r.r}</span><span>${r.w}W ${r.l}L</span>`).join('') : '<span></span><span>NO RANKED MATCHES THIS SEASON YET</span>'}</div>`;
+  };
+  draw();
+  if (Date.now() - ladderAt > 20000) {
+    ladderAt = Date.now();
+    getLadder().then(d => { ladderData = d; if (current === 'online') draw() }).catch(() => { box.innerHTML = '<div class="help">Could not load the ladder.</div>' });
+  }
 }
 
 function renderPractice() {
@@ -121,6 +146,11 @@ export function buildMenu() {
     else if (e.code === 'ArrowDown' || e.code === 'KeyS') { e.preventDefault(); menuMove(1) }
     else if (e.code === 'Enter') { e.preventDefault(); menuPrimary() }
   });
+  const nameIn = $('nameIn');
+  const saveName = async () => { const err = await setName(nameIn.value); $('nameMsg').textContent = err || 'SAVED'; if (!err) { nameIn.value = profile().name; ladderAt = 0 } };
+  nameIn.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') saveName() });
+  nameIn.addEventListener('keyup', e => e.stopPropagation());
+  nameIn.addEventListener('change', saveName);
   showPanel(current);
   renderMenu();
   setHelp();

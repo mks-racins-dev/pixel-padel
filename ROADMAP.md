@@ -72,7 +72,7 @@ Last updated: 2026-11-21 (Phase 3 started)
 | Different looks for career opponents | ⬜ |
 | Doubles partner and chemistry in career | ⬜ |
 | More cosmetics: outfits, rackets, celebrations | ⬜ |
-| Cloud saves (needs Phase 3 accounts) | ⬜ |
+| Cloud saves | ✅ (Phase 3) |
 | Pixel artist: sprite sheets, animations, venues | ⬜ hire |
 | Composer: one chiptune track per country, sound effects | ⬜ hire |
 
@@ -87,12 +87,12 @@ Last updated: 2026-11-21 (Phase 3 started)
 | Item | Notes |
 |---|---|
 | Server-run matches | ✅ Cloudflare Workers + Durable Objects; the server runs the same simulation code, players send inputs only. Quick match (lobby) and private rooms with codes. Built and tested locally; deploying needs a Cloudflare account. |
-| Matchmaking and rankings | 🟡 random pairing and private rooms done; Glicko-2 skill rating and ranked seasons to do |
+| Matchmaking and rankings | ✅ random pairing (ranked) and private rooms (friendly); Glicko-2 rating, monthly seasons, Top 10 ladder; quitting a ranked match counts as a loss. 🟡 matchmaking by rating (pairs whoever is waiting for now) |
 | Online 2 vs 2 | You and a friend, or you plus an AI partner |
-| Accounts | Steam login on PC, guest accounts on web; friends, clubs, leaderboards by country and city |
-| Weekly Cup leaderboard | Shared results, replacing the local "best this week" |
-| Server-side checks | 🟡 matches are server-run (inputs only, clamped, rate-limited); challenges still use the device clock |
-| Cloud saves | Move the local profile to the account |
+| Accounts | ✅ anonymous guest accounts with a nickname (no sign-up). ⬜ Steam login, friends, clubs, leaderboards by country and city |
+| Weekly Cup leaderboard | ⬜ needs server-side replay of the recorded match to trust results; browsers can differ slightly in math functions, so the simulation must first avoid them (or the server must tolerate tiny differences) |
+| Server-side checks | ✅ matches are server-run (inputs only, clamped, rate-limited); challenge days and weeks use the server clock. 🟡 challenge progress itself is still counted in the browser |
+| Cloud saves | ✅ the profile is backed up to the guest account; the newer of local and cloud wins |
 
 **Gate:** a closed beta with 200+ players, average connection delay under 120 ms in Europe, matchmaking in under 60 seconds.
 
