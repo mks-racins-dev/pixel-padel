@@ -11,6 +11,8 @@ export interface Profile {
   career: { won: string[] };   // ids of won career events
   unlocked: string[];      // cosmetic ids (trails)
   trail: string;           // equipped trail
+  ch?: unknown;            // daily/weekly challenge progress (shape checked by challenges.ts)
+  cup?: unknown;           // weekly cup best result (shape checked by cup.ts)
 }
 
 const KEY = 'pixelpadel-profile';
@@ -36,6 +38,8 @@ export function migrate(raw: unknown): Profile {
   if (Array.isArray(r.career?.won)) p.career.won = r.career!.won.filter(x => typeof x === 'string');
   if (Array.isArray(r.unlocked)) p.unlocked = [...new Set(['classic', ...r.unlocked.filter(x => typeof x === 'string')])];
   p.trail = typeof r.trail === 'string' && p.unlocked.includes(r.trail) ? r.trail : 'classic';
+  if (r.ch && typeof r.ch === 'object') p.ch = r.ch;
+  if (r.cup && typeof r.cup === 'object') p.cup = r.cup;
   return p;
 }
 

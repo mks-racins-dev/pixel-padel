@@ -1,3 +1,4 @@
+import { emit } from '../meta/events.ts';
 import { CAREER, oppDiff } from '../meta/career.ts';
 import { careerSkills } from '../meta/profile.ts';
 import { isPractice, practiceLanded, practiceMiss, startPractice, stopPractice } from './practice.js';
@@ -16,10 +17,10 @@ import { LOOKS } from '../render/sprites.js';
 import { showEnd, showMsg, updateHud } from '../ui/ui.js';
 
 export function newMatch(isDemo,seed){
-  seedSim(seed ?? (Date.now() ^ (Math.random()*0x7fffffff)));
-  S.demo=isDemo;
   const career=CAREER.active&&!isDemo;
-  if(!isDemo)matchStart({career:career?CAREER.event.id:null,mode:career?'career':settings.mode,diff:settings.diff,venue:settings.loc,games:settings.games,style:settings.style});
+  seedSim(seed ?? (career&&CAREER.event.seed!=null?CAREER.event.seed:(Date.now() ^ (Math.random()*0x7fffffff))));
+  S.demo=isDemo;
+  if(!isDemo)matchStart({career:career?CAREER.event.id:null,mode:career?CAREER.kind:settings.mode,diff:settings.diff,venue:settings.loc,games:settings.games,style:settings.style});
   stopPractice();
   const m=S.demo?'2v2':career?'1v1':settings.mode;const me=mkLook(S.myLookData);
   if(m==='practice')S.players=[mkPlayer(0,me,'h1',0)];
@@ -118,6 +119,7 @@ export function performHit(p,type,aimX,power){
   if(shot==='bandeja')S.ball.slice=true;
   if(shot&&shot!=='portres')S.floats.push({x:p.x,y:p.y,t:0.9,text:SHOT_LABEL[shot][0],c:SHOT_LABEL[shot][1]});
   S.R0.lastShot=shot||(smash?'smash':type);S.R0.lastOffWall=offWall;
+  if(!S.demo&&(p.ctrl==='h1'||p.ctrl==='h2'))emit({type:'shot',shot:S.R0.lastShot,offWall});
   S.R0.lastTeam=p.team;S.R0.bounces=0;S.R0.serve=false;S.R0.net=false;S.R0.hits++;S.R0.backWall=-1;
   if(offWall){S.R0.wallShot=true;p.energy=Math.min(100,p.energy+10+Math.round((p.sk.wall||0)*4));S.floats.push({x:p.x,y:p.y,t:1,text:'OFF THE WALL!',c:'#6fd3d2'});sfx('glass',1)}
   p.hitDone=true;if(p.swingT<0.12)p.swingT=0.2;
@@ -161,6 +163,7 @@ export function endPoint(team,reason){
   S.state='between';S.stateT=1.8;S.marker=null;
   for(const s of S.spectators)s.cheer=1.6;
   mascotReact();
+  if(!S.demo){const me=S.players.find(p=>p.ctrl==='h1');emit({type:'point',won:team===(me?me.team:0),wall:!!S.R0.wallShot,reason,golden:S.score.pts[0]===3&&S.score.pts[1]===3})}
   S.score.pts[team]++;for(const q of teamOf(team))q.energy=Math.min(100,q.energy+8);
   let small='POINT · '+teamName(team);
   if(S.score.pts[team]>=4){S.score.games[team]++;S.score.pts=[0,0];small='GAME · '+teamName(team);

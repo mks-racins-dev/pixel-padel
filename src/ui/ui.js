@@ -1,3 +1,7 @@
+import { renderDailyTab } from './dailyTab.js';
+import { emit } from '../meta/events.ts';
+import { takeRecent } from '../meta/challenges.ts';
+import { finishCupMatch, startCup } from '../meta/cup.ts';
 import { CAREER, finishCareerMatch, leaveCareer } from '../meta/career.ts';
 import { renderCareerTab } from './careerTab.js';
 import { isPractice, practiceHud } from '../game/practice.js';
@@ -30,7 +34,7 @@ export function updateHud(){
   $('r0').querySelector('.pt').textContent=PT[S.score.pts[0]]||'0';$('r1').querySelector('.pt').textContent=PT[S.score.pts[1]]||'0';
   const st=(S.score.games[0]+S.score.games[1])%2;$('r0').classList.toggle('serving',st===0);$('r1').classList.toggle('serving',st===1);
   const gp=S.score.pts[0]===3&&S.score.pts[1]===3;
-  $('info').textContent=gp?'GOLDEN POINT!':'FIRST TO '+matchGames()+' GAMES';
+  $('info').textContent=gp?'GOLDEN POINT!':CAREER.active&&CAREER.kind==='cup'?'WEEKLY CUP · '+CAREER.event.round:'FIRST TO '+matchGames()+' GAMES';
 }
 export function showMsg(big,small){if(S.demo)return;if(S.net&&S.net.role==='host')netSend({t:'msg',b:big,s:small||''});$('msgBig').textContent=big;$('msgSmall').textContent=small||'';$('msg').classList.add('show')}
 export function hideMsg(){if(S.net&&S.net.role==='host'&&!S.demo)netSend({t:'hide'});$('msg').classList.remove('show')}
@@ -42,7 +46,13 @@ export function showEnd(){
   $('endTitle').textContent=settings.mode==='pvp'?(w===0?'PLAYER 1 WINS!':'PLAYER 2 WINS!'):(human?'YOU WIN!':(on?'RIVAL WINS':'CPU WINS'));
   $('endScore').textContent=S.score.games[0]+' – '+S.score.games[1];
   $('againBtn').textContent='REMATCH';$('endInfo').innerHTML='';
-  if(CAREER.active){const r=finishCareerMatch(human,S.score.games[0]);$('endInfo').innerHTML=careerSummary(r);$('againBtn').textContent=r.last&&r.won?'PLAY AGAIN':r.won?'NEXT MATCH':'RETRY'}
+  const me=S.players.find(p=>p.ctrl==='h1'),myT=me?me.team:0;
+  emit({type:'match',won:human,mode:settings.mode,venue:settings.loc,gamesLost:S.score.games[1-myT],career:CAREER.active&&CAREER.kind==='career',cup:CAREER.active&&CAREER.kind==='cup'});
+  let lines='';
+  if(CAREER.active&&CAREER.kind==='cup'){const r=finishCupMatch(human);lines=cupSummary(r);$('againBtn').textContent=r.over?'NEW CUP RUN':'NEXT ROUND'}
+  else if(CAREER.active){const r=finishCareerMatch(human,S.score.games[0]);lines=careerSummary(r);$('againBtn').textContent=r.last&&r.won?'PLAY AGAIN':r.won?'NEXT MATCH':'RETRY'}
+  const ch=takeRecent().map(c=>'CHALLENGE DONE: '+c.text+' +'+c.xp+' XP');
+  $('endInfo').innerHTML=[lines,...ch].filter(Boolean).join('<br>');
   $('end').hidden=false;$('touch').hidden=true;sfx(human||settings.mode==='pvp'?'win':'lose');
 }
 export function setHelp(){
@@ -60,11 +70,18 @@ export function startGame(){
     if(S.net&&S.net.conn&&S.net.conn.open){if(S.net.role==='host')startOnline();else{netSend({t:'again'});$('endTitle').textContent='WAITING FOR HOST…'}}
     else{initAudio();$('menu').hidden=true;$('end').hidden=true;$('online').hidden=false;$('codeShow').textContent='';onStatus('Host to get a code, or type a friend\'s code and join.')}
     return}
+  if(CAREER.active&&CAREER.kind==='cup')startCup(false); // next round, or round 1 after a run ended
   if(CAREER.active)setLoc(CAREER.event.venue);
   showGameUI();newMatch(false)}
 export function toMenu(){matchQuit();leaveCareer();renderCareerTab();netClose();$('online').hidden=true;S.paused=false;$('pause').hidden=true;$('end').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('menu').hidden=false;hideMsg();newMatch(true)}
 export function togglePause(){if(S.net&&!S.demo){$('pause').hidden=!$('pause').hidden;return}S.paused=!S.paused;$('pause').hidden=!S.paused}
 
+function cupSummary(r){
+  const bits=[r.won?r.round+' WON!':'OUT IN THE '+r.round,'+'+r.xp+' XP'];
+  if(r.champion)bits.push('WEEKLY CUP CHAMPION!');
+  bits.push('BEST THIS WEEK: '+(r.best>=3?'CHAMPION':r.best?['','QUARTER-FINAL WON','SEMI-FINAL WON'][r.best]:'NO WINS YET'));
+  return bits.join('<br>');
+}
 function careerSummary(r){
   const bits=['+'+r.xp+' XP'];
   if(r.levels)bits.push('LEVEL UP! +'+r.levels+' SKILL POINT'+(r.levels>1?'S':''));
@@ -86,7 +103,7 @@ export function setup(){
       setHelp()})});
   document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{
     document.querySelectorAll('#tabs button').forEach(x=>x.setAttribute('aria-selected',x===b?'true':'false'));
-    $('playBtn').hidden=b.dataset.sec==='career';if(b.dataset.sec==='career')renderCareerTab();
+    $('playBtn').hidden=b.dataset.sec==='career'||b.dataset.sec==='daily';if(b.dataset.sec==='career')renderCareerTab();if(b.dataset.sec==='daily')renderDailyTab();
     document.querySelectorAll('.sec').forEach(s=>s.hidden=s.dataset.sec!==b.dataset.sec)}));
   prevG.imageSmoothingEnabled=false;
   $('playBtn').onclick=()=>{leaveCareer();startGame()};

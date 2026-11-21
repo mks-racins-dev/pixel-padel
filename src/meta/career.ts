@@ -31,7 +31,7 @@ export const TIERS: Tier[] = [
 export const ALL_EVENTS = TIERS.flatMap((t, ti) => t.events.map(e => ({ ...e, tier: ti })));
 
 /** Career run state for the current match. Not saved: a match in progress is just abandoned on reload. */
-export const CAREER = { active: false, event: null as (CareerEvent & { tier: number }) | null };
+export const CAREER = { active: false, kind: 'career' as 'career' | 'cup', event: null as (CareerEvent & { tier: number; seed?: number; round?: string }) | null };
 
 /** The first event not won yet (or the last one once everything is won). */
 export function nextEvent() {
@@ -52,7 +52,7 @@ export function oppDiff(skill: number, easy: Diff, hard: Diff): Diff {
   return { spd: mix(easy.spd, hard.spd), err: Math.max(0.2, mix(easy.err, hard.err)), react: Math.max(0.04, mix(easy.react, hard.react)), volley: skill >= 0.2, miss: Math.max(0.005, mix(easy.miss, hard.miss)) };
 }
 
-export function startCareerEvent() { CAREER.active = true; CAREER.event = nextEvent() }
+export function startCareerEvent() { CAREER.active = true; CAREER.kind = 'career'; CAREER.event = nextEvent() }
 export function leaveCareer() { CAREER.active = false; CAREER.event = null }
 
 export interface CareerResult { xp: number; levels: number; unlocked: string[]; tierDone?: string; won: boolean; last: boolean }

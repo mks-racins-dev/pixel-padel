@@ -1,3 +1,4 @@
+import { emit } from '../meta/events.ts';
 // Practice mode: a ball machine on the far side feeds you balls, and a short series of drills
 // teaches the game step by step. Drills run on the normal rules and physics; only the scoring is different.
 import { S } from '../state.js';
@@ -86,6 +87,7 @@ function next() {
   const d = DRILLS[PR.drill];
   if (PR.done < d.need) return feed();
   track('drill_done', { drill: d.id });
+  emit({ type: 'drill', id: d.id });
   const done = new Set(saved().done || []); done.add(d.id); save({ done: [...done] });
   if (PR.drill + 1 < DRILLS.length) return beginDrill(PR.drill + 1);
   track('practice_complete', {});
