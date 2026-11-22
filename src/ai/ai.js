@@ -9,7 +9,7 @@ import { settings } from '../game/config.js';
 export const wallPref={leg:null,on:false};
 export function predict(team,volley){
   if(S.state!=='play'||S.R0.lastTeam===team||S.ball.held)return[];
-  const b={x:S.ball.x,y:S.ball.y,z:S.ball.z,vx:S.ball.vx,vy:S.ball.vy,vz:S.ball.vz,out:false,rolling:S.ball.rolling,spin:S.ball.spin,kick:S.ball.kick,slice:S.ball.slice};
+  const b={x:S.ball.x,y:S.ball.y,z:S.ball.z,vx:S.ball.vx,vy:S.ball.vy,vz:S.ball.vz,ext:S.ball.ext,out:false,rolling:S.ball.rolling,spin:S.ball.spin,kick:S.ball.kick,slice:S.ball.slice};
   let bounces=S.R0.bounces,end=false,fault=false,wall=false;const out=[];let t=0;const dt=1/60;
   for(let i=0;i<180&&!end;i++){
     stepBall(b,dt,(ty,a,g,bk)=>{if(ty==='floor'||ty==='roll'){if(bounces===0&&a!==team){end=true;fault=true}bounces++;if(bounces>=2)end=true}if(ty==='out'){end=true;if(bounces===0)fault=true}if(ty==='wall'&&bounces===0&&a===team){end=true;fault=true}if(ty==='wall'&&bounces>=1&&a===team&&bk)wall=true});

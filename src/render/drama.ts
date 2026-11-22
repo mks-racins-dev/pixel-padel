@@ -2,8 +2,9 @@
 // heartbeat and a hushed crowd, a rally counter that builds the crowd up, a standing wave
 // after long rallies, and confetti for a win.
 import { S } from '../state.js';
-import { R, txt, txtW } from '../core/gfx.js';
-import { burst } from './fx.ts';
+import { R, P, txt, txtW } from '../core/gfx.js';
+import { burst, FX, zoomIn } from './fx.ts';
+import { settings } from '../game/settings.js';
 import { tone } from '../audio/sfx.js';
 
 const D = { banner: '', bannerT: 0, beatT: 0, lastHits: 0, lastState: '', rally: 0, rallyPeak: 0, waveT: -1 };
@@ -22,7 +23,9 @@ function beat() { if (!S.AC || S.muted) return; try { tone('sine', 70, 45, 0.12,
 
 /** Called every frame from the main loop. */
 export function updateDrama(dt: number, toWin: number) {
-  if (S.demo || !S.score) { D.banner = ''; S.hush = false; return }
+  if (S.demo || !S.score) { D.banner = ''; S.hush = false; if (RP.on) endReplay(); return }
+  updateReplay(dt); if (RP.on) return;
+  const ch = (S as any).chase; if (S.state === 'chase' && ch) zoomIn(0.07, 0.25, S.ball as any);
   const st = S.state as string;
   // a new point is being served: check for match / golden point
   if (st === 'serve' && D.lastState !== 'serve') {
@@ -47,6 +50,11 @@ export function updateDrama(dt: number, toWin: number) {
 /** Banner and rally counter, drawn over the court. */
 export function drawDrama(ctx: CanvasRenderingContext2D) {
   if (S.demo) return;
+  if (RP.on) return drawReplay(ctx);
+  const ch = (S as any).chase;
+  if (S.state === 'chase' && ch && ch.reach && (ch.p.ctrl === 'h1' || ch.p.ctrl === 'h2') && Math.floor(performance.now() / 120) % 2) {
+    const q = P(ch.p.x, ch.p.y, 2.6); R(ctx, q.x - 14, q.y - 12, 28, 13, '#e4572e'); txt(ctx, 'HIT!', q.x - 9, q.y - 9, '#ffffff', 2);
+  }
   if (D.bannerT > 0 && D.banner) {
     const a = Math.min(1, D.bannerT * 2, (2.2 - D.bannerT) * 6), w = txtW(D.banner, 3) + 24, x = 240 - w / 2, y = 56;
     ctx.globalAlpha = a; R(ctx, x, y, w, 25, '#17131c'); R(ctx, x, y + 23, w, 2, D.banner === 'MATCH POINT' ? '#e4572e' : '#f2c14e');
@@ -57,6 +65,57 @@ export function drawDrama(ctx: CanvasRenderingContext2D) {
     R(ctx, 240 - w / 2 - 3, 30, w + 6, 5 * sc + 4, 'rgba(23,19,28,0.75)'); txt(ctx, s, 240 - w / 2, 32, big ? '#ff8a5c' : '#f4ead2', sc);
   }
   if (S.hush) { ctx.fillStyle = 'rgba(10,8,16,0.12)'; ctx.fillRect(0, 0, 480, 270) }
+}
+
+
+/* ---------------- instant replay ---------------- */
+// The last seconds of play are recorded every frame. After a highlight point (a return from
+// outside, a por tres, a long rally) they play back in slow motion while the simulation is frozen,
+// then the live state is put back exactly as it was. Not online (the host owns the clock).
+interface Frame { b: { x: number; y: number; z: number }; P: { x: number; y: number; vx: number; vy: number; swingT: number; swingType: string; anim: number; flip: boolean }[] }
+const REC: Frame[] = [];
+const RP = { on: false, i: 0, saved: null as null | { b: any; P: any[]; trail: any[] }, waitT: -1, wasPlay: false, flagged: false };
+const canReplay = () => !S.demo && settings.mode !== 'online' && settings.mode !== 'practice';
+function record() {
+  const b = S.ball as any;
+  REC.push({ b: { x: b.x, y: b.y, z: b.z }, P: (S.players as any[]).map(p => ({ x: p.x, y: p.y, vx: p.vx, vy: p.vy, swingT: p.swingT, swingType: p.swingType, anim: p.anim, flip: p.flip })) });
+  if (REC.length > 240) REC.shift();
+}
+function apply(f: Frame) {
+  Object.assign(S.ball as any, f.b);
+  f.P.forEach((q, k) => { const p = (S.players as any[])[k]; if (p) Object.assign(p, q) });
+}
+function startReplay() {
+  if (REC.length < 30) return;
+  const b = S.ball as any;
+  RP.saved = { b: { ...b }, P: (S.players as any[]).map(p => ({ x: p.x, y: p.y, vx: p.vx, vy: p.vy, swingT: p.swingT, swingType: p.swingType, anim: p.anim, flip: p.flip })), trail: [...(S as any).trail] };
+  RP.on = true; RP.i = Math.max(0, REC.length - 150); FX.freeze = true; (S as any).trail.length = 0;
+}
+export function endReplay() {
+  if (!RP.on) return;
+  RP.on = false; FX.freeze = false;
+  if (RP.saved) { Object.assign(S.ball as any, RP.saved.b); RP.saved.P.forEach((q, k) => { const p = (S.players as any[])[k]; if (p) Object.assign(p, q) }); (S as any).trail = RP.saved.trail }
+  REC.length = 0;
+}
+export const replaying = () => RP.on;
+function updateReplay(dt: number) {
+  const st = S.state as string, live = st === 'play' || st === 'chase';
+  if (RP.on) { RP.i += dt * 60 * 0.4; if (RP.i >= REC.length - 1) endReplay(); else apply(REC[Math.floor(RP.i)]); return }
+  if (!canReplay()) { REC.length = 0; return }
+  if (live) { record(); RP.wasPlay = true; const r = (S as any).R0; if (r && (r.chased || (S.ball as any).porTres)) RP.flagged = true; return }
+  if (RP.wasPlay && st === 'between') { RP.wasPlay = false; if (RP.flagged || D.rallyPeak >= 12) RP.waitT = 0.9; RP.flagged = false }
+  if (st === 'serve') { RP.wasPlay = false; RP.flagged = false; REC.length = 0 }
+  if (RP.waitT >= 0) { RP.waitT -= dt; if (RP.waitT < 0 && S.state === 'between') startReplay() }
+}
+function drawReplay(ctx: CanvasRenderingContext2D) {
+  if (!RP.on) return;
+  R(ctx, 0, 0, 480, 14, '#0c0a10'); R(ctx, 0, 256, 480, 14, '#0c0a10');
+  if (Math.floor(performance.now() / 500) % 2) { ctx.fillStyle = '#e4572e'; ctx.beginPath(); ctx.arc(14, 7, 3, 0, Math.PI * 2); ctx.fill() }
+  txt(ctx, 'REPLAY', 22, 4, '#f4ead2'); txt(ctx, 'CLICK TO SKIP', 400, 260, '#8a7f98');
+}
+if (typeof addEventListener !== 'undefined') {
+  addEventListener('pointerdown', () => { if (RP.on) endReplay() });
+  addEventListener('keydown', e => { if (RP.on && ['Escape', 'Enter', 'Space'].includes(e.code)) endReplay() }, true);
 }
 
 /** A shower of confetti over the court (match won). */

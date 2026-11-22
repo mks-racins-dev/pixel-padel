@@ -3,6 +3,7 @@ import { LOOKS } from '../content/looks.js';
 import { settings } from './config.js';
 import { CAREER, oppDiff } from '../meta/career.ts';
 import { careerSkills } from '../meta/profile.ts';
+import { tryChase } from './chase.js';
 import { gearBonus, gearLook } from '../meta/gear.ts';
 /** Career stats plus the equipped pro shop gear. */
 const withGear=s=>{const b=gearBonus();return{...s,spd:s.spd+b.spd,pow:s.pow+b.pow,acc:s.acc+b.acc,wall:(s.wall||0)+b.wall}};
@@ -58,6 +59,7 @@ export function teamOf(t){return S.players.filter(p=>p.team===t)}
 export function diffOf(p){if(CAREER.active&&!S.demo&&p.team===1)return careerDiff();if(CAREER.active&&!S.demo&&CAREER.event.doubles&&p.team===0)return partnerDiff();return DIFF[S.demo?'normal':(p.team===0&&settings.mode==='2v2'?'normal':settings.diff)]}
 export function isHuman(p){return p.ctrl==='h1'||p.ctrl==='h2'||p.ctrl==='net'}
 export function setupServe(second){
+  S.chase=null;for(const q of S.players){q.ret=false;q.outside=false}S.ball.ext=false;
   const g=S.score.games[0]+S.score.games[1];
   const st=g%2;const mates=teamOf(st);const srv=mates[Math.floor(g/2)%mates.length];
   const rt=1-st;const deuce=(S.score.pts[0]+S.score.pts[1])%2===0;
@@ -83,7 +85,7 @@ export function aimVel(x0,y0,z0,tx,ty,spd,clear){
   }return v;
 }
 export function gauss(){return(rand()+rand()+rand()-1.5)*1.15}
-export function launch(tx,ty,spd,clear){const v=aimVel(S.ball.x,S.ball.y,S.ball.z,tx,ty,spd,clear);S.ball.vx=v.vx;S.ball.vy=v.vy;S.ball.vz=v.vz;S.ball.held=false;S.ball.rolling=false;S.ball.out=false;S.ball.spin=0;S.ball.vib=false;S.ball.kick=false;S.ball.slice=false;S.ball.porTres=false}
+export function launch(tx,ty,spd,clear){const v=aimVel(S.ball.x,S.ball.y,S.ball.z,tx,ty,spd,clear);S.ball.vx=v.vx;S.ball.vy=v.vy;S.ball.vz=v.vz;S.ball.held=false;S.ball.rolling=false;S.ball.out=false;S.ball.ext=false;S.ball.spin=0;S.ball.vib=false;S.ball.kick=false;S.ball.slice=false;S.ball.porTres=false}
 export function serveTarget(p,power){const dir=p.team===0?1:-1,bx=S.R0.boxX;return{tx:bx*(0.5+p.serveAim*3.6),ty:dir*(3.8+power*2.8)}}
 export function doServe(p,power){
   const dir=p.team===0?1:-1;
@@ -165,7 +167,7 @@ export function onEvent(t,a,c,back){
     else if(r.serve&&!c)return serveFault('SERVE INTO FENCE');
     if(back&&c&&r.bounces>=1&&a!==r.lastTeam)r.backWall=a;
   }else if(t==='out'){
-    if(r.bounces>=1)endPoint(r.lastTeam,S.ball.porTres?'POR TRES!':'OUT OF THE CAGE!');else if(r.serve)serveFault('SERVE OUT');else endPoint(1-r.lastTeam,'OUT');
+    if(r.bounces>=1){if(tryChase())return;endPoint(r.lastTeam,S.ball.porTres?'POR TRES!':'OUT OF THE CAGE!')}else if(r.serve)serveFault('SERVE OUT');else endPoint(1-r.lastTeam,'OUT');
   }else if(t==='roof'){if(r.serve&&r.bounces===0)serveFault('HIT THE ROOF');else endPoint(1-r.lastTeam,'HIT THE ROOF!');
   }else if(t==='net')r.net=true;
 }

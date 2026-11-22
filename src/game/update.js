@@ -4,6 +4,7 @@ import { S } from '../state.js';
 import { aiPlan, aiShot } from '../ai/ai.js';
 import { SPEED_H, SVC, movK } from './constants.js';
 import { stepBall } from './physics.js';
+import { stepChase, stepReturn } from './chase.js';
 import { canHit, diffOf, doServe, endPoint, isHuman, onEvent, performHit, soundOnly, teamOf } from './rules.js';
 
 /* ---------------- update ---------------- */
@@ -18,12 +19,16 @@ export function update(dt){
   }else if(S.state==='play'){
     stepBall(S.ball,dt,onEvent);
     if(S.state==='play'&&S.ball.rolling&&S.R0.bounces>=1)endPoint(S.R0.lastTeam,'DOUBLE BOUNCE');
+  }else if(S.state==='chase'){
+    stepChase(dt);
   }else if(S.state==='between'){
     stepBall(S.ball,dt,soundOnly);
     S.stateT-=dt;if(S.stateT<=0&&S.afterState){const f=S.afterState;S.afterState=null;H.hideMsg();f()}
   }
   for(const t of[0,1]){const m=teamOf(t);if(m.some(q=>!isHuman(q))){const q0=m.find(q=>!isHuman(q));q0.think-=dt;if(q0.think<=0){q0.think=0.08+rand()*0.06;if(S.state==='play')aiPlan(t);else for(const q of m)if(!isHuman(q)&&S.state!=='serve'){q.tx=q.x;q.ty=q.y}}}}
   for(const p of S.players){
+    // out of the cage: the chaser and anyone walking back in are moved by chase.js
+    if((S.chase&&S.chase.p===p)||(p.ret&&stepReturn(p,dt))){if(p.swingT>0)p.swingT-=dt;continue}
     const lim=p.team===0?[-9.7,-0.5]:[0.5,9.7];
     if(isHuman(p)){
       const i=H.inputOf(p);const l=Math.hypot(i.mx,i.my)||1;const sc=Math.min(1,Math.hypot(i.mx,i.my));
