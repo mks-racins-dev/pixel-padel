@@ -12,7 +12,7 @@ export function getSprite(look,view,pose,leg){
   const lUp=leg===1?1:0,rUp=leg===2?1:0;
   r(9,20-lUp,2,6,sk);r(9,20-lUp,1,6,skD);r(13,20-rUp,2,6,sk);r(14,20-rUp,1,6,skD);
   r(9,25-lUp,2,2,'#f2f2ee');r(13,25-rUp,2,2,'#f2f2ee');
-  r(8,27-lUp,4,2,'#f4f4f0');r(8,28-lUp,4,1,'#3a3540');r(12,27-rUp,4,2,'#f4f4f0');r(12,28-rUp,4,1,'#3a3540');
+  r(8,27-lUp,4,2,look.shoe||'#f4f4f0');r(8,28-lUp,4,1,'#3a3540');r(12,27-rUp,4,2,look.shoe||'#f4f4f0');r(12,28-rUp,4,1,'#3a3540');
   r(back?8:10,27-lUp,1,1,look.frame);r(back?15:13,27-rUp,1,1,look.frame);
   // shorts / skirt
   if(look.skirt){r(7,17,10,4,so);r(7,20,10,1,soD);r(8,17,1,3,shade(so,20))}else{r(8,17,8,4,so);r(8,20,3,1,soD);r(13,20,3,1,soD);r(11,18,2,3,soD)}

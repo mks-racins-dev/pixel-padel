@@ -11,6 +11,7 @@ import { playCine, parkIntro, parkOutro } from '../render/cine.js';
 import { DRILLS, setPracticeCustom } from '../game/practice.js';
 import { settings } from '../game/settings.js';
 import { totalStars, eventStars, starGoals } from '../meta/stars.ts';
+import { GEAR, SLOTS, coins, owns, equipped, gearUnlocked, buy, equip } from '../meta/gear.ts';
 import { mkLook } from '../game/player.js';
 import { S } from '../state.js';
 import { leaveCareer } from '../meta/career.ts';
@@ -31,6 +32,8 @@ let scene = null; // { s, i, done } while a story scene is playing
 export function renderCareerTab() {
   renderCareer();
   const db = document.getElementById('dblBtn'); if (db) db.onclick = () => { view = 'doubles'; renderCareerTab() };
+  const sk = document.getElementById('skillsBtn');
+  if (sk && !document.getElementById('shopBtn')) { sk.insertAdjacentHTML('afterend', `<button class="big alt" id="shopBtn">PRO SHOP · ${coins()} ◉</button>`); document.getElementById('shopBtn').onclick = () => { view = 'shop'; renderCareerTab() } }
 }
 const dblBtn = () => doublesOpen() ? '<button class="big alt" id="dblBtn">DOUBLES</button>' : '';
 
@@ -45,6 +48,7 @@ function renderCareer() {
   if (pendingPress()) return renderPress(box);
   if (!view) view = townDone() ? 'match' : 'map';
   if (view === 'skills') return renderSkills(box);
+  if (view === 'shop') return renderShop(box);
   if (view === 'doubles' && doublesOpen()) return renderDoubles(box);
   if (view === 'map') return renderMap(box);
   const nx = nextEvent();
@@ -302,6 +306,31 @@ function renderMatch(box) {
   document.getElementById('townBtn').onclick = () => { view = 'map'; renderCareerTab() };
   const sb = document.getElementById('seasonBtn'); if (sb) sb.onclick = () => { view = 'match'; renderCareerTab() };
   document.getElementById('skillsBtn').onclick = () => { view = 'skills'; renderCareerTab() };
+}
+
+/* ---------------- pro shop ---------------- */
+const STATN = { spd: 'SPD', pow: 'POW', acc: 'ACC', wall: 'WALL' };
+function renderShop(box) {
+  const c = coins();
+  const row = ([slot, label]) => {
+    const eq = equipped(slot);
+    const items = GEAR.filter(g => g.slot === slot).map(g => {
+      const have = owns(g.id), open = gearUnlocked(g), on = eq.id === g.id;
+      const stats = Object.entries(g.stats).map(([k, v]) => `+${v} ${STATN[k]}`).join(' ') || 'NO BONUS';
+      const act = on ? '<span class="gon">EQUIPPED</span>' : have ? `<button data-equip="${g.id}">EQUIP</button>`
+        : !open ? `<span class="glock">LOCKED · ${g.needsText}</span>` : `<button data-buy="${g.id}" ${c >= g.price ? '' : 'disabled'}>BUY ${g.price} ◉</button>`;
+      return `<div class="gitem${on ? ' on' : ''}${open ? '' : ' locked'}"><i style="--g:${open ? g.color : '#3a3146'}"></i><span class="gname">${open ? g.name : '???'}</span><span class="gstat">${open ? stats : ''}</span>${act}</div>`;
+    }).join('');
+    return `<div class="gslot"><span class="px">${label}</span>${items}</div>`;
+  };
+  box.innerHTML = `
+    <div class="thead"><span class="px">PRO SHOP</span><span class="px gcoins">${c} ◉</span></div>
+    <div class="help">Coins come from every career, doubles and season match. New gear arrives as your story moves on.</div>
+    <div class="gshop">${SLOTS.map(row).join('')}</div>
+    <div class="cacts"><button class="big" data-primary id="shopBack">◂ BACK TO CAREER</button></div>`;
+  box.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => { if (buy(b.dataset.buy)) renderCareerTab() });
+  box.querySelectorAll('[data-equip]').forEach(b => b.onclick = () => { equip(b.dataset.equip); renderCareerTab() });
+  document.getElementById('shopBack').onclick = () => { view = null; renderCareerTab() };
 }
 
 function renderSkills(box) {

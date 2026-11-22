@@ -16,6 +16,7 @@ export interface Profile {
   ch?: unknown;            // daily/weekly challenge progress (shape checked by challenges.ts)
   cup?: unknown;           // weekly cup best result (shape checked by cup.ts)
   season?: unknown;        // endless seasons progress (shape checked by season.ts)
+  gear?: unknown;          // coins and pro shop gear (shape checked by gear.ts)
   doubles?: unknown;       // career doubles: partner, chemistry, circuit wins (shape checked by doubles.ts)
 }
 
@@ -69,6 +70,7 @@ export function migrate(raw: unknown): Profile {
   if (r.cup && typeof r.cup === 'object') p.cup = r.cup;
   if (r.season && typeof r.season === 'object') p.season = r.season;
   if (r.doubles && typeof r.doubles === 'object') p.doubles = r.doubles;
+  if (r.gear && typeof r.gear === 'object') p.gear = r.gear;
   return p;
 }
 

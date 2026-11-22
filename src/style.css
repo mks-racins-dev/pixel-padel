@@ -301,3 +301,15 @@ h1{margin:0;font-size:calc(var(--u)*17);line-height:1.1;color:#f7c993;text-shado
 .nextup{margin-top:calc(var(--u)*3);color:#ff8a5c}
 .nextup span{background:#e4572e;color:#fff;padding:0 calc(var(--u)*2)}
 .tstars{color:#f2c14e;font-size:calc(var(--u)*8);letter-spacing:calc(var(--u)*1)}
+/* pro shop */
+.gcoins,.coinln{color:#f2c14e}
+.gshop{display:flex;flex-direction:column;gap:calc(var(--u)*3);max-height:calc(var(--u)*150);overflow:auto}
+.gslot>span{font-size:calc(var(--u)*6);color:#ff8a5c}
+.gitem{display:grid;grid-template-columns:calc(var(--u)*8) 1fr auto auto;gap:calc(var(--u)*3);align-items:center;padding:calc(var(--u)*1.5) calc(var(--u)*3);background:#211b29;border:calc(var(--u)*1) solid #0f0c13;margin-top:calc(var(--u)*1)}
+.gitem.on{border-color:#f2c14e}
+.gitem.locked{opacity:.6}
+.gitem i{width:calc(var(--u)*6);height:calc(var(--u)*6);background:var(--g);border:calc(var(--u)*1) solid #0f0c13}
+.gname{color:#f4ead2}
+.gstat{color:#9be37a;font-size:calc(var(--u)*6)}
+.gon{color:#f2c14e;font-size:calc(var(--u)*6)}
+.glock{color:#8a7f98;font-size:calc(var(--u)*5.5)}

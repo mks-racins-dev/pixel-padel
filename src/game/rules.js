@@ -3,6 +3,9 @@ import { LOOKS } from '../content/looks.js';
 import { settings } from './config.js';
 import { CAREER, oppDiff } from '../meta/career.ts';
 import { careerSkills } from '../meta/profile.ts';
+import { gearBonus, gearLook } from '../meta/gear.ts';
+/** Career stats plus the equipped pro shop gear. */
+const withGear=s=>{const b=gearBonus();return{...s,spd:s.spd+b.spd,pow:s.pow+b.pow,acc:s.acc+b.acc,wall:(s.wall||0)+b.wall}};
 import { PARTNERS, chemistry, chemPerks } from '../meta/doubles.ts';
 import { isPractice, practiceLanded, practiceMiss, startPractice, stopPractice } from './practice.js';
 import { rand, seedSim } from '../core/rng.ts';
@@ -19,7 +22,7 @@ export function newMatch(isDemo,seed){
   stopPractice();
   setCourt(career&&CAREER.event.court||null);
   const dbl=career&&!!CAREER.event.doubles;
-  const m=S.demo?'2v2':career?(dbl?'2v2':'1v1'):settings.mode;const me=mkLook(S.myLookData);
+  const m=S.demo?'2v2':career?(dbl?'2v2':'1v1'):settings.mode;const me=career?gearLook(mkLook(S.myLookData)):mkLook(S.myLookData);
   if(m==='practice')S.players=[mkPlayer(0,me,'h1',0)];
   else if(m==='1v1')S.players=[mkPlayer(0,me,'h1',0),mkPlayer(1,LOOKS.o1,'ai',0)];
   else if(m==='2v2')S.players=[mkPlayer(0,me,S.demo?'ai':'h1',2.4),mkPlayer(0,LOOKS.p2,'ai',-2.4),mkPlayer(1,LOOKS.o1,'ai',-2.4),mkPlayer(1,LOOKS.o2,'ai',2.4)];
@@ -36,11 +39,11 @@ export function newMatch(isDemo,seed){
     S.players=[0,1].map(t=>mkPlayer(t,lk[t]?mkLook(lk[t]):(t?LOOKS.o1:LOOKS.p1),ctrl(t),0))}
   else S.players=[mkPlayer(0,me,'h1',0),mkPlayer(1,LOOKS.o1,'h2',0)];
   const ks=Object.keys(STYLES);for(const p of S.players)p.sk=isHuman(p)?STYLES[settings.style]:STYLES[ks[Math.floor(rand()*ks.length)]];
-  if(career&&!dbl){S.players[0].sk=careerSkills(STYLES[settings.style]);S.players[1].sk=STYLES[CAREER.event.style]||STYLES.allround}
+  if(career&&!dbl){S.players[0].sk=withGear(careerSkills(STYLES[settings.style]));S.players[1].sk=STYLES[CAREER.event.style]||STYLES.allround}
   S.chem=null;
   if(dbl){ // career doubles: you + a story partner vs a story pair; chemistry shapes the partner
     const e=CAREER.event,pa=PARTNERS.find(x=>x.id===e.partner)||PARTNERS[0],pk=chemPerks(chemistry(pa.id)),base=STYLES[pa.style]||STYLES.allround;
-    S.chem=pk;S.players[0].sk=careerSkills(STYLES[settings.style]);
+    S.chem=pk;S.players[0].sk=withGear(careerSkills(STYLES[settings.style]));
     S.players[1].sk={...base,spd:base.spd+pk.bonus,pow:base.pow+pk.bonus,acc:base.acc+pk.bonus};
     S.players[2].sk=STYLES[e.styles[0]]||STYLES.allround;S.players[3].sk=STYLES[e.styles[1]]||STYLES.allround}
   if(m==='online'&&S.net){const sty=S.net.role==='host'?[settings.style,S.net.guestStyle]:S.net.styles||[];S.players.forEach((p,i)=>p.sk=STYLES[sty[i]]||STYLES.allround)}
