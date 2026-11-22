@@ -15,6 +15,7 @@ import { PAL, mkLook, saveLook } from '../game/player.js';
 import { isHuman, matchGames, newMatch, teamName } from '../game/rules.js';
 import { setLoc, settings } from '../game/settings.js';
 import { gradeFor } from '../render/grades.js';
+import { confetti } from '../render/drama.ts';
 import { resetStars, finishStars } from '../meta/stars.ts';
 import { addXp, profile } from '../meta/profile.ts';
 import { earnCoins, matchCoins } from '../meta/gear.ts';
@@ -61,7 +62,7 @@ export function showEnd(){
   else if(CAREER.active){const evId=CAREER.event.id,evTier=CAREER.event.tier,wasWon=profile().career.won.includes(evId);const r=finishCareerMatch(human,S.score.games[0],S.score.games[1]);const st=finishStars(evId,human,S.score.games[1]);if(st.xp)addXp(st.xp);lines=starsHtml(st)+coinLine(earnCoins(matchCoins(human,evTier,!wasWon,st.newStars)))+careerSummary(r);if(r.rankBefore>r.rank)setTimeout(()=>animRank(r.rankBefore,r.rank),500);CAREER.toMap=!!r.toMap;const nx=!r.toMap&&r.won&&CAREER.event;if(nx&&!r.last)lines+='<div class="nextup"><span class="px">NEXT</span> '+(nx.stage?nx.stage+' · ':'')+nx.opp+'</div>';$('againBtn').textContent=r.toMap?(r.free?'TOWN MAP ▸':'CONTINUE ▸'):r.last&&r.won?'PLAY AGAIN':r.won?'PLAY NEXT ▸':'RETRY';if(r.rival&&!r.won)$('endTitle').textContent='RUTA WINS… FOR NOW'}
   const ch=takeRecent().map(c=>'CHALLENGE DONE: '+c.text+' +'+c.xp+' XP');
   $('endInfo').innerHTML=[lines,...ch].filter(Boolean).join('<br>');
-  $('end').hidden=false;$('touch').hidden=true;sfx(human||settings.mode==='pvp'?'win':'lose');
+  $('end').hidden=false;$('touch').hidden=true;sfx(human||settings.mode==='pvp'?'win':'lose');if(human||settings.mode==='pvp')confetti();
 }
 export function setHelp(){
   const m=settings.mode,st=STYLES[settings.style],bar=v=>'■'.repeat(v)+'□'.repeat(5-v);

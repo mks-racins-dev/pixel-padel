@@ -1,7 +1,7 @@
 // Game feel: hit-stop, camera punch, slow motion and particles.
 // All of this is cosmetic. It changes how real time maps onto simulation steps
 // (pausing or slowing them) but never what a step does, so matches stay deterministic.
-import { P, R } from '../core/gfx.js';
+import { P, R, WL } from '../core/gfx.js';
 
 interface Part { x: number; y: number; z: number; vx: number; vy: number; vz: number; t: number; life: number; c: string; grav: number }
 
@@ -11,7 +11,15 @@ export const FX = {
   slowK: 1,            // simulation speed while slowT > 0
   punch: { x: 0, y: 0, t: 0 },
   parts: [] as Part[],
+  glass: [] as { x: number; y: number; z: number; t: number; side: boolean; mesh: boolean }[], // impact ripples on the walls
+  rings: [] as { x: number; y: number; z: number; t: number; big: boolean }[],                 // racket contact rings
+  zoom: { t: 0, len: 0, k: 0, ox: 240, oy: 135 },                                             // quick camera push-in
 };
+/** Push the camera in by `k` (0.05 = 5%) for `secs`, centred on world point p. */
+export function zoomIn(k: number, secs: number, p?: { x: number; y: number; z: number }) {
+  const q = p ? P(p.x, p.y, p.z) : { x: 240, y: 135 };
+  FX.zoom = { t: secs, len: secs, k, ox: q.x, oy: q.y };
+}
 
 /** Freeze the simulation for a few frames so a big hit lands. Longer requests win. */
 export function hitStop(secs: number) { FX.hitStop = Math.max(FX.hitStop, secs) }
@@ -38,8 +46,10 @@ export function burst(x: number, y: number, z: number, n: number, colors: string
 /** Particles for a sound event at the ball's position (also runs on online guests, who replay host sounds). */
 export function fxForSound(k: string, v: number, b: { x: number; y: number; z: number } | undefined) {
   if (!b) return;
-  if (k === 'smash') { hitStop(0.07); punch(0, 3) }
-  else if (k === 'vibora') { hitStop(0.1); punch(Math.random() < 0.5 ? -3 : 3, 2) }
+  if (k === 'smash') { hitStop(0.07); punch(0, 3); zoomIn(0.06, 0.32, b) }
+  else if (k === 'vibora') { hitStop(0.1); punch(Math.random() < 0.5 ? -3 : 3, 2); zoomIn(0.05, 0.3, b) }
+  if (k === 'hit' || k === 'smash' || k === 'vibora') FX.rings.push({ x: b.x, y: b.y, z: b.z, t: 0, big: k !== 'hit' || v > 0.9 });
+  if ((k === 'glass' || k === 'mesh') && FX.glass.length < 8) FX.glass.push({ x: b.x, y: b.y, z: Math.max(0.3, b.z), t: 0, side: Math.abs(b.x) > 4.6, mesh: k === 'mesh' });
   else if (k === 'hit' && v > 0.97) hitStop(0.03);
   if (k === 'hit') burst(b.x, b.y, b.z, 4 + Math.round(v * 4), ['#fbffb8', '#e2ef3c', '#ffffff'], 2 + v * 2, 1.2);
   else if (k === 'smash') { burst(b.x, b.y, b.z, 14, ['#fff1c1', '#ff8a5c', '#ffffff'], 5, 2.5); }
@@ -51,6 +61,8 @@ export function fxForSound(k: string, v: number, b: { x: number; y: number; z: n
 
 export function updateFx(dt: number) {
   if (FX.punch.t > 0) FX.punch.t -= dt;
+  if (FX.zoom.t > 0) FX.zoom.t = Math.max(0, FX.zoom.t - dt);
+  for (const a of [FX.glass, FX.rings] as { t: number }[][]) for (let i = a.length - 1; i >= 0; i--) { a[i].t += dt; if (a[i].t > 0.45) a.splice(i, 1) }
   const ps = FX.parts;
   for (let i = ps.length - 1; i >= 0; i--) {
     const p = ps[i];
@@ -67,7 +79,36 @@ export function cameraOffset(): { x: number; y: number } {
   return { x: Math.round(FX.punch.x * k), y: Math.round(FX.punch.y * k) };
 }
 
+/** Ripples where the ball hit the glass (a flash and spreading rings on the wall plane) and racket contact rings. */
+function drawImpacts(ctx: CanvasRenderingContext2D) {
+  for (const g of FX.glass) {
+    const k = g.t / 0.45, a = 1 - k;
+    for (const r of [0.25 + k * 1.4, 0.1 + k * 0.8]) {
+      const pts: [number, number, number][] = [];
+      for (let i = 0; i <= 16; i++) { const ang = i / 16 * Math.PI * 2, u = Math.cos(ang) * r, w = Math.sin(ang) * r * 0.8;
+        pts.push(g.side ? [Math.sign(g.x) * 5, g.y + u, g.z + w] : [g.x + u, Math.sign(g.y) * 10, g.z + w]) }
+      const c = g.mesh ? `rgba(200,195,210,${a * 0.6})` : `rgba(220,250,255,${a * 0.85})`;
+      for (let i = 0; i < 16; i++) WL(ctx, pts[i], pts[i + 1], c);
+    }
+    if (!g.mesh && g.t < 0.08) { const q = P(g.side ? Math.sign(g.x) * 5 : g.x, g.side ? g.y : Math.sign(g.y) * 10, g.z); ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fillRect(Math.round(q.x) - 3, Math.round(q.y) - 3, 7, 7) }
+  }
+  for (const r of FX.rings) {
+    if (r.t > 0.16) continue;
+    const q = P(r.x, r.y, r.z), rad = (r.big ? 4 : 2) + r.t * (r.big ? 70 : 40);
+    ctx.strokeStyle = `rgba(255,250,210,${1 - r.t / 0.16})`; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(Math.round(q.x), Math.round(q.y) - 2, rad, 0, Math.PI * 2); ctx.stroke();
+  }
+}
+/** CSS transform for the quick push-in (the canvas is pixel art, so scaling it stays crisp). */
+export function zoomTransform(): string {
+  const z = FX.zoom; if (z.t <= 0) return '';
+  const u = 1 - z.t / z.len, e = u < 0.25 ? u / 0.25 : 1 - (u - 0.25) / 0.75, s = 1 + z.k * e;
+  return `scale(${s.toFixed(3)})`;
+}
+export const zoomOrigin = () => `${(FX.zoom.ox / 480 * 100).toFixed(1)}% ${(FX.zoom.oy / 270 * 100).toFixed(1)}%`;
+
 export function drawFx(ctx: CanvasRenderingContext2D) {
+  drawImpacts(ctx);
   for (const p of FX.parts) {
     const q = P(p.x, p.y, p.z);
     ctx.globalAlpha = Math.max(0, 1 - p.t / p.life);

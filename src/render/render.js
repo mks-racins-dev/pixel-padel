@@ -1,6 +1,8 @@
 import { trailColor } from '../meta/profile.ts';
 import { isPractice, PR } from '../game/practice.js';
-import { cameraOffset, drawFx } from './fx.ts';
+import { cameraOffset, drawFx, zoomTransform, zoomOrigin } from './fx.ts';
+import { drawDrama } from './drama.ts';
+import { cv } from '../core/gfx.js';
 import { S } from '../state.js';
 import { L, P, R, ctx, shade, txt, txtW } from '../core/gfx.js';
 import { sweet } from '../game/constants.js';
@@ -36,7 +38,7 @@ export function drawBall(){
 export function drawSpectators(){
   gradeFrame(ctx);
   for(const s of S.spectators){const p=P(s.x,s.y,0.5);const x=Math.round(p.x),y=Math.round(p.y);
-    const bob=(s.cheer>0)?(Math.floor(S.time*8+s.ph)%2):(Math.floor(S.time*1.5+s.ph)%2===0&&Math.sin(S.time+s.ph)>0.6?1:0);
+    const bob=(s.cheer>0)?(Math.floor(S.time*8+s.ph)%2):(!S.hush&&Math.floor(S.time*1.5+s.ph)%2===0&&Math.sin(S.time+s.ph)>0.6?1:0);
     R(ctx,x-1,y-4,5,4,s.pants);R(ctx,x+2,y-1,2,4,s.pants);R(ctx,x+3,y+2,2,1,'#f4f4f0');
     R(ctx,x-2,y-10-bob,6,7,s.shirt);R(ctx,x-2,y-10-bob,1,7,shade(s.shirt,-30));
     R(ctx,x-1,y-15-bob,5,5,s.skin);R(ctx,x-1,y-16-bob,5,2,s.hair);R(ctx,x-1,y-14-bob,1,2,s.hair);
@@ -63,7 +65,7 @@ export function render(){
   if(S.shake>0)ctx.translate(Math.round((Math.random()-0.5)*3),Math.round((Math.random()-0.5)*3));
   ctx.drawImage(S.BG,0,0);
   drawSpectators();drawMascot();
-  if(!S.ball.held){const p=P(S.ball.x,S.ball.y,S.ball.z);S.trail.push({x:Math.round(p.x),y:Math.round(p.y)-2});if(S.trail.length>5)S.trail.shift();if(Math.hypot(S.ball.vx,S.ball.vy)<9&&!S.ball.vib)S.trail.length=0}
+  if(!S.ball.held){const p=P(S.ball.x,S.ball.y,S.ball.z);S.trail.push({x:Math.round(p.x),y:Math.round(p.y)-2});{const sp=Math.hypot(S.ball.vx,S.ball.vy);while(S.trail.length>(sp>17?9:sp>13?7:5))S.trail.shift()}if(Math.hypot(S.ball.vx,S.ball.vy)<9&&!S.ball.vib)S.trail.length=0}
   drawMarker();drawServeAim();
   const far=S.players.filter(p=>p.y>=0).sort((a,b)=>b.y-a.y),near=S.players.filter(p=>p.y<0).sort((a,b)=>b.y-a.y);
   const ballFar=S.ball.y>=0;
@@ -76,7 +78,9 @@ export function render(){
   drawFx(ctx);
   ctx.drawImage(S.FRONT,0,0);
   for(const f of(S.floatTxt?[S.floatTxt]:[]).concat(S.floats)){const q=P(f.x,f.y,2.2);const rise=Math.round((1.1-f.t)*14);const w=txtW(f.text,f===S.floatTxt?2:1);const sc=f===S.floatTxt?2:1;R(ctx,q.x-w/2-2,q.y-rise-2,w+4,5*sc+4,'rgba(23,19,28,0.75)');txt(ctx,f.text,Math.round(q.x-w/2),Math.round(q.y-rise),f.c,sc)}
+  drawDrama(ctx);
   ctx.restore();
+  {const z=zoomTransform();if(z){cv.style.transformOrigin=zoomOrigin();cv.style.transform=z}else if(cv.style.transform)cv.style.transform=''}
 }
 export function drawGroup(list,withBall){
   let drawn=!withBall;
