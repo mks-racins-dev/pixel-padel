@@ -8,6 +8,7 @@ import { isHuman, serveTarget } from '../game/rules.js';
 import { settings } from '../game/settings.js';
 import { drawMascot } from './mascot.js';
 import { getSprite } from './sprites.js';
+import { gradeFrame } from './grades.js';
 
 export function drawPlayer(p){
   const g0=P(p.x,p.y,0);const x=Math.round(g0.x),y=Math.round(g0.y);
@@ -33,12 +34,14 @@ export function drawBall(){
   R(ctx,x-1,y-1,3,3,'#e2ef3c');R(ctx,x-1,y-1,1,1,'#fbffb8');R(ctx,x+1,y+1,1,1,'#a9b82a');
 }
 export function drawSpectators(){
+  gradeFrame(ctx);
   for(const s of S.spectators){const p=P(s.x,s.y,0.5);const x=Math.round(p.x),y=Math.round(p.y);
     const bob=(s.cheer>0)?(Math.floor(S.time*8+s.ph)%2):(Math.floor(S.time*1.5+s.ph)%2===0&&Math.sin(S.time+s.ph)>0.6?1:0);
     R(ctx,x-1,y-4,5,4,s.pants);R(ctx,x+2,y-1,2,4,s.pants);R(ctx,x+3,y+2,2,1,'#f4f4f0');
     R(ctx,x-2,y-10-bob,6,7,s.shirt);R(ctx,x-2,y-10-bob,1,7,shade(s.shirt,-30));
     R(ctx,x-1,y-15-bob,5,5,s.skin);R(ctx,x-1,y-16-bob,5,2,s.hair);R(ctx,x-1,y-14-bob,1,2,s.hair);
     const look=S.ball.x<-1?0:1;R(ctx,x+2+look,y-13-bob,1,1,'#2a1e1e');
+    if(s.phone&&s.cheer<=0){R(ctx,x+3,y-14-bob,3,4,'#1c1a22');R(ctx,x+4,y-13-bob,1,2,'#9be3ff')}
     if(s.cheer>0){R(ctx,x-3,y-15-bob,1,5,s.skin);R(ctx,x+4,y-15-bob,1,5,s.skin)}else{R(ctx,x+3,y-8-bob,2,1,s.skin)}
   }
 }

@@ -20,6 +20,7 @@ export const S = {
   trail: [],
   shake: 0,
   spectators: [],
+  grade: 0, // how big the event looks (render/grades.js)
   time: 0,
   lastWinner: -1,
   BG: undefined,

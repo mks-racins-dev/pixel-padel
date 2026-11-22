@@ -14,6 +14,7 @@ import { STYLES } from '../game/constants.js';
 import { PAL, mkLook, saveLook } from '../game/player.js';
 import { isHuman, matchGames, newMatch, teamName } from '../game/rules.js';
 import { setLoc, settings } from '../game/settings.js';
+import { gradeFor } from '../render/grades.js';
 import { actRelease, actStart, actVib, touchIn } from '../input/input.js';
 import { myTeam, netClose, netSend, onStatus, startOnline } from '../net/online.js';
 import { prevG } from './preview.js';
@@ -75,9 +76,9 @@ export function startGame(){
     return}
   if(CAREER.active&&CAREER.kind!=='cup'&&CAREER.toMap)return toMenu();
   if(CAREER.active&&CAREER.kind==='cup')startCup(false); // next round, or round 1 after a run ended
-  if(CAREER.active)setLoc(CAREER.event.venue);
+  if(CAREER.active)setLoc(CAREER.event.venue,gradeFor(CAREER.event));else if(S.grade)setLoc(settings.loc,0);
   showGameUI();newMatch(false)}
-export function toMenu(){matchQuit();leaveCareer();renderMenu();netClose();$('online').hidden=true;S.paused=false;$('pause').hidden=true;$('end').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('menu').hidden=false;hideMsg();newMatch(true)}
+export function toMenu(){if(S.grade)setLoc(settings.loc,0);matchQuit();leaveCareer();renderMenu();netClose();$('online').hidden=true;S.paused=false;$('pause').hidden=true;$('end').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('menu').hidden=false;hideMsg();newMatch(true)}
 export function togglePause(){if(S.net&&!S.demo){$('pause').hidden=!$('pause').hidden;return}S.paused=!S.paused;$('pause').hidden=!S.paused}
 
 function cupSummary(r){
