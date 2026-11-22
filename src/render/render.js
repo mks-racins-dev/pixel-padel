@@ -25,8 +25,8 @@ export function drawPlayer(p){
   if(fl){ctx.save();ctx.translate(dx+24,dy);ctx.scale(-1,1);ctx.drawImage(img,0,0);ctx.restore()}else ctx.drawImage(img,dx,dy);
   if(!S.demo){const full=p.energy>=100;const bx=x-7,by=dy-4;R(ctx,bx-1,by-1,16,4,'#17131c');R(ctx,bx,by,14,2,'#3a3146');const w=Math.round(14*p.energy/100);if(w>0)R(ctx,bx,by,w,2,full?((Math.floor(S.time*8)%2)?'#fff1c1':'#ff8a5c'):'#f2c14e');
     if(p.charging){const h=Math.round(16*p.charge);R(ctx,x+9,dy+10,4,18,'#17131c');R(ctx,x+10,dy+11,2,16,'#3a3146');if(h>0)R(ctx,x+10,dy+27-h,2,h,p.charge>sweet(p)?'#e4572e':p.charge>0.35?'#f2c14e':'#9fd38a');const sy=dy+27-Math.round(16*sweet(p));R(ctx,x+8,sy,6,1,'#fff1c1')}}
-  if(isHuman(p)&&!S.demo){const c=p.ctrl==='h1'?'#ff8a5c':'#6fd3d2';const ty=dy-11;R(ctx,x-2,ty,5,1,c);R(ctx,x-1,ty+1,3,1,c);R(ctx,x,ty+2,1,1,c);
-    if(settings.mode==='pvp'){const lab=p.ctrl==='h1'?'P1':'P2';R(ctx,x-5,ty-8,10,7,'#17131c');txt(ctx,lab,x-3,ty-7,c)}}
+  if(isHuman(p)&&!S.demo&&p.ctrl!=='net'){const c={h1:'#ff8a5c',h2:'#6fd3d2',h3:'#9be37a',h4:'#ff6ad5'}[p.ctrl]||'#ff8a5c';const ty=dy-11;R(ctx,x-2,ty,5,1,c);R(ctx,x-1,ty+1,3,1,c);R(ctx,x,ty+2,1,1,c);
+    if(settings.mode==='pvp'||settings.mode==='couch'){const lab='P'+p.ctrl.slice(1);R(ctx,x-5,ty-8,10,7,'#17131c');txt(ctx,lab,x-3,ty-7,c)}}
 }
 export function drawBallShadow(){if(S.ball.out&&S.ball.z>4)return;const g0=P(S.ball.x,S.ball.y,0);ctx.fillStyle='rgba(16,12,40,'+Math.max(0.12,0.4-S.ball.z*0.05)+')';ctx.fillRect(Math.round(g0.x)-1,Math.round(g0.y),3,1)}
 export function drawBall(){
@@ -50,7 +50,7 @@ export function drawSpectators(){
 export function drawMarker(){if(!S.marker)return;const p=P(S.marker.x,S.marker.y,0);const x=Math.round(p.x),y=Math.round(p.y);const c=(Math.floor(S.time*6)%2)?'rgba(255,255,255,0.9)':'rgba(255,255,255,0.45)';
   R(ctx,x-3,y-1,1,1,c);R(ctx,x-2,y,1,1,c);R(ctx,x,y,1,1,c);R(ctx,x+2,y,1,1,c);R(ctx,x+3,y-1,1,1,c);R(ctx,x-1,y,1,1,c);R(ctx,x+1,y,1,1,c);R(ctx,x-3,y+1,1,1,c);R(ctx,x+3,y+1,1,1,c)}
 export function drawServeAim(){
-  if(S.demo||S.state!=='serve'||!S.R0||!S.R0.server||(S.R0.server.ctrl!=='h1'&&S.R0.server.ctrl!=='h2'))return;const p=S.R0.server;
+  if(S.demo||S.state!=='serve'||!S.R0||!S.R0.server||!/^h[1-4]$/.test(S.R0.server.ctrl))return;const p=S.R0.server;
   const pw=p.charging?Math.max(0.06,p.charge):sweet(p);const t=serveTarget(p,pw);
   const a=P(S.ball.x,S.ball.y,0),b=P(t.tx,t.ty,0);const over=p.charging&&p.charge>sweet(p);
   const c=over?'#e4572e':(p.ctrl==='h1'?'#ff8a5c':'#6fd3d2');

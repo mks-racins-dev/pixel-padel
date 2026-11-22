@@ -16,6 +16,7 @@ import { isHuman, matchGames, newMatch, teamName } from '../game/rules.js';
 import { setLoc, settings } from '../game/settings.js';
 import { gradeFor } from '../render/grades.js';
 import { confetti } from '../render/drama.ts';
+import { renderCouch } from './couch.js';
 import { resetStars, finishStars } from '../meta/stars.ts';
 import { addXp, profile } from '../meta/profile.ts';
 import { earnCoins, matchCoins } from '../meta/gear.ts';
@@ -47,10 +48,10 @@ export function showMsg(big,small){if(S.demo)return;if(S.net&&S.net.role==='host
 export function hideMsg(){if(S.net&&S.net.role==='host'&&!S.demo)netSend({t:'hide'});$('msg').classList.remove('show')}
 export function showEnd(){
   S.state='over';const w=S.score.winner;
-  const on=settings.mode==='online';const human=on?w===myTeam():(settings.mode!=='pvp'&&w===0);
+  const on=settings.mode==='online';const human=on?w===myTeam():(settings.mode!=='pvp'&&settings.mode!=='couch'&&w===0);
   matchEnd({won:human,games:S.score.games.slice()});
   if(S.net&&S.net.role==='host')netSend({t:'end'});
-  $('endTitle').textContent=settings.mode==='pvp'?(w===0?'PLAYER 1 WINS!':'PLAYER 2 WINS!'):(human?'YOU WIN!':(on?'RIVAL WINS':'CPU WINS'));
+  $('endTitle').textContent=settings.mode==='couch'?(w===0?'TEAM A WINS!':'TEAM B WINS!'):settings.mode==='pvp'?(w===0?'PLAYER 1 WINS!':'PLAYER 2 WINS!'):(human?'YOU WIN!':(on?'RIVAL WINS':'CPU WINS'));
   $('endScore').textContent=S.score.games[0]+' – '+S.score.games[1];
   $('againBtn').textContent='REMATCH';$('endInfo').innerHTML='';$('endRank').hidden=true;$('endRank').classList.remove('pop');
   const me=S.players.find(p=>p.ctrl==='h1'),myT=me?me.team:0;
@@ -62,7 +63,7 @@ export function showEnd(){
   else if(CAREER.active){const evId=CAREER.event.id,evTier=CAREER.event.tier,wasWon=profile().career.won.includes(evId);const r=finishCareerMatch(human,S.score.games[0],S.score.games[1]);const st=finishStars(evId,human,S.score.games[1]);if(st.xp)addXp(st.xp);lines=starsHtml(st)+coinLine(earnCoins(matchCoins(human,evTier,!wasWon,st.newStars)))+careerSummary(r);if(r.rankBefore>r.rank)setTimeout(()=>animRank(r.rankBefore,r.rank),500);CAREER.toMap=!!r.toMap;const nx=!r.toMap&&r.won&&CAREER.event;if(nx&&!r.last)lines+='<div class="nextup"><span class="px">NEXT</span> '+(nx.stage?nx.stage+' · ':'')+nx.opp+'</div>';$('againBtn').textContent=r.toMap?(r.free?'TOWN MAP ▸':'CONTINUE ▸'):r.last&&r.won?'PLAY AGAIN':r.won?'PLAY NEXT ▸':'RETRY';if(r.rival&&!r.won)$('endTitle').textContent='RUTA WINS… FOR NOW'}
   const ch=takeRecent().map(c=>'CHALLENGE DONE: '+c.text+' +'+c.xp+' XP');
   $('endInfo').innerHTML=[lines,...ch].filter(Boolean).join('<br>');
-  $('end').hidden=false;$('touch').hidden=true;sfx(human||settings.mode==='pvp'?'win':'lose');if(human||settings.mode==='pvp')confetti();
+  $('end').hidden=false;$('touch').hidden=true;sfx(human||settings.mode==='pvp'?'win':'lose');if(human||settings.mode==='pvp'||settings.mode==='couch')confetti();
 }
 export function setHelp(){
   const m=settings.mode,st=STYLES[settings.style],bar=v=>'■'.repeat(v)+'□'.repeat(5-v);
@@ -73,7 +74,7 @@ export function setHelp(){
 }
 export function press(seg,v){seg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===String(v)?'true':'false'))}
 export const coarse=matchMedia('(pointer:coarse)').matches;
-export function showGameUI(){initAudio();$('menu').hidden=true;$('online').hidden=true;$('end').hidden=true;$('pause').hidden=true;S.paused=false;$('hud').hidden=false;$('touch').hidden=!(coarse&&settings.mode!=='pvp');$('msg').classList.remove('show')}
+export function showGameUI(){initAudio();$('menu').hidden=true;$('online').hidden=true;$('end').hidden=true;$('pause').hidden=true;S.paused=false;$('hud').hidden=false;$('touch').hidden=!(coarse&&settings.mode!=='pvp'&&settings.mode!=='couch');$('msg').classList.remove('show')}
 export function startGame(){
   if(settings.mode==='online'){
     if(S.net&&S.net.conn&&S.net.conn.open){if(S.net.role==='host')startOnline();else{netSend({t:'again'});$('endTitle').textContent='WAITING FOR HOST…'}}
@@ -140,7 +141,7 @@ export function setup(){
     seg.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const v=b.dataset.v;press(seg,v);
       if(seg.dataset.look){S.myLookData={...S.myLookData,[seg.dataset.look]:v};saveLook();if(S.demo&&S.players[0])S.players[0].look=mkLook(S.myLookData)}
       else if(seg.dataset.key==='loc'){setLoc(v);try{localStorage.setItem('pixelpadel-venue',v)}catch(e){}}
-      else{const k=seg.dataset.key;settings[k]=k==='games'?+v:v;if(k==='style')saveLook()}
+      else{const k=seg.dataset.key;settings[k]=k==='games'?+v:v;if(k==='style')saveLook();if(k==='mode')renderCouch()}
       setHelp()})});
   prevG.imageSmoothingEnabled=false;
   $('againBtn').onclick=startGame;

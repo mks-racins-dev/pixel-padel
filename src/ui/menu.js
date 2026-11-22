@@ -12,16 +12,17 @@ import { renderCareerTab } from './careerTab.js';
 import { renderDailyTab, renderCupTab } from './dailyTab.js';
 import { initAudio } from '../audio/sfx.js';
 import { startGame, setHelp } from './ui.js';
+import { renderCouch, couchReady } from './couch.js';
 import { useServer } from '../net/online.js';
 import { account, ladder as getLadder, setName } from '../net/account.ts';
 
 const $ = id => document.getElementById(id);
-const QUICK_MODES = ['1v1', '2v2', 'pvp'];
+const QUICK_MODES = ['1v1', '2v2', 'pvp', 'couch'];
 const STEPS = {
   diff: { opts: ['easy', 'normal', 'hard'], label: v => v.toUpperCase() },
   games: { opts: [2, 3, 4, 6], label: v => `FIRST TO ${v} GAMES` },
 };
-const MODE_NAME = { '1v1': '1 VS 1 VS CPU', '2v2': '2 VS 2 WITH MIA', pvp: '2 PLAYERS, ONE KEYBOARD' };
+const MODE_NAME = { '1v1': '1 VS 1 VS CPU', '2v2': '2 VS 2 WITH MIA', pvp: '2 PLAYERS, ONE KEYBOARD', couch: 'COUCH 2 VS 2 · UP TO 4 PLAYERS, BOTS FILL IN' };
 let current = 'career';
 
 const items = () => [...document.querySelectorAll('#menu .mi')];
@@ -73,6 +74,7 @@ function renderQuick() {
   document.querySelectorAll('#menu .seg[data-key="mode"] button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === settings.mode ? 'true' : 'false'));
   for (const el of document.querySelectorAll('#menu .step')) el.querySelector('.sv').textContent = STEPS[el.dataset.key].label(settings[el.dataset.key]);
   const st = STYLES[settings.style];
+  renderCouch();
   $('qSummary').innerHTML = [MODE_NAME[settings.mode], 'CPU: ' + settings.diff.toUpperCase(), 'FIRST TO ' + settings.games + ' GAMES', 'YOUR STYLE: ' + st.name, 'BOUNCE MARK: ' + (settings.assist === 'on' ? 'ON' : 'OFF')].join('<br>');
 }
 
@@ -103,7 +105,7 @@ function renderPractice() {
     <div class="help">A ball machine feeds you balls. Five short drills teach every shot; finished drills are saved.</div>
     <div class="plist">${DRILLS.map((d, i) => `<div class="pd ${done.includes(d.id) ? 'won' : i === next ? 'next' : ''}"><span class="px">${i + 1}</span>${done.includes(d.id) ? '✓ ' : ''}${d.name}<i>${d.tip}</i></div>`).join('')}</div>
     <button class="big" data-primary id="practiceStart">${next < 0 ? 'FREE PRACTICE' : done.length ? 'CONTINUE: ' + DRILLS[next].name : 'START PRACTICE'} ▸</button>`;
-  $('practiceStart').onclick = () => { initAudio(); leaveCareer(); settings.mode = 'practice'; startGame() };
+  $('practiceStart').onclick = () => { initAudio(); leaveCareer(); settings.mode = 'practice'; if (settings.mode === 'couch') couchReady(); startGame() };
 }
 
 function buildSteppers() {

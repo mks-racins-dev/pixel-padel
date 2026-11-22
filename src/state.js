@@ -20,6 +20,7 @@ export const S = {
   trail: [],
   shake: 0,
   spectators: [],
+  couch: null, // couch 2v2 slots: [{dev}|null] x4 (ui/couch.js)
   hush: false, // the crowd holds its breath (match point)
   grade: 0, // how big the event looks (render/grades.js)
   time: 0,

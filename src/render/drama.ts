@@ -52,7 +52,7 @@ export function drawDrama(ctx: CanvasRenderingContext2D) {
   if (S.demo) return;
   if (RP.on) return drawReplay(ctx);
   const ch = (S as any).chase;
-  if (S.state === 'chase' && ch && ch.reach && (ch.p.ctrl === 'h1' || ch.p.ctrl === 'h2') && Math.floor(performance.now() / 120) % 2) {
+  if (S.state === 'chase' && ch && ch.reach && /^h[1-4]$/.test(ch.p.ctrl) && Math.floor(performance.now() / 120) % 2) {
     const q = P(ch.p.x, ch.p.y, 2.6); R(ctx, q.x - 14, q.y - 12, 28, 13, '#e4572e'); txt(ctx, 'HIT!', q.x - 9, q.y - 9, '#ffffff', 2);
   }
   if (D.bannerT > 0 && D.banner) {

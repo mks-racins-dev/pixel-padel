@@ -27,6 +27,10 @@ export function newMatch(isDemo,seed){
   if(m==='practice')S.players=[mkPlayer(0,me,'h1',0)];
   else if(m==='1v1')S.players=[mkPlayer(0,me,'h1',0),mkPlayer(1,LOOKS.o1,'ai',0)];
   else if(m==='2v2')S.players=[mkPlayer(0,me,S.demo?'ai':'h1',2.4),mkPlayer(0,LOOKS.p2,'ai',-2.4),mkPlayer(1,LOOKS.o1,'ai',-2.4),mkPlayer(1,LOOKS.o2,'ai',2.4)];
+  else if(m==='couch'){
+    // couch 2 vs 2: joined slots are local players h1..h4 (in slot order) with their device, the rest are bots
+    const home=[2.4,-2.4,-2.4,2.4],fb=[me,LOOKS.p2,LOOKS.o1,LOOKS.o2],cs=S.couch||[{dev:'kb1'},null,null,null];let h=0;
+    S.players=[0,1,2,3].map(i=>{const s=cs[i];const p=mkPlayer(i<2?0:1,fb[i],s?'h'+(++h):'ai',home[i]);if(s)p.dev=s.dev;return p})}
   else if(m==='online'&&S.net&&S.net.size===4){
     // 2 vs 2 online. Slots 0,1 = team 0, slots 2,3 = team 1. Server: humans are 'net', empty slots are bots.
     // Players: you are 'h1', everyone else (people and bots) moves from the server's snapshots.
@@ -57,7 +61,9 @@ export function newMatch(isDemo,seed){
 }
 export function teamOf(t){return S.players.filter(p=>p.team===t)}
 export function diffOf(p){if(CAREER.active&&!S.demo&&p.team===1)return careerDiff();if(CAREER.active&&!S.demo&&CAREER.event.doubles&&p.team===0)return partnerDiff();return DIFF[S.demo?'normal':(p.team===0&&settings.mode==='2v2'?'normal':settings.diff)]}
-export function isHuman(p){return p.ctrl==='h1'||p.ctrl==='h2'||p.ctrl==='net'}
+export function isHuman(p){return p.ctrl==='net'||/^h[1-4]$/.test(p.ctrl)}
+/** A player controlled on this machine (keyboard, pad or touch). */
+export const isLocal=p=>/^h[1-4]$/.test(p.ctrl);
 export function setupServe(second){
   S.chase=null;for(const q of S.players){q.ret=false;q.outside=false}S.ball.ext=false;
   const g=S.score.games[0]+S.score.games[1];
@@ -171,7 +177,7 @@ export function onEvent(t,a,c,back){
   }else if(t==='roof'){if(r.serve&&r.bounces===0)serveFault('HIT THE ROOF');else endPoint(1-r.lastTeam,'HIT THE ROOF!');
   }else if(t==='net')r.net=true;
 }
-export function teamName(t,short){if(S.demo)return t?'BLUE':'RED';if(CAREER.active)return t?CAREER.event.opp:(CAREER.event.doubles&&!short?'YOU & '+((PARTNERS.find(x=>x.id===CAREER.event.partner)||PARTNERS[0]).name):'YOU');const m=settings.mode;if(m==='online'&&S.net&&S.net.size===4){const nm=S.net.names||[],hu=S.net.humans||[];const ns=(t?[2,3]:[0,1]).map(i=>i===S.net.slot?'YOU':hu[i]?(nm[i]||'P'+(i+1)):'BOT');return short?(t===H.myTeam()?'YOU':'RIVALS'):ns.join(' & ')}
+export function teamName(t,short){if(settings.mode==='couch'&&!S.demo&&!CAREER.active)return t?'TEAM B':'TEAM A';if(S.demo)return t?'BLUE':'RED';if(CAREER.active)return t?CAREER.event.opp:(CAREER.event.doubles&&!short?'YOU & '+((PARTNERS.find(x=>x.id===CAREER.event.partner)||PARTNERS[0]).name):'YOU');const m=settings.mode;if(m==='online'&&S.net&&S.net.size===4){const nm=S.net.names||[],hu=S.net.humans||[];const ns=(t?[2,3]:[0,1]).map(i=>i===S.net.slot?'YOU':hu[i]?(nm[i]||'P'+(i+1)):'BOT');return short?(t===H.myTeam()?'YOU':'RIVALS'):ns.join(' & ')}
   if(m==='online')return t===H.myTeam()?'YOU':((S.net&&S.net.names&&S.net.names[t])||'RIVAL');if(m==='pvp')return t?'P2':'P1';if(m==='2v2')return t?(short?'CPU':'LEO & IVY'):(short?'YOU':'YOU & MIA');return t?'CPU':'YOU'}
 export function serveFault(reason){
   S.state='between';

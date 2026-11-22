@@ -321,3 +321,10 @@ h1{margin:0;font-size:calc(var(--u)*17);line-height:1.1;color:#f7c993;text-shado
 #cineBox i{position:absolute;right:calc(var(--u)*4);bottom:calc(var(--u)*2);font-style:normal;color:#f2c14e;opacity:0}
 #cineBox.done i{opacity:1;animation:blink 1s steps(2) infinite}
 @keyframes blink{50%{opacity:0}}
+/* couch 2v2 lobby */
+#couchBox{display:flex;flex-direction:column;gap:calc(var(--u)*2);margin:calc(var(--u)*2) 0}
+.cteam{display:grid;grid-template-columns:calc(var(--u)*34) 1fr 1fr;gap:calc(var(--u)*3);align-items:center}
+.cteam>span{color:#c9bba6;font-size:calc(var(--u)*6)}
+.cslot{background:#211b29;border:calc(var(--u)*1) dashed #3a3146;padding:calc(var(--u)*2) calc(var(--u)*3);display:flex;flex-direction:column;color:#8a7f98;font-size:calc(var(--u)*5.5)}
+.cslot.on{border-style:solid;border-color:#f2c14e;color:#f4ead2}
+.cslot b{color:#ff8a5c;font-size:calc(var(--u)*7)}
