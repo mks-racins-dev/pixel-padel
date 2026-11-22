@@ -8,6 +8,8 @@ import { LOCS } from '../content/venues.js';
 import { WHO, pendingScene, preScene } from '../content/story.js';
 import { startGame } from './ui.js';
 import { initAudio } from '../audio/sfx.js';
+import { seasonsOpen, seasonFor, seasonState, startSeasonEvent, CROWN_STREAK } from '../meta/season.ts';
+import { weekNumber } from '../meta/challenges.ts';
 
 const STAT_NAMES = { spd: 'SPEED', pow: 'POWER', acc: 'ACCURACY', wall: 'WALL PLAY' };
 const city = v => (LOCS[v] && LOCS[v].city) || v.toUpperCase();
@@ -30,6 +32,7 @@ export function renderCareerTab() {
   if (view === 'map') return renderMap(box);
   const nx = nextEvent();
   if (TIERS[nx.tier].stops && !profile().career.won.includes(nx.id)) return renderTour(box, nx);
+  if (seasonsOpen() && view !== 'replay') return renderSeason(box);
   renderMatch(box);
 }
 
@@ -107,6 +110,35 @@ function renderMap(box) {
   if (!locked) document.getElementById('careerPlay').onclick = () => play(e.id);
   const tt = document.getElementById('toTour'); if (tt) tt.onclick = () => { view = 'match'; renderCareerTab() };
   document.getElementById('skillsBtn').onclick = () => { view = 'skills'; renderCareerTab() };
+}
+
+/* ---------------- endless seasons: weekly title defences ---------------- */
+function renderSeason(box) {
+  const p = profile(), st = seasonState(), evs = seasonFor(), done = st.won.length === 3;
+  const ms = Math.max(0, (weekNumber() + 1) * 7 - 3) * 864e5 - Date.now(), days = Math.ceil(ms / 864e5);
+  const cards = evs.map((e, i) => {
+    const s = STYLES[e.style] || STYLES.allround, won = st.won.includes(i);
+    return `<button class="tid sdef${won ? ' won' : ''}" data-def="${i}"><span>${e.label}${won ? ' ✓' : ''}</span><b class="px">${e.opp}</b>
+      <span>${e.place || city(e.venue)} · FIRST TO ${e.games}</span>${e.twist ? `<span class="ttwist">${e.twist}</span>` : `<span class="cstyle">SPD ${bar(s.spd)} PWR ${bar(s.pow)} ACC ${bar(s.acc)}</span>`}
+      <span class="txp">${won ? 'REPLAY · +60 XP' : '+' + (120 + i * 30) + ' XP'}</span></button>`;
+  }).join('');
+  const crown = p.unlocked.includes('crown') ? 'CROWN TRAIL OWNED' : `CROWN TRAIL: ${Math.max(0, CROWN_STREAK - st.streak)} MORE WEEK${CROWN_STREAK - st.streak === 1 ? '' : 'S'} IN A ROW`;
+  box.innerHTML = `
+    <div class="thead"><span class="px">SEASON · WEEK ${weekNumber()} · DEFEND #1</span><span class="trep">${days} DAY${days === 1 ? '' : 'S'} LEFT</span></div>
+    <div class="help">${done ? '<b>TITLE DEFENDED THIS WEEK.</b> New challengers arrive on Monday.' : `Win all 3 this week to defend your title (+300 XP). Play them in any order, retry any time.`}</div>
+    <div class="tids">${cards}</div>
+    <div class="tpocket"><span>STREAK</span><b>${st.streak} WEEK${st.streak === 1 ? '' : 'S'}</b><span>BEST</span><b>${st.best}</b><span>DEFENCES</span><b>${st.total}</b><em>${crown}</em></div>
+    <div class="cacts">
+      <button class="big alt" id="replayBtn">REPLAY FINAL</button>
+      <button class="big alt" id="townBtn">TOWN</button>
+      <button class="big alt" id="skillsBtn">SKILLS${p.points ? ' · ' + p.points : ''}</button>
+    </div>`;
+  box.querySelectorAll('[data-def]').forEach(b => b.onclick = () => { initAudio(); startSeasonEvent(+b.dataset.def); startGame() });
+  document.getElementById('replayBtn').onclick = () => { view = 'replay'; renderCareerTab() };
+  document.getElementById('townBtn').onclick = () => { view = 'map'; renderCareerTab() };
+  document.getElementById('skillsBtn').onclick = () => { view = 'skills'; renderCareerTab() };
+  const first = box.querySelector('.sdef:not(.won)') || box.querySelector('[data-def]');
+  first.setAttribute('data-primary', '');
 }
 
 /* ---------------- act 4: press conference ---------------- */
@@ -189,10 +221,12 @@ function renderMatch(box) {
     <div class="cacts">
       <button class="big" data-primary id="careerPlay">PLAY MATCH ▸</button>
       <button class="big alt" id="townBtn">TOWN</button>
+      ${seasonsOpen() ? '<button class="big alt" id="seasonBtn">SEASON</button>' : ''}
       <button class="big alt" id="skillsBtn">SKILLS${p.points ? ' · ' + p.points : ''}</button>
     </div>`;
   document.getElementById('careerPlay').onclick = () => play(nx.id);
   document.getElementById('townBtn').onclick = () => { view = 'map'; renderCareerTab() };
+  const sb = document.getElementById('seasonBtn'); if (sb) sb.onclick = () => { view = 'match'; renderCareerTab() };
   document.getElementById('skillsBtn').onclick = () => { view = 'skills'; renderCareerTab() };
 }
 
@@ -204,7 +238,7 @@ function renderSkills(box) {
   const trails = TRAILS.map(tr => {
     const has = p.unlocked.includes(tr.id), lv = LEVEL_UNLOCKS.find(u => u.id === tr.id);
     const t = TIERS.find(t => t.reward === tr.id);
-    const how = has ? tr.name : lv ? 'LV ' + lv.level : (t ? tierLabel(t) : '');
+    const how = has ? tr.name : lv ? 'LV ' + lv.level : (t ? tierLabel(t) : tr.id === 'crown' ? 'SEASONS' : '');
     return `<button data-trail="${tr.id}" aria-pressed="${p.trail === tr.id}" ${has ? '' : 'disabled'}>${how}</button>`;
   }).join('');
   box.innerHTML = `

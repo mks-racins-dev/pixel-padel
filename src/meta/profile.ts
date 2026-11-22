@@ -15,6 +15,7 @@ export interface Profile {
   updatedAt: number;       // last change, for picking the newer of the local and cloud save
   ch?: unknown;            // daily/weekly challenge progress (shape checked by challenges.ts)
   cup?: unknown;           // weekly cup best result (shape checked by cup.ts)
+  season?: unknown;        // endless seasons progress (shape checked by season.ts)
 }
 
 const KEY = 'pixelpadel-profile';
@@ -64,6 +65,7 @@ export function migrate(raw: unknown): Profile {
   p.updatedAt = num(r.updatedAt, 0, 1e15, 0);
   if (r.ch && typeof r.ch === 'object') p.ch = r.ch;
   if (r.cup && typeof r.cup === 'object') p.cup = r.cup;
+  if (r.season && typeof r.season === 'object') p.season = r.season;
   return p;
 }
 
@@ -124,6 +126,7 @@ export const TRAILS: Trail[] = [
   { id: 'fire', name: 'FIRE', color: i => (i % 2 ? `rgba(255,140,60,${0.2 + i * 0.1})` : `rgba(255,210,90,${0.2 + i * 0.1})`) },
   { id: 'mint', name: 'MINT', color: i => `rgba(120,240,180,${0.15 + i * 0.09})` },
   { id: 'gold', name: 'GOLD', color: i => `rgba(242,193,78,${0.25 + i * 0.1})` },
+  { id: 'crown', name: 'CROWN', color: i => (i % 2 ? `rgba(178,120,255,${0.25 + i * 0.1})` : `rgba(255,222,120,${0.3 + i * 0.1})`) },
   { id: 'rainbow', name: 'RAINBOW', color: (i, t) => `hsla(${(i * 50 + t * 300) % 360},90%,65%,${0.3 + i * 0.1})` },
 ];
 /** Trails unlocked by reaching a level (the rest come from career finals). */

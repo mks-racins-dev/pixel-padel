@@ -7,6 +7,7 @@ import { profile, addXp, spendPoint, migrate, resetProfileCache, xpToNext, MAX_A
 import { worldRank, activeGoal, GOALS, needsIdentity, chooseIdentity, pendingPress, answerPress, fans } from '../src/meta/career.ts';
 import { CAREER, TIERS, ALL_EVENTS, nextEvent, startCareerEvent, finishCareerMatch, leaveCareer, oppDiff, tierUnlocked, eventOpen, prizes, streetRep } from '../src/meta/career.ts';
 import { COURT } from '../src/game/physics.js';
+import { seasonsOpen, seasonFor, seasonState, startSeasonEvent, finishSeasonMatch } from '../src/meta/season.ts';
 import { stepBall } from '../src/game/physics.js';
 import { pendingScene, preScene } from '../src/content/story.js';
 
@@ -259,5 +260,50 @@ describe('act 4: the pro tour', () => {
     const p = migrate({ career: { won: ['club3', 'bal1', 'bal2', 'bal3', 'east1', 'east2', 'east3', 'pro1'] } });
     expect(p.career.won).toEqual(expect.arrayContaining(['p_mad3']));
     expect(p.career.press).toContain('madrid:humble');
+  });
+});
+
+describe('endless seasons', () => {
+  const finish = () => { for (const e of ALL_EVENTS) profile().career.won.push(e.id) };
+  const play = (i, won = true) => { startSeasonEvent(i); return finishSeasonMatch(won, won ? 4 : 1) };
+  it('open only after the story career is finished', () => {
+    expect(seasonsOpen()).toBe(false);
+    finish();
+    expect(seasonsOpen()).toBe(true);
+  });
+  it('a week has 3 seeded defences, the same every time, one on a street court', () => {
+    const a = seasonFor(3000, 0), b = seasonFor(3000, 0);
+    expect(a).toEqual(b);
+    expect(a.length).toBe(3);
+    expect(a[1].court).toBeTruthy();
+    expect(new Set(a.map(e => e.opp)).size).toBe(3);
+  });
+  it('winning all 3 defends the title; losses can be retried', () => {
+    finish();
+    play(0); expect(play(1, false).won).toBe(false);
+    const r1 = play(1); expect(r1.left).toBe(1);
+    const r = play(2);
+    expect(r.defended).toBe(true);
+    expect(r.streak).toBe(1);
+    expect(seasonState().total).toBe(1);
+    expect(play(2).defended).toBe(false); // replays don't defend twice
+  });
+  it('3 weeks in a row unlock the crown trail; a missed week resets the streak', () => {
+    finish();
+    const st = seasonState();
+    Object.assign(st, { streak: 2, lastWeek: st.week - 1 });
+    for (const i of [0, 1, 2]) play(i);
+    expect(seasonState().streak).toBe(3);
+    expect(profile().unlocked).toContain('crown');
+    const later = seasonState(st.week + 2);
+    expect(later.streak).toBe(0);
+    expect(later.best).toBe(3);
+  });
+  it('a season match uses the defence: opponent, games, court twist and identity', () => {
+    finish();
+    startSeasonEvent(1); newMatch(false, 1);
+    expect(teamName(1)).toBe(seasonFor()[1].opp);
+    expect(matchGames()).toBe(3);
+    expect(COURT.wind || COURT.sand || COURT.deadBack || COURT.roof).toBeTruthy();
   });
 });

@@ -220,6 +220,9 @@ h1{margin:0;font-size:calc(var(--u)*17);line-height:1.1;color:#f7c993;text-shado
 .tid b{font-weight:normal;font-size:calc(var(--u)*6.5);color:#fff1c1}
 .tid:hover,.tid:focus-visible{border-color:#e4572e;outline:none}
 .tstops:has(.tstop:nth-child(2):last-child){grid-template-columns:repeat(2,minmax(0,1fr))}
+/* endless seasons */
+.sdef span:first-child{color:#9a8fa8;font-size:calc(var(--u)*7)}
+.sdef.won{background:#25352a}.sdef.won b{color:#bfe8b0}
 /* quick match */
 .qgrid{flex:1;display:grid;grid-template-columns:1fr calc(var(--u)*118);gap:calc(var(--u)*9);min-height:0}
 .qopts{display:flex;flex-direction:column;gap:calc(var(--u)*4)}

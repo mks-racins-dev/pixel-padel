@@ -2,6 +2,7 @@ import { emit } from '../meta/events.ts';
 import { takeRecent } from '../meta/challenges.ts';
 import { finishCupMatch, startCup } from '../meta/cup.ts';
 import { CAREER, finishCareerMatch, leaveCareer } from '../meta/career.ts';
+import { finishSeasonMatch, CROWN_STREAK } from '../meta/season.ts';
 import { buildMenu, renderMenu } from './menu.js';
 import { isPractice, practiceHud } from '../game/practice.js';
 import { matchEnd, matchQuit } from '../core/analytics.ts';
@@ -49,6 +50,7 @@ export function showEnd(){
   emit({type:'match',won:human,mode:settings.mode,venue:settings.loc,gamesLost:S.score.games[1-myT],career:CAREER.active&&CAREER.kind==='career',cup:CAREER.active&&CAREER.kind==='cup'});
   let lines='';
   if(CAREER.active&&CAREER.kind==='cup'){const r=finishCupMatch(human);lines=cupSummary(r);$('againBtn').textContent=r.over?'NEW CUP RUN':'NEXT ROUND'}
+  else if(CAREER.active&&CAREER.kind==='season'){const r=finishSeasonMatch(human,S.score.games[0]);lines=seasonSummary(r);$('againBtn').textContent='SEASON ▸'}
   else if(CAREER.active){const r=finishCareerMatch(human,S.score.games[0],S.score.games[1]);lines=careerSummary(r);CAREER.toMap=!!r.toMap;$('againBtn').textContent=r.toMap?(r.free?'TOWN MAP ▸':'CONTINUE ▸'):r.last&&r.won?'PLAY AGAIN':r.won?'NEXT MATCH':'RETRY';if(r.rival&&!r.won)$('endTitle').textContent='RUTA WINS… FOR NOW'}
   const ch=takeRecent().map(c=>'CHALLENGE DONE: '+c.text+' +'+c.xp+' XP');
   $('endInfo').innerHTML=[lines,...ch].filter(Boolean).join('<br>');
@@ -69,7 +71,7 @@ export function startGame(){
     if(S.net&&S.net.conn&&S.net.conn.open){if(S.net.role==='host')startOnline();else{netSend({t:'again'});$('endTitle').textContent='WAITING FOR HOST…'}}
     else{initAudio();$('menu').hidden=true;$('end').hidden=true;$('online').hidden=false;$('codeShow').textContent='';onStatus('Host to get a code, or type a friend\'s code and join.')}
     return}
-  if(CAREER.active&&CAREER.kind==='career'&&CAREER.toMap)return toMenu();
+  if(CAREER.active&&CAREER.kind!=='cup'&&CAREER.toMap)return toMenu();
   if(CAREER.active&&CAREER.kind==='cup')startCup(false); // next round, or round 1 after a run ended
   if(CAREER.active)setLoc(CAREER.event.venue);
   showGameUI();newMatch(false)}
@@ -80,6 +82,15 @@ function cupSummary(r){
   const bits=[r.won?r.round+' WON!':'OUT IN THE '+r.round,'+'+r.xp+' XP'];
   if(r.champion)bits.push('WEEKLY CUP CHAMPION!');
   bits.push('BEST THIS WEEK: '+(r.best>=3?'CHAMPION':r.best?['','QUARTER-FINAL WON','SEMI-FINAL WON'][r.best]:'NO WINS YET'));
+  return bits.join('<br>');
+}
+function seasonSummary(r){
+  const bits=['+'+r.xp+' XP'];
+  if(r.defended)bits.push('TITLE DEFENDED! STREAK: '+r.streak+' WEEK'+(r.streak>1?'S':''));
+  else if(r.won)bits.push(r.left?r.left+' DEFENCE'+(r.left>1?'S':'')+' LEFT THIS WEEK':'ALREADY DEFENDED THIS WEEK');
+  else bits.push('NO HARM DONE · TRY AGAIN ANY TIME THIS WEEK');
+  if(r.crown)bits.push('UNLOCKED: CROWN TRAIL');
+  else if(r.defended&&r.streak<CROWN_STREAK)bits.push((CROWN_STREAK-r.streak)+' MORE WEEK'+(CROWN_STREAK-r.streak>1?'S':'')+' IN A ROW FOR THE CROWN TRAIL');
   return bits.join('<br>');
 }
 function careerSummary(r){
