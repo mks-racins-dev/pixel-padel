@@ -1,7 +1,7 @@
 // Career panel. Act 1 is a town map of street courts played in any order, with story scenes
 // between matches. Later tiers show the next match (venue, opponent, reward, tour progress).
 // Also a skills view for spending skill points and choosing a ball trail.
-import { TIERS, nextEvent, tierUnlocked, startCareerEvent, xpForWin, eventState, prizes, streetRep, streetRepMax, townDone } from '../meta/career.ts';
+import { TIERS, nextEvent, tierUnlocked, startCareerEvent, xpForWin, eventState, prizes, streetRep, streetRepMax, townDone, worldRank, activeGoal, sponsorSigned, SPONSOR, GOALS } from '../meta/career.ts';
 import { profile, saveProfile, spendPoint, refundPoints, xpToNext, MAX_ALLOC, MAX_LEVEL, TRAILS, LEVEL_UNLOCKS, equipTrail } from '../meta/profile.ts';
 import { STYLES } from '../game/constants.js';
 import { LOCS } from '../content/venues.js';
@@ -26,6 +26,8 @@ export function renderCareerTab() {
   if (!view) view = townDone() ? 'match' : 'map';
   if (view === 'skills') return renderSkills(box);
   if (view === 'map') return renderMap(box);
+  const nx = nextEvent();
+  if (TIERS[nx.tier].stops && !profile().career.won.includes(nx.id)) return renderTour(box, nx);
   renderMatch(box);
 }
 
@@ -96,12 +98,47 @@ function renderMap(box) {
     <div class="tpocket"><span>POCKET</span>${items.length ? items.map(x => `<b>${x}</b>`).join('') : '<em>win dares to fill your pockets</em>'}</div>
     <div class="cacts">
       <button class="big" data-primary id="careerPlay" ${locked ? 'disabled' : ''}>${locked ? 'LOCKED' : e.rival && state !== 'won' ? 'FACE THE STRANGER ▸' : 'PLAY ▸'}</button>
-      ${townDone() ? '<button class="big alt" id="toTour">BALTIC TOUR ▸</button>' : ''}
+      ${townDone() ? '<button class="big alt" id="toTour">TOUR ▸</button>' : ''}
       <button class="big alt" id="skillsBtn">SKILLS${profile().points ? ' · ' + profile().points : ''}</button>
     </div>`;
   box.querySelectorAll('[data-pin]').forEach(b => b.onclick = () => { sel = b.dataset.pin; renderCareerTab(); box.querySelector(`[data-pin="${sel}"]`)?.focus() });
   if (!locked) document.getElementById('careerPlay').onclick = () => play(e.id);
   const tt = document.getElementById('toTour'); if (tt) tt.onclick = () => { view = 'match'; renderCareerTab() };
+  document.getElementById('skillsBtn').onclick = () => { view = 'skills'; renderCareerTab() };
+}
+
+/* ---------------- act 2: tour stops with knockout brackets ---------------- */
+function renderTour(box, nx) {
+  const p = profile(), tier = TIERS[nx.tier], stop = tier.stops.find(s => s.id === nx.stop), loc = LOCS[stop.venue] || LOCS.sunset;
+  const st = STYLES[nx.style] || STYLES.allround, won = p.career.won;
+  const sky = loc.sky.slice(1, 6).map(c => `<span style="background:${c}"></span>`).join('');
+  const stops = tier.stops.map(s => {
+    const evs = tier.events.filter(e => e.stop === s.id), done = evs.every(e => won.includes(e.id)), here = s.id === stop.id;
+    const rounds = evs.map(e => `<span class="${won.includes(e.id) ? 'won' : e.id === nx.id ? 'next' : ''}">${e.stage === 'FINAL' ? 'F' : e.stage === 'SEMI-FINAL' ? 'SF' : 'R1'}</span>`).join('');
+    return `<div class="tstop${done ? ' done' : here ? ' here' : ''}"><b class="px">${s.name}</b><span>${city(s.venue)}${done ? ' ✓' : ''}</span><div class="tround">${rounds}</div></div>`;
+  }).join('');
+  const g = activeGoal(), gi = g ? GOALS.indexOf(g) : GOALS.length;
+  const sponsor = sponsorSigned()
+    ? `<div class="ccard tspon"><span>SPONSOR · ${SPONSOR} · GOAL ${Math.min(gi + 1, GOALS.length)}/${GOALS.length}</span>${g ? `<b>${g.text}</b><span class="txp">+${g.xp} XP · +${g.rp} RP</span>` : '<b>ALL GOALS DONE. THE KEBABS ARE FREE.</b>'}</div>`
+    : `<div class="ccard tspon"><span>SPONSOR</span><b>NO SPONSOR YET</b><span>win a tournament to get noticed</span></div>`;
+  box.innerHTML = `
+    <div class="chead"><span class="csky" aria-hidden="true">${sky}</span>
+      <span class="px csub">ACT 2 · ${tier.name} · ${stop.name}</span>
+      <span class="px ccity">${nx.stage}</span>
+      <span class="px trank">WORLD RANK #${worldRank()} · ${p.career.rp} RP</span></div>
+    <div class="tstops">${stops}</div>
+    <div class="ccards">
+      <div class="ccard"><span>${nx.stage} · ${city(nx.venue)}</span><b class="px">${nx.opp}</b><span>${st.name} · FIRST TO ${nx.games}</span><span class="cstyle">SPD ${bar(st.spd)} PWR ${bar(st.pow)} ACC ${bar(st.acc)}</span><span class="txp">+${xpForWin(nx)} XP · +${nx.rp} RP</span></div>
+      ${sponsor}
+    </div>
+    <div class="help">KNOCKOUT: lose a round and the tournament starts again from round 1.</div>
+    <div class="cacts">
+      <button class="big" data-primary id="careerPlay">PLAY ${nx.stage} ▸</button>
+      <button class="big alt" id="townBtn">TOWN</button>
+      <button class="big alt" id="skillsBtn">SKILLS${p.points ? ' · ' + p.points : ''}</button>
+    </div>`;
+  document.getElementById('careerPlay').onclick = () => play(nx.id);
+  document.getElementById('townBtn').onclick = () => { view = 'map'; renderCareerTab() };
   document.getElementById('skillsBtn').onclick = () => { view = 'skills'; renderCareerTab() };
 }
 

@@ -202,6 +202,18 @@ h1{margin:0;font-size:calc(var(--u)*17);line-height:1.1;color:#f7c993;text-shado
 .sdots{display:flex;gap:calc(var(--u)*2);justify-content:center}
 .sdots span{width:calc(var(--u)*4);height:calc(var(--u)*4);background:#3a2f48}.sdots span.on{background:#f2c14e}
 @media (max-width:640px){.tgrid{grid-template-columns:1fr}.tmap{min-height:calc(var(--u)*130)}}
+/* career act 2: tour */
+.trank{position:relative;font-size:calc(var(--u)*5.5);color:#fff;text-shadow:calc(var(--u)*1) calc(var(--u)*1) 0 #17131c}
+.tstops{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:calc(var(--u)*5)}
+.tstop{background:#211b29;border:calc(var(--u)*1.5) solid #0f0c13;padding:calc(var(--u)*4);display:flex;flex-direction:column;gap:calc(var(--u)*2);font-size:calc(var(--u)*7.5);color:#8a7f98}
+.tstop b{font-weight:normal;font-size:calc(var(--u)*5.5);color:#c9bba6}
+.tstop.here{border-color:#e4572e}.tstop.here b{color:#fff1c1}
+.tstop.done{background:#25352a}.tstop.done b{color:#bfe8b0}
+.tround{display:flex;gap:calc(var(--u)*2)}
+.tround span{flex:1;text-align:center;background:#17131c;padding:calc(var(--u)*1.5) 0;color:#6a5f78}
+.tround span.won{background:#2f4a33;color:#bfe8b0}
+.tround span.next{background:#e4572e;color:#fff}
+.tspon b{font-size:calc(var(--u)*8.5);line-height:1.35}
 /* quick match */
 .qgrid{flex:1;display:grid;grid-template-columns:1fr calc(var(--u)*118);gap:calc(var(--u)*9);min-height:0}
 .qopts{display:flex;flex-direction:column;gap:calc(var(--u)*4)}

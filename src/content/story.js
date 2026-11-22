@@ -8,6 +8,7 @@ export const WHO = {
   ray: { name: 'COACH RAY', c: '#c9bba6', hair: '#e8e8e8' },
   ruta: { name: 'RUTA', c: '#b05cc8', hair: '#151018' },
   dani: { name: 'BIG DANI', c: '#f2c14e', hair: '#5a3a20' },
+  kebab: { name: 'KEBAB KING', c: '#c4613a', hair: '#f4ead2' },
   note: { name: '', c: '#2a2333', hair: '#2a2333' },
 };
 
@@ -54,6 +55,56 @@ export const SCENES = [
     ['ray', 'I still have my old van. It mostly works.'],
     ['tomi', 'You\'re leaving? Take the shuttlecock. And send me a postcard!'],
     ['note', 'ACT 1 COMPLETE. THE BALTIC TOUR IS OPEN.'],
+  ] },
+  // ---------------- act 2: the baltic tour ----------------
+  { id: 'van1', pre: 'b_riga1', lines: [
+    ['note', 'Six in the morning. Ray\'s van coughs twice, then starts. Tomi waves from the pavement until you turn the corner.'],
+    ['ray', 'Rules of the road. One: real brackets. You lose, you go home.'],
+    ['ray', 'Two: every round you win gives ranking points. Right now you are number 412 in the world.'],
+    ['you', 'Is that good?'],
+    ['ray', 'It means you exist. First stop: the RIGA OPEN.'],
+  ] },
+  { id: 'knocked', when: c => c.seen.includes('flag:knocked'), lines: [
+    ['note', 'The car park behind the venue. Your bag feels heavier than this morning.'],
+    ['ray', 'Knocked out. Welcome to the tour, kid. It happens to everyone.'],
+    ['ray', 'The good news: there is another bracket next week. Same city, same draw. Go again.'],
+  ] },
+  { id: 'riga_win', when: c => c.won.includes('b_riga3'), lines: [
+    ['note', 'Your first real trophy. It is small, and it is made of real metal.'],
+    ['ray', 'Look at the ranking. You moved. People will know your name in Tallinn.'],
+    ['note', 'Ray\'s phone rings. He listens, laughs, and hands it to you.'],
+  ] },
+  { id: 'sponsor', when: c => c.seen.includes('riga_win'), lines: [
+    ['kebab', 'Hello? This is the KEBAB KING. From your town! Tomi gave me your number.'],
+    ['kebab', 'I put your match on the TV in the shop. Everyone was shouting!'],
+    ['kebab', 'I want my logo on your shirt. I pay XP and ranking bonuses. You just do my little goals, OK?'],
+    ['ray', '(whispering) Say yes. The van needs tyres.'],
+    ['note', 'SPONSOR SIGNED: KEBAB KING. Goals now show on the tour screen.'],
+  ] },
+  { id: 'van2', pre: 'b_tal1', lines: [
+    ['note', 'The road to Tallinn. Pine trees for four hours. Ray sings along to a radio station that does not exist any more.'],
+    ['ray', 'MART plays in Tallinn. Big hitter. Don\'t trade power with him. Use the glass.'],
+    ['you', 'Have you played him?'],
+    ['ray', 'I played his father.'],
+  ] },
+  { id: 'van3', pre: 'b_vil1', lines: [
+    ['note', 'A petrol station near the border. Ray buys two hot dogs and a map he does not need.'],
+    ['ray', 'Vilnius. The BALTIC MASTERS. Everyone good is there.'],
+    ['ray', 'And kid... she will be there too.'],
+    ['you', 'Ruta.'],
+  ] },
+  { id: 'ruta2', pre: 'b_vil2', lines: [
+    ['note', 'The final. A real crowd, real lights, a real umpire.'],
+    ['ruta', 'Well. The town player made it to my final.'],
+    ['ruta', 'Last time I was tired. This time I am not.'],
+    ['ray', 'Same court as everyone else. Same walls. Play your game.'],
+  ] },
+  { id: 'act2', when: c => c.won.includes('b_vil2'), lines: [
+    ['note', 'BALTIC MASTERS CHAMPION. The crowd chants a name. It is yours.'],
+    ['ruta', '...Fine. You are good. Don\'t let it go to your head.'],
+    ['kebab', '(on speaker) THAT\'S MY PLAYER! FREE KEBABS FOR A YEAR!'],
+    ['ray', 'Kid. They want you in the EAST OPEN. Night matches. Serious players.'],
+    ['note', 'ACT 2 COMPLETE. THE EAST OPEN IS OPEN.'],
   ] },
 ];
 

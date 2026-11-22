@@ -49,7 +49,7 @@ export function showEnd(){
   emit({type:'match',won:human,mode:settings.mode,venue:settings.loc,gamesLost:S.score.games[1-myT],career:CAREER.active&&CAREER.kind==='career',cup:CAREER.active&&CAREER.kind==='cup'});
   let lines='';
   if(CAREER.active&&CAREER.kind==='cup'){const r=finishCupMatch(human);lines=cupSummary(r);$('againBtn').textContent=r.over?'NEW CUP RUN':'NEXT ROUND'}
-  else if(CAREER.active){const r=finishCareerMatch(human,S.score.games[0],S.score.games[1]);lines=careerSummary(r);CAREER.toMap=!!r.toMap;$('againBtn').textContent=r.toMap?'TOWN MAP ▸':r.last&&r.won?'PLAY AGAIN':r.won?'NEXT MATCH':'RETRY';if(r.rival&&!r.won)$('endTitle').textContent='RUTA WINS… FOR NOW'}
+  else if(CAREER.active){const r=finishCareerMatch(human,S.score.games[0],S.score.games[1]);lines=careerSummary(r);CAREER.toMap=!!r.toMap;$('againBtn').textContent=r.toMap?(r.free?'TOWN MAP ▸':'CONTINUE ▸'):r.last&&r.won?'PLAY AGAIN':r.won?'NEXT MATCH':'RETRY';if(r.rival&&!r.won)$('endTitle').textContent='RUTA WINS… FOR NOW'}
   const ch=takeRecent().map(c=>'CHALLENGE DONE: '+c.text+' +'+c.xp+' XP');
   $('endInfo').innerHTML=[lines,...ch].filter(Boolean).join('<br>');
   $('end').hidden=false;$('touch').hidden=true;sfx(human||settings.mode==='pvp'?'win':'lose');
@@ -87,6 +87,9 @@ function careerSummary(r){
   if(r.prize)bits.push('DARE WON! IN YOUR POCKET: '+r.prize);
   if(r.dareMissed)bits.push('DARE MISSED · TRY AGAIN FOR THE PRIZE');
   if(r.rival)bits.push('THE STORY MOVES ON');
+  if(r.knocked)bits.push('KNOCKED OUT IN THE '+r.knocked+' · THE TOURNAMENT STARTS AGAIN');
+  if(r.rp)bits.push('+'+r.rp+' RANKING POINTS · WORLD RANK #'+r.rank+(r.rankBefore>r.rank?' (▲'+(r.rankBefore-r.rank)+')':''));
+  if(r.goal)bits.push('SPONSOR GOAL DONE: '+r.goal);
   if(r.levels)bits.push('LEVEL UP! +'+r.levels+' SKILL POINT'+(r.levels>1?'S':''));
   if(r.tierDone)bits.push(r.tierDone+' COMPLETE!');
   for(const u of r.unlocked)bits.push('UNLOCKED: '+u);

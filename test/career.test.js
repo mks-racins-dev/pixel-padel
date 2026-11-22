@@ -4,6 +4,7 @@ import { newMatch, diffOf, teamName, matchGames } from '../src/game/rules.js';
 import { DIFF, STYLES } from '../src/game/constants.js';
 import { settings } from '../src/game/settings.js';
 import { profile, addXp, spendPoint, migrate, resetProfileCache, xpToNext, MAX_ALLOC } from '../src/meta/profile.ts';
+import { worldRank, activeGoal, GOALS } from '../src/meta/career.ts';
 import { CAREER, TIERS, ALL_EVENTS, nextEvent, startCareerEvent, finishCareerMatch, leaveCareer, oppDiff, tierUnlocked, eventOpen, prizes, streetRep } from '../src/meta/career.ts';
 import { COURT } from '../src/game/physics.js';
 import { stepBall } from '../src/game/physics.js';
@@ -74,7 +75,7 @@ describe('career', () => {
     expect(r.tierDone).toBe(TIERS[0].name);
     expect(profile().unlocked).toContain('fire');
     expect(tierUnlocked(1)).toBe(true);
-    expect(nextEvent().id).toBe('bal1');
+    expect(nextEvent().id).toBe('b_riga1');
   });
   it('losing gives some XP but does not advance', () => {
     startCareerEvent();
@@ -148,9 +149,54 @@ describe('act 1: the neighbourhood', () => {
     expect(preScene(profile().career, 'a1_king').id).toBe('king');
   });
   it('old club-ladder saves move onto the town map', () => {
-    const p = migrate({ career: { won: ['club1', 'club2', 'club3', 'bal1'] } });
-    expect(p.career.won).toEqual(expect.arrayContaining(['a1_tomi', 'a1_market', 'a1_king', 'bal1']));
+    const p = migrate({ career: { won: ['club1', 'club2', 'club3'] } });
+    expect(p.career.won).toEqual(expect.arrayContaining(['a1_tomi', 'a1_market', 'a1_king']));
     expect(p.career.won).not.toContain('club1');
     expect(pendingScene(p.career)).toBeUndefined();
+  });
+});
+
+describe('act 2: the baltic tour', () => {
+  const town = ['a1_tomi', 'a1_roof', 'a1_market', 'a1_camp', 'a1_ware', 'a1_ruta', 'a1_king'];
+  const result = (id, won, lost = 0) => { startCareerEvent(id); return finishCareerMatch(won, won ? 3 : 1, lost) };
+  beforeEach(() => { profile().career.won.push(...town) });
+  it('tour rounds go in order and give ranking points once', () => {
+    expect(nextEvent().id).toBe('b_riga1');
+    const before = worldRank();
+    const r = result('b_riga1', true, 2);
+    expect(r.rp).toBe(15);
+    expect(r.rank).toBeLessThan(before);
+    expect(nextEvent().id).toBe('b_riga2');
+    expect(r.toMap).toBe(false);
+  });
+  it('losing a round knocks you out and the tournament starts again', () => {
+    result('b_riga1', true, 2);
+    const r = result('b_riga2', false, 3);
+    expect(r.knocked).toBe('SEMI-FINAL');
+    expect(r.toMap).toBe(true);
+    expect(nextEvent().id).toBe('b_riga1');
+    expect(CAREER.event.id).toBe('b_riga1');
+    expect(profile().career.rp).toBe(15); // points already earned are kept
+    expect(result('b_riga1', true, 2).rp).toBe(0); // and not paid twice
+  });
+  it('winning riga signs the sponsor, whose goals pay out in order', () => {
+    for (const id of ['b_riga1', 'b_riga2', 'b_riga3']) result(id, true, 2);
+    expect(activeGoal()).toBeUndefined();
+    profile().career.seen.push('sponsor');
+    expect(activeGoal().id).toBe(GOALS[0].id);
+    const r = result('b_tal1', true, 1);
+    expect(r.goal).toBe(GOALS[0].text);
+    expect(activeGoal().id).toBe('g_streak');
+  });
+  it('beating ruta in the vilnius final completes act 2 and opens the east open', () => {
+    for (const e of TIERS[1].events) result(e.id, true, 2);
+    expect(tierUnlocked(2)).toBe(true);
+    expect(profile().unlocked).toContain('gold');
+    expect(worldRank()).toBeLessThan(250);
+  });
+  it('old baltic saves move onto the new brackets', () => {
+    const p = migrate({ career: { won: ['club3', 'bal1', 'bal2'] } });
+    expect(p.career.won).toEqual(expect.arrayContaining(['b_riga3', 'b_tal2']));
+    expect(p.career.won).not.toContain('b_vil1');
   });
 });
