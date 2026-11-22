@@ -31,12 +31,14 @@ export function aiPlan(team){
   if(cands.length){
     const ev=mates.map(q=>({q,b:bestCand(q,cands)})).filter(e=>e.b);
     const human=mates.find(isHuman);
-    if(human){const ai=ev.find(e=>!isHuman(e.q));if(ai&&ai.b.c.x*Math.sign(ai.q.homeX||-1)>0.2){chooser=ai.q;pick=ai.b.c}}
+    if(human){const ai=ev.find(e=>!isHuman(e.q));if(ai&&ai.b.c.x*Math.sign(ai.q.homeX||-1)>(S.chem&&S.chem.middle?-0.6:0.2)){chooser=ai.q;pick=ai.b.c}}
     else{ev.sort((a,b)=>(b.b.slack>=0)-(a.b.slack>=0)||a.b.c.t-b.b.c.t);if(ev.length){chooser=ev[0].q;pick=ev[0].b.c}}
   }
   for(const q of mates){if(isHuman(q))continue;
     if(q===chooser){q.tx=pick.x-(pick.x>q.x?0.35:-0.35)*0.6;q.ty=pick.y+dir*0.3}
-    else{q.tx=mates.length>1?q.homeX:(attacking?S.ball.x*0.4:0);q.ty=dir*(attacking?(mates.length>1?5.8:6.8):8.2)}
+    else{q.tx=mates.length>1?q.homeX:(attacking?S.ball.x*0.4:0);q.ty=dir*(attacking?(mates.length>1?5.8:6.8):8.2);
+      // career chemistry 50+: the partner moves up and back with you instead of on its own
+      const h=S.chem&&S.chem.mirror&&mates.find(isHuman);if(h)q.ty=dir*(Math.abs(h.y)<5.5?3.8:8.2)}
   }
 }
 export function aiShot(p){

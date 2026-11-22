@@ -75,7 +75,7 @@ Last updated: 2026-11-22 (story career: Acts 1–4, endless seasons)
 | Weekly Cup (same seeded knockout for everyone each week) | ✅ |
 | New main menu (side list with detail panels, keyboard and gamepad) | ✅ |
 | Different looks for career opponents | ⬜ |
-| Doubles partner and chemistry in career (set up by the Ruta story) | ⬜ |
+| Doubles partner and chemistry in career: 5 story partners, 6-match doubles circuit, chemistry perks (both up/both back, covering the middle) | ✅ |
 | More cosmetics: outfits, rackets, celebrations | ⬜ |
 | Cloud saves | ✅ (Phase 3) |
 | Pixel artist: sprite sheets, animations, venues | ⬜ hire |

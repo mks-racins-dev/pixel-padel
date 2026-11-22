@@ -223,6 +223,16 @@ h1{margin:0;font-size:calc(var(--u)*17);line-height:1.1;color:#f7c993;text-shado
 /* endless seasons */
 .sdef span:first-child{color:#9a8fa8;font-size:calc(var(--u)*7)}
 .sdef.won{background:#25352a}.sdef.won b{color:#bfe8b0}
+/* career doubles */
+.dpart{grid-template-columns:repeat(5,minmax(0,1fr))}
+.dpart small{font-size:calc(var(--u)*6.5);color:#9a8fa8}
+.dchem .cxp{flex:1;min-width:calc(var(--u)*60)}
+.dperks{display:flex;flex-wrap:wrap;gap:calc(var(--u)*3);font-size:calc(var(--u)*7)}
+.dperks span{background:#17131c;padding:calc(var(--u)*1.5) calc(var(--u)*3);color:#6a5f78}
+.dperks span.won{background:#2f4a33;color:#bfe8b0}
+.dgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.dgrid .tid{padding:calc(var(--u)*4);gap:calc(var(--u)*2)}
+.dgrid .tid[disabled]{opacity:.55;cursor:default}
 /* quick match */
 .qgrid{flex:1;display:grid;grid-template-columns:1fr calc(var(--u)*118);gap:calc(var(--u)*9);min-height:0}
 .qopts{display:flex;flex-direction:column;gap:calc(var(--u)*4)}

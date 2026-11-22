@@ -3,6 +3,7 @@ import { takeRecent } from '../meta/challenges.ts';
 import { finishCupMatch, startCup } from '../meta/cup.ts';
 import { CAREER, finishCareerMatch, leaveCareer } from '../meta/career.ts';
 import { finishSeasonMatch, CROWN_STREAK } from '../meta/season.ts';
+import { finishDoublesMatch } from '../meta/doubles.ts';
 import { buildMenu, renderMenu } from './menu.js';
 import { isPractice, practiceHud } from '../game/practice.js';
 import { matchEnd, matchQuit } from '../core/analytics.ts';
@@ -50,6 +51,7 @@ export function showEnd(){
   emit({type:'match',won:human,mode:settings.mode,venue:settings.loc,gamesLost:S.score.games[1-myT],career:CAREER.active&&CAREER.kind==='career',cup:CAREER.active&&CAREER.kind==='cup'});
   let lines='';
   if(CAREER.active&&CAREER.kind==='cup'){const r=finishCupMatch(human);lines=cupSummary(r);$('againBtn').textContent=r.over?'NEW CUP RUN':'NEXT ROUND'}
+  else if(CAREER.active&&CAREER.kind==='doubles'){const r=finishDoublesMatch(human,S.score.games[0]);lines=['+'+r.xp+' XP','CHEMISTRY WITH '+r.partner+': '+r.chem+'/100'+(r.gained?' (+'+r.gained+')':''),r.perk?'NEW: '+r.partner+' '+r.perk:''].filter(Boolean).join('<br>');$('againBtn').textContent='DOUBLES ▸'}
   else if(CAREER.active&&CAREER.kind==='season'){const r=finishSeasonMatch(human,S.score.games[0]);lines=seasonSummary(r);$('againBtn').textContent='SEASON ▸'}
   else if(CAREER.active){const r=finishCareerMatch(human,S.score.games[0],S.score.games[1]);lines=careerSummary(r);CAREER.toMap=!!r.toMap;$('againBtn').textContent=r.toMap?(r.free?'TOWN MAP ▸':'CONTINUE ▸'):r.last&&r.won?'PLAY AGAIN':r.won?'NEXT MATCH':'RETRY';if(r.rival&&!r.won)$('endTitle').textContent='RUTA WINS… FOR NOW'}
   const ch=takeRecent().map(c=>'CHALLENGE DONE: '+c.text+' +'+c.xp+' XP');

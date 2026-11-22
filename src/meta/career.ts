@@ -78,7 +78,7 @@ export const TIERS: Tier[] = [
 export const ALL_EVENTS = TIERS.flatMap((t, ti) => t.events.map(e => ({ ...e, tier: ti })));
 
 /** Career run state for the current match. Not saved: a match in progress is just abandoned on reload. */
-export const CAREER = { active: false, toMap: false, kind: 'career' as 'career' | 'cup' | 'season', event: null as (CareerEvent & { tier: number; seed?: number; round?: string }) | null };
+export const CAREER = { active: false, toMap: false, kind: 'career' as 'career' | 'cup' | 'season' | 'doubles', event: null as (CareerEvent & { tier: number; seed?: number; round?: string }) | null };
 
 /** The first event not won yet (or the last one once everything is won). */
 export function nextEvent() {

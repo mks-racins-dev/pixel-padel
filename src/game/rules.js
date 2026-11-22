@@ -3,6 +3,7 @@ import { LOOKS } from '../content/looks.js';
 import { settings } from './config.js';
 import { CAREER, oppDiff } from '../meta/career.ts';
 import { careerSkills } from '../meta/profile.ts';
+import { PARTNERS, chemistry, chemPerks } from '../meta/doubles.ts';
 import { isPractice, practiceLanded, practiceMiss, startPractice, stopPractice } from './practice.js';
 import { rand, seedSim } from '../core/rng.ts';
 import { S } from '../state.js';
@@ -17,7 +18,8 @@ export function newMatch(isDemo,seed){
   if(!isDemo)H.matchStart({career:career?CAREER.event.id:null,mode:career?CAREER.kind:settings.mode,diff:settings.diff,venue:settings.loc,games:settings.games,style:settings.style});
   stopPractice();
   setCourt(career&&CAREER.event.court||null);
-  const m=S.demo?'2v2':career?'1v1':settings.mode;const me=mkLook(S.myLookData);
+  const dbl=career&&!!CAREER.event.doubles;
+  const m=S.demo?'2v2':career?(dbl?'2v2':'1v1'):settings.mode;const me=mkLook(S.myLookData);
   if(m==='practice')S.players=[mkPlayer(0,me,'h1',0)];
   else if(m==='1v1')S.players=[mkPlayer(0,me,'h1',0),mkPlayer(1,LOOKS.o1,'ai',0)];
   else if(m==='2v2')S.players=[mkPlayer(0,me,S.demo?'ai':'h1',2.4),mkPlayer(0,LOOKS.p2,'ai',-2.4),mkPlayer(1,LOOKS.o1,'ai',-2.4),mkPlayer(1,LOOKS.o2,'ai',2.4)];
@@ -28,7 +30,13 @@ export function newMatch(isDemo,seed){
     S.players=[0,1].map(t=>mkPlayer(t,lk[t]?mkLook(lk[t]):(t?LOOKS.o1:LOOKS.p1),ctrl(t),0))}
   else S.players=[mkPlayer(0,me,'h1',0),mkPlayer(1,LOOKS.o1,'h2',0)];
   const ks=Object.keys(STYLES);for(const p of S.players)p.sk=isHuman(p)?STYLES[settings.style]:STYLES[ks[Math.floor(rand()*ks.length)]];
-  if(career){S.players[0].sk=careerSkills(STYLES[settings.style]);S.players[1].sk=STYLES[CAREER.event.style]||STYLES.allround}
+  if(career&&!dbl){S.players[0].sk=careerSkills(STYLES[settings.style]);S.players[1].sk=STYLES[CAREER.event.style]||STYLES.allround}
+  S.chem=null;
+  if(dbl){ // career doubles: you + a story partner vs a story pair; chemistry shapes the partner
+    const e=CAREER.event,pa=PARTNERS.find(x=>x.id===e.partner)||PARTNERS[0],pk=chemPerks(chemistry(pa.id)),base=STYLES[pa.style]||STYLES.allround;
+    S.chem=pk;S.players[0].sk=careerSkills(STYLES[settings.style]);
+    S.players[1].sk={...base,spd:base.spd+pk.bonus,pow:base.pow+pk.bonus,acc:base.acc+pk.bonus};
+    S.players[2].sk=STYLES[e.styles[0]]||STYLES.allround;S.players[3].sk=STYLES[e.styles[1]]||STYLES.allround}
   if(m==='online'&&S.net){const sty=S.net.role==='host'?[settings.style,S.net.guestStyle]:S.net.styles||[];S.players.forEach((p,i)=>p.sk=STYLES[sty[i]]||STYLES.allround)}
   S.score={pts:[0,0],games:[0,0],winner:-1};
   S.ball={x:0,y:-9,z:1,vx:0,vy:0,vz:0,held:true,out:false,rolling:false};
@@ -38,7 +46,7 @@ export function newMatch(isDemo,seed){
   setupServe(false);H.updateHud();
 }
 export function teamOf(t){return S.players.filter(p=>p.team===t)}
-export function diffOf(p){if(CAREER.active&&!S.demo&&p.team===1)return careerDiff();return DIFF[S.demo?'normal':(p.team===0&&settings.mode==='2v2'?'normal':settings.diff)]}
+export function diffOf(p){if(CAREER.active&&!S.demo&&p.team===1)return careerDiff();if(CAREER.active&&!S.demo&&CAREER.event.doubles&&p.team===0)return partnerDiff();return DIFF[S.demo?'normal':(p.team===0&&settings.mode==='2v2'?'normal':settings.diff)]}
 export function isHuman(p){return p.ctrl==='h1'||p.ctrl==='h2'||p.ctrl==='net'}
 export function setupServe(second){
   const g=S.score.games[0]+S.score.games[1];
@@ -152,7 +160,7 @@ export function onEvent(t,a,c,back){
   }else if(t==='roof'){if(r.serve&&r.bounces===0)serveFault('HIT THE ROOF');else endPoint(1-r.lastTeam,'HIT THE ROOF!');
   }else if(t==='net')r.net=true;
 }
-export function teamName(t,short){if(S.demo)return t?'BLUE':'RED';if(CAREER.active)return t?CAREER.event.opp:'YOU';const m=settings.mode;if(m==='online')return t===H.myTeam()?'YOU':((S.net&&S.net.names&&S.net.names[t])||'RIVAL');if(m==='pvp')return t?'P2':'P1';if(m==='2v2')return t?(short?'CPU':'LEO & IVY'):(short?'YOU':'YOU & MIA');return t?'CPU':'YOU'}
+export function teamName(t,short){if(S.demo)return t?'BLUE':'RED';if(CAREER.active)return t?CAREER.event.opp:(CAREER.event.doubles&&!short?'YOU & '+((PARTNERS.find(x=>x.id===CAREER.event.partner)||PARTNERS[0]).name):'YOU');const m=settings.mode;if(m==='online')return t===H.myTeam()?'YOU':((S.net&&S.net.names&&S.net.names[t])||'RIVAL');if(m==='pvp')return t?'P2':'P1';if(m==='2v2')return t?(short?'CPU':'LEO & IVY'):(short?'YOU':'YOU & MIA');return t?'CPU':'YOU'}
 export function serveFault(reason){
   S.state='between';
   if(S.R0.faults===0){H.showMsg('FAULT',reason+' · 2ND SERVE');S.stateT=1.1;S.afterState=()=>setupServe(true)}
@@ -200,4 +208,6 @@ export function contraparedVel(p,aimX){
 /** Games needed to win the current match. */
 export function matchGames(){return CAREER.active&&!S.demo&&CAREER.event?CAREER.event.games:settings.games}
 let cdKey=null,cdVal=null;
+let pdKey='',pdVal=null;
+function partnerDiff(){const e=CAREER.event,pa=PARTNERS.find(x=>x.id===e.partner)||PARTNERS[0],k=pa.id+':'+chemistry(pa.id);if(pdKey!==k){pdKey=k;pdVal=oppDiff(pa.skill+chemPerks(chemistry(pa.id)).skill,DIFF.easy,DIFF.hard)}return pdVal}
 function careerDiff(){const e=CAREER.event;if(cdKey!==e.id){cdKey=e.id;cdVal=oppDiff(e.skill,DIFF.easy,DIFF.hard)}return cdVal}

@@ -10,6 +10,7 @@ import { startGame } from './ui.js';
 import { initAudio } from '../audio/sfx.js';
 import { seasonsOpen, seasonFor, seasonState, startSeasonEvent, CROWN_STREAK } from '../meta/season.ts';
 import { weekNumber } from '../meta/challenges.ts';
+import { PARTNERS, DOUBLES, CHEM_STEPS, doublesOpen, doublesState, doublesEventOpen, currentPartner, choosePartner, chemistry, startDoublesEvent } from '../meta/doubles.ts';
 
 const STAT_NAMES = { spd: 'SPEED', pow: 'POWER', acc: 'ACCURACY', wall: 'WALL PLAY' };
 const city = v => (LOCS[v] && LOCS[v].city) || v.toUpperCase();
@@ -20,6 +21,12 @@ let sel = null;  // selected town court
 let scene = null; // { s, i, done } while a story scene is playing
 
 export function renderCareerTab() {
+  renderCareer();
+  const db = document.getElementById('dblBtn'); if (db) db.onclick = () => { view = 'doubles'; renderCareerTab() };
+}
+const dblBtn = () => doublesOpen() ? '<button class="big alt" id="dblBtn">DOUBLES</button>' : '';
+
+function renderCareer() {
   const box = document.getElementById('careerBox');
   if (!box) return;
   if (scene) return renderScene(box);
@@ -29,6 +36,7 @@ export function renderCareerTab() {
   if (pendingPress()) return renderPress(box);
   if (!view) view = townDone() ? 'match' : 'map';
   if (view === 'skills') return renderSkills(box);
+  if (view === 'doubles' && doublesOpen()) return renderDoubles(box);
   if (view === 'map') return renderMap(box);
   const nx = nextEvent();
   if (TIERS[nx.tier].stops && !profile().career.won.includes(nx.id)) return renderTour(box, nx);
@@ -104,12 +112,39 @@ function renderMap(box) {
     <div class="cacts">
       <button class="big" data-primary id="careerPlay" ${locked ? 'disabled' : ''}>${locked ? 'LOCKED' : e.rival && state !== 'won' ? 'FACE THE STRANGER ▸' : 'PLAY ▸'}</button>
       ${townDone() ? '<button class="big alt" id="toTour">TOUR ▸</button>' : ''}
+      ${dblBtn()}
       <button class="big alt" id="skillsBtn">SKILLS${profile().points ? ' · ' + profile().points : ''}</button>
     </div>`;
   box.querySelectorAll('[data-pin]').forEach(b => b.onclick = () => { sel = b.dataset.pin; renderCareerTab(); box.querySelector(`[data-pin="${sel}"]`)?.focus() });
   if (!locked) document.getElementById('careerPlay').onclick = () => play(e.id);
   const tt = document.getElementById('toTour'); if (tt) tt.onclick = () => { view = 'match'; renderCareerTab() };
   document.getElementById('skillsBtn').onclick = () => { view = 'skills'; renderCareerTab() };
+}
+
+/* ---------------- doubles: partners, chemistry, the doubles circuit ---------------- */
+function renderDoubles(box) {
+  const s = doublesState(), pa = currentPartner(), ch = chemistry(pa.id);
+  const partners = PARTNERS.map(x => {
+    const open = x.unlock(profile().career), c = chemistry(x.id);
+    return `<button data-partner="${x.id}" aria-pressed="${x.id === pa.id}" ${open ? '' : 'disabled'} title="${open ? x.name : x.how}">${open ? `${x.name}<br><small>${c}/100</small>` : '???'}</button>`;
+  }).join('');
+  const perks = CHEM_STEPS.map(([n, t]) => `<span class="${ch >= n ? 'won' : ''}">${n}: ${t}</span>`).join('');
+  const evs = DOUBLES.map(e => {
+    const won = s.won.includes(e.id), open = doublesEventOpen(e.id);
+    return `<button class="tid sdef${won ? ' won' : ''}" data-dbl="${e.id}" ${open ? '' : 'disabled'}><span>${won ? 'WON ✓' : open ? 'OPEN' : 'LOCKED'}</span><b class="px">${open || won ? e.opp : '???'}</b><span>${open || won ? city(e.venue) + ' · FIRST TO ' + e.games : e.needsText}</span></button>`;
+  }).join('');
+  box.innerHTML = `
+    <div class="thead"><span class="px">DOUBLES CIRCUIT</span><span class="trep">${s.won.length}/${DOUBLES.length} WON</span></div>
+    <div class="opt"><span class="px">PARTNER</span><div class="seg dpart">${partners}</div></div>
+    <div class="tpocket dchem"><span>CHEMISTRY WITH ${pa.name}</span><span class="cxp"><span style="width:${ch}%"></span></span><b>${ch}/100</b></div>
+    <div class="dperks">${perks}</div>
+    <div class="tids dgrid">${evs}</div>
+    <div class="cacts"><button class="big" id="dblBack">◂ BACK TO CAREER</button></div>`;
+  box.querySelectorAll('[data-partner]').forEach(b => b.onclick = () => { choosePartner(b.dataset.partner); renderCareerTab() });
+  box.querySelectorAll('[data-dbl]').forEach(b => b.onclick = () => { initAudio(); startDoublesEvent(b.dataset.dbl); startGame() });
+  document.getElementById('dblBack').onclick = () => { view = null; renderCareerTab() };
+  const first = box.querySelector('[data-dbl]:not([disabled]):not(.won)') || document.getElementById('dblBack');
+  first.setAttribute('data-primary', '');
 }
 
 /* ---------------- endless seasons: weekly title defences ---------------- */
@@ -131,6 +166,7 @@ function renderSeason(box) {
     <div class="cacts">
       <button class="big alt" id="replayBtn">REPLAY FINAL</button>
       <button class="big alt" id="townBtn">TOWN</button>
+      ${dblBtn()}
       <button class="big alt" id="skillsBtn">SKILLS${p.points ? ' · ' + p.points : ''}</button>
     </div>`;
   box.querySelectorAll('[data-def]').forEach(b => b.onclick = () => { initAudio(); startSeasonEvent(+b.dataset.def); startGame() });
@@ -189,6 +225,7 @@ function renderTour(box, nx) {
     <div class="cacts">
       <button class="big" data-primary id="careerPlay">PLAY ${nx.stage} ▸</button>
       <button class="big alt" id="townBtn">TOWN</button>
+      ${dblBtn()}
       <button class="big alt" id="skillsBtn">SKILLS${p.points ? ' · ' + p.points : ''}</button>
     </div>`;
   document.getElementById('careerPlay').onclick = () => play(nx.id);
@@ -222,6 +259,7 @@ function renderMatch(box) {
       <button class="big" data-primary id="careerPlay">PLAY MATCH ▸</button>
       <button class="big alt" id="townBtn">TOWN</button>
       ${seasonsOpen() ? '<button class="big alt" id="seasonBtn">SEASON</button>' : ''}
+      ${dblBtn()}
       <button class="big alt" id="skillsBtn">SKILLS${p.points ? ' · ' + p.points : ''}</button>
     </div>`;
   document.getElementById('careerPlay').onclick = () => play(nx.id);

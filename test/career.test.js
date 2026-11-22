@@ -7,6 +7,7 @@ import { profile, addXp, spendPoint, migrate, resetProfileCache, xpToNext, MAX_A
 import { worldRank, activeGoal, GOALS, needsIdentity, chooseIdentity, pendingPress, answerPress, fans } from '../src/meta/career.ts';
 import { CAREER, TIERS, ALL_EVENTS, nextEvent, startCareerEvent, finishCareerMatch, leaveCareer, oppDiff, tierUnlocked, eventOpen, prizes, streetRep } from '../src/meta/career.ts';
 import { COURT } from '../src/game/physics.js';
+import { doublesOpen, currentPartner, doublesEventOpen, startDoublesEvent, finishDoublesMatch, choosePartner, chemistry } from '../src/meta/doubles.ts';
 import { seasonsOpen, seasonFor, seasonState, startSeasonEvent, finishSeasonMatch } from '../src/meta/season.ts';
 import { stepBall } from '../src/game/physics.js';
 import { pendingScene, preScene } from '../src/content/story.js';
@@ -305,5 +306,62 @@ describe('endless seasons', () => {
     expect(teamName(1)).toBe(seasonFor()[1].opp);
     expect(matchGames()).toBe(3);
     expect(COURT.wind || COURT.sand || COURT.deadBack || COURT.roof).toBeTruthy();
+  });
+});
+
+describe('career doubles', () => {
+  const won = ids => profile().career.won.push(...ids);
+  const play = (id, w = true) => { startDoublesEvent(id); return finishDoublesMatch(w, w ? 3 : 1) };
+  it('opens with Tomi after King of the Court', () => {
+    expect(doublesOpen()).toBe(false);
+    won(['a1_tomi', 'a1_king']);
+    expect(doublesOpen()).toBe(true);
+    expect(currentPartner().id).toBe('tomi');
+    expect(doublesEventOpen('d_town')).toBe(true);
+    expect(doublesEventOpen('d_riga')).toBe(false);
+  });
+  it('a doubles match is 2 vs 2 with the partner and the story pair', () => {
+    won(['a1_king']);
+    startDoublesEvent('d_town'); newMatch(false, 1);
+    expect(S.players.length).toBe(4);
+    expect(S.players.filter(p => p.ctrl === 'h1').length).toBe(1);
+    expect(teamName(0)).toBe('YOU & TOMI');
+    expect(teamName(1)).toBe('PETE & VASQUEZ');
+    expect(COURT.wind).toBeGreaterThan(0);
+    expect(S.chem.mirror).toBe(false);
+  });
+  it('chemistry grows by playing together and unlocks perks', () => {
+    won(['a1_king']);
+    let r = play('d_town');
+    expect(r.chem).toBe(12);
+    for (let i = 0; i < 3; i++) r = play('d_town');
+    expect(r.chem).toBe(48);
+    r = play('d_town');
+    expect(r.perk).toBe('BOTH UP, BOTH BACK WITH YOU');
+    startDoublesEvent('d_town'); newMatch(false, 1);
+    expect(S.chem.mirror).toBe(true);
+    expect(diffOf(S.players[1]).spd).toBeGreaterThan(oppDiff(0.3, DIFF.easy, DIFF.hard).spd);
+    for (let i = 0; i < 10; i++) play('d_town');
+    expect(chemistry('tomi')).toBe(100);
+  });
+  it('the circuit goes in order and each step needs its story moment', () => {
+    won(['a1_king', 'b_riga3']);
+    expect(doublesEventOpen('d_riga')).toBe(false);
+    play('d_town');
+    expect(doublesEventOpen('d_riga')).toBe(true);
+    expect(doublesEventOpen('d_tallinn')).toBe(false);
+  });
+  it('partners need their unlock; picking a locked one is ignored', () => {
+    won(['a1_king']);
+    choosePartner('maestro');
+    expect(currentPartner().id).toBe('tomi');
+    won(['p_fin']);
+    choosePartner('maestro');
+    expect(currentPartner().id).toBe('maestro');
+  });
+  it('singles career matches stay 1 vs 1 with no chemistry', () => {
+    startCareerEvent(); newMatch(false, 1);
+    expect(S.players.length).toBe(2);
+    expect(S.chem).toBe(null);
   });
 });

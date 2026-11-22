@@ -29,4 +29,5 @@ export const S = {
   net: null,
   last: undefined,
   acc: 0,
+  chem: null, // career doubles: chemistry perks for the partner AI (null outside career doubles)
 };
