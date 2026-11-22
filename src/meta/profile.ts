@@ -8,7 +8,7 @@ export interface Profile {
   level: number;
   points: number;          // unspent skill points
   alloc: Record<Stat, number>;
-  career: { won: string[]; dares: string[]; seen: string[]; rp: number; goals: string[]; streak: number; identity: string; press: string[] }; // events done, dares won, scenes seen, ranking points, sponsor goals done, tour win streak
+  career: { won: string[]; dares: string[]; seen: string[]; rp: number; goals: string[]; streak: number; identity: string; press: string[]; stars?: Record<string, number> }; // events done, dares won, scenes seen, ranking points, sponsor goals done, tour win streak
   unlocked: string[];      // cosmetic ids (trails)
   trail: string;           // equipped trail
   name: string;            // nickname shown to opponents and on the leaderboard ('' = not chosen yet)
@@ -42,6 +42,7 @@ export function migrate(raw: unknown): Profile {
   const strs = (a: unknown) => (Array.isArray(a) ? a.filter(x => typeof x === 'string') as string[] : []);
   p.career.won = strs(r.career?.won); p.career.dares = strs(r.career?.dares); p.career.seen = strs(r.career?.seen);
   p.career.goals = strs(r.career?.goals); p.career.press = strs(r.career?.press); p.career.rp = num(r.career?.rp, 0, 1e5, 0); p.career.streak = num(r.career?.streak, 0, 1e4, 0);
+  { const s: Record<string, number> = {}; const o = r.career?.stars; if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) s[k] = num(v, 0, 3, 0); p.career.stars = s }
   p.career.identity = ['wall', 'smash', 'counter'].includes(r.career?.identity as string) ? r.career!.identity : '';
   // saves from before Act 1: the old 3-match club ladder maps onto the town courts
   const LEGACY: Record<string, string[]> = { club1: ['a1_tomi'], club2: ['a1_market'], club3: ['a1_roof', 'a1_camp', 'a1_ware', 'a1_ruta', 'a1_king'],

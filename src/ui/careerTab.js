@@ -10,6 +10,7 @@ import { startGame, toMenu } from './ui.js';
 import { playCine, parkIntro, parkOutro } from '../render/cine.js';
 import { DRILLS, setPracticeCustom } from '../game/practice.js';
 import { settings } from '../game/settings.js';
+import { totalStars, eventStars, starGoals } from '../meta/stars.ts';
 import { mkLook } from '../game/player.js';
 import { S } from '../state.js';
 import { leaveCareer } from '../meta/career.ts';
@@ -132,6 +133,7 @@ function renderMap(box) {
       <div class="tmap" aria-label="Town map"><span class="troad h"></span><span class="troad v"></span><span class="tpond"></span>${pins}</div>
       <div class="tcard">
         <span class="px tplace">${hiddenSel ? '???' : e.place}</span>
+        ${hiddenSel ? '' : `<span class="tstars" title="${starGoals(e.id).map(g => g.text).join(' · ')}">${'★'.repeat(eventStars(e.id))}${'☆'.repeat(3 - eventStars(e.id))}</span>`}
         ${hiddenSel ? `<span class="ttwist">${need}</span>` : `
         <span class="ttwist">${e.twist}</span>
         <span>VS <b class="px">${e.opp}</b></span>
@@ -249,7 +251,7 @@ function renderTour(box, nx) {
     <div class="chead"><span class="csky" aria-hidden="true">${sky}</span>
       <span class="px csub">ACT ${nx.tier + 1} · ${tier.name} · ${stop.name}</span>
       <span class="px ccity">${nx.stage}</span>
-      <span class="px trank">WORLD RANK #${worldRank()} · ${p.career.rp} RP${nx.tier >= 3 ? ' · ' + fans().toLocaleString('en') + ' FANS' : ''}</span></div>
+      <span class="px trank">WORLD RANK #${worldRank()} · ★ ${totalStars()} · ${p.career.rp} RP${nx.tier >= 3 ? ' · ' + fans().toLocaleString('en') + ' FANS' : ''}</span></div>
     <div class="tstops">${stops}</div>
     <div class="ccards">
       <div class="ccard"><span>${nx.stage} · ${city(nx.venue)}</span><b class="px">${nx.opp}</b><span>${st.name} · FIRST TO ${nx.games}</span><span class="cstyle">SPD ${bar(st.spd)} PWR ${bar(st.pow)} ACC ${bar(st.acc)}</span><span class="txp">+${xpForWin(nx)} XP · +${nx.rp} RP</span></div>

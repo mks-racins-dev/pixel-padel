@@ -121,7 +121,9 @@ export const GOALS: Goal[] = [
 export const sponsorSigned = () => profile().career.seen.includes('sponsor');
 export const activeGoal = () => sponsorSigned() ? GOALS.find(g => !profile().career.goals.includes(g.id)) : undefined;
 /** World ranking from ranking points: #412 for a newcomer, about #150 after the Baltic tour. */
-export const worldRank = (rp = profile().career.rp) => profile().career.won.includes('p_fin') ? 1 : Math.max(2, Math.round(412 * Math.exp(-rp / 270)));
+/** World ranking from ranking points: #2000 on day one, top 250 after the Baltic tour, #1 after the World Finals. */
+export const START_RANK = 2000;
+export const worldRank = (rp = profile().career.rp) => profile().career.won.includes('p_fin') ? 1 : Math.max(2, Math.round(START_RANK * Math.exp(-0.15 * Math.sqrt(rp))));
 /** Playing identities, chosen once in Act 3. Each adds a permanent bonus to career stats. */
 export const IDENTITIES = [
   { id: 'wall', name: 'WALL WIZARD', text: 'lives off the glass: +1 WALL PLAY', bonus: { wall: 1 } },
@@ -175,6 +177,7 @@ export function finishCareerMatch(won: boolean, gamesWon: number, gamesLost = 0)
   // tour stops: ranking points, knockouts, sponsor goals
   let knocked: string | undefined, rp = 0, goal: string | undefined;
   const rankBefore = worldRank();
+  if (first && won && !e.stop && !p.career.seen.includes('rp:' + e.id)) { rp = e.final ? 25 : 10; p.career.seen.push('rp:' + e.id); p.career.rp += rp } // town wins move you up too
   if (e.stop) {
     if (won && !p.career.seen.includes('rp:' + e.id)) { rp += e.rp || 0; p.career.seen.push('rp:' + e.id) } // paid once, even after a knockout
     if (!won) {
@@ -199,7 +202,7 @@ export function finishCareerMatch(won: boolean, gamesWon: number, gamesLost = 0)
   // back to the career panel when the town map needs a pick, or a tournament ended (story scenes play there)
   const toMap = (done && free) || !!knocked || (won && e.stage === 'FINAL');
   if ((won && !toMap) || knocked) CAREER.event = nextEvent();
-  const extra = e.stop ? { knocked, rp, rank: worldRank(), rankBefore, goal } : {};
+  const extra = { knocked, rp, rank: worldRank(), rankBefore, goal };
   return { xp, levels, unlocked, tierDone, won, last, prize, dareMissed, rival: !!e.rival && first, toMap, free, ...extra };
 }
 

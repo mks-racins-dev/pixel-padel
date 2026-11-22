@@ -288,3 +288,16 @@ h1{margin:0;font-size:calc(var(--u)*17);line-height:1.1;color:#f7c993;text-shado
 .chapter span{color:#e4572e;font-size:calc(var(--u)*6)}
 .chapter b{color:#f4ead2;font-size:calc(var(--u)*12)}
 .chapter p{color:#c9bba6;margin:0}
+/* match stars and the world rank counter */
+.mstars{font-size:calc(var(--u)*16);letter-spacing:calc(var(--u)*3);color:#3a3146;margin:calc(var(--u)*2) 0}
+.mstars span.on{color:#f2c14e;animation:starIn .45s var(--d) both;display:inline-block;text-shadow:0 0 calc(var(--u)*4) rgba(242,193,78,.6)}
+@keyframes starIn{0%{transform:scale(0) rotate(-90deg);color:#3a3146}70%{transform:scale(1.4)}100%{transform:scale(1)}}
+.sgoals{font-size:calc(var(--u)*6);color:#c9bba6;margin-bottom:calc(var(--u)*3)}
+#endRank{font-size:calc(var(--u)*9);color:#f4ead2;margin:calc(var(--u)*2) 0}
+#endRank b{color:#f2c14e}
+#endRank i{color:#9be37a;font-style:normal}
+#endRank.pop{animation:rankPop .4s}
+@keyframes rankPop{50%{transform:scale(1.15)}}
+.nextup{margin-top:calc(var(--u)*3);color:#ff8a5c}
+.nextup span{background:#e4572e;color:#fff;padding:0 calc(var(--u)*2)}
+.tstars{color:#f2c14e;font-size:calc(var(--u)*8);letter-spacing:calc(var(--u)*1)}

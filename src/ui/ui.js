@@ -15,6 +15,8 @@ import { PAL, mkLook, saveLook } from '../game/player.js';
 import { isHuman, matchGames, newMatch, teamName } from '../game/rules.js';
 import { setLoc, settings } from '../game/settings.js';
 import { gradeFor } from '../render/grades.js';
+import { resetStars, finishStars } from '../meta/stars.ts';
+import { addXp } from '../meta/profile.ts';
 import { actRelease, actStart, actVib, touchIn } from '../input/input.js';
 import { myTeam, netClose, netSend, onStatus, startOnline } from '../net/online.js';
 import { prevG } from './preview.js';
@@ -47,14 +49,14 @@ export function showEnd(){
   if(S.net&&S.net.role==='host')netSend({t:'end'});
   $('endTitle').textContent=settings.mode==='pvp'?(w===0?'PLAYER 1 WINS!':'PLAYER 2 WINS!'):(human?'YOU WIN!':(on?'RIVAL WINS':'CPU WINS'));
   $('endScore').textContent=S.score.games[0]+' – '+S.score.games[1];
-  $('againBtn').textContent='REMATCH';$('endInfo').innerHTML='';
+  $('againBtn').textContent='REMATCH';$('endInfo').innerHTML='';$('endRank').hidden=true;$('endRank').classList.remove('pop');
   const me=S.players.find(p=>p.ctrl==='h1'),myT=me?me.team:0;
   emit({type:'match',won:human,mode:settings.mode,venue:settings.loc,gamesLost:S.score.games[1-myT],career:CAREER.active&&CAREER.kind==='career',cup:CAREER.active&&CAREER.kind==='cup'});
   let lines='';
   if(CAREER.active&&CAREER.kind==='cup'){const r=finishCupMatch(human);lines=cupSummary(r);$('againBtn').textContent=r.over?'NEW CUP RUN':'NEXT ROUND'}
   else if(CAREER.active&&CAREER.kind==='doubles'){const r=finishDoublesMatch(human,S.score.games[0]);lines=['+'+r.xp+' XP','CHEMISTRY WITH '+r.partner+': '+r.chem+'/100'+(r.gained?' (+'+r.gained+')':''),r.perk?'NEW: '+r.partner+' '+r.perk:''].filter(Boolean).join('<br>');$('againBtn').textContent='DOUBLES ▸'}
   else if(CAREER.active&&CAREER.kind==='season'){const r=finishSeasonMatch(human,S.score.games[0]);lines=seasonSummary(r);$('againBtn').textContent='SEASON ▸'}
-  else if(CAREER.active){const r=finishCareerMatch(human,S.score.games[0],S.score.games[1]);lines=careerSummary(r);CAREER.toMap=!!r.toMap;$('againBtn').textContent=r.toMap?(r.free?'TOWN MAP ▸':'CONTINUE ▸'):r.last&&r.won?'PLAY AGAIN':r.won?'NEXT MATCH':'RETRY';if(r.rival&&!r.won)$('endTitle').textContent='RUTA WINS… FOR NOW'}
+  else if(CAREER.active){const evId=CAREER.event.id;const r=finishCareerMatch(human,S.score.games[0],S.score.games[1]);const st=finishStars(evId,human,S.score.games[1]);if(st.xp)addXp(st.xp);lines=starsHtml(st)+careerSummary(r);if(r.rankBefore>r.rank)setTimeout(()=>animRank(r.rankBefore,r.rank),500);CAREER.toMap=!!r.toMap;const nx=!r.toMap&&r.won&&CAREER.event;if(nx&&!r.last)lines+='<div class="nextup"><span class="px">NEXT</span> '+(nx.stage?nx.stage+' · ':'')+nx.opp+'</div>';$('againBtn').textContent=r.toMap?(r.free?'TOWN MAP ▸':'CONTINUE ▸'):r.last&&r.won?'PLAY AGAIN':r.won?'PLAY NEXT ▸':'RETRY';if(r.rival&&!r.won)$('endTitle').textContent='RUTA WINS… FOR NOW'}
   const ch=takeRecent().map(c=>'CHALLENGE DONE: '+c.text+' +'+c.xp+' XP');
   $('endInfo').innerHTML=[lines,...ch].filter(Boolean).join('<br>');
   $('end').hidden=false;$('touch').hidden=true;sfx(human||settings.mode==='pvp'?'win':'lose');
@@ -76,6 +78,7 @@ export function startGame(){
     return}
   if(CAREER.active&&CAREER.kind!=='cup'&&CAREER.toMap)return toMenu();
   if(CAREER.active&&CAREER.kind==='cup')startCup(false); // next round, or round 1 after a run ended
+  resetStars(!!(CAREER.active&&CAREER.kind==='career'));
   if(CAREER.active)setLoc(CAREER.event.venue,gradeFor(CAREER.event));else if(S.grade)setLoc(settings.loc,0);
   showGameUI();newMatch(false)}
 export function toMenu(){if(S.grade)setLoc(settings.loc,0);matchQuit();leaveCareer();renderMenu();netClose();$('online').hidden=true;S.paused=false;$('pause').hidden=true;$('end').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('menu').hidden=false;hideMsg();newMatch(true)}
@@ -96,13 +99,26 @@ function seasonSummary(r){
   else if(r.defended&&r.streak<CROWN_STREAK)bits.push((CROWN_STREAK-r.streak)+' MORE WEEK'+(CROWN_STREAK-r.streak>1?'S':'')+' IN A ROW FOR THE CROWN TRAIL');
   return bits.join('<br>');
 }
+/** The three match stars and their goals. */
+function starsHtml(st){
+  return '<div class="mstars">'+st.got.map((g,i)=>'<span class="'+(g?'on':'')+'" style="--d:'+(0.25+i*0.35)+'s">★</span>').join('')+'</div>'
+    +'<div class="sgoals">'+st.goals.map((t,i)=>(st.got[i]?'✓ ':'· ')+t).join('<br>')+'</div>'
+    +(st.newStars?'<div>+'+st.newStars+' NEW STAR'+(st.newStars>1?'S':'')+' · +'+st.xp+' XP</div>':'');
+}
+/** World rank counts down after a win. */
+function animRank(from,to){
+  const el=$('endRank');if(!el)return;el.hidden=false;const t0=performance.now(),dur=Math.min(2200,600+(from-to)*6);
+  const step=now=>{const k=Math.min(1,(now-t0)/dur),e=1-(1-k)**3,v=Math.round(from-(from-to)*e);el.innerHTML='WORLD RANK <b>#'+v+'</b>'+(k>=1?' <i>▲'+(from-to)+'</i>':'');
+    if(k<1){if(Math.random()<0.3)sfx('hit',0.15);requestAnimationFrame(step)}else{el.classList.add('pop');sfx('point')}};
+  requestAnimationFrame(step);
+}
 function careerSummary(r){
   const bits=['+'+r.xp+' XP'];
   if(r.prize)bits.push('DARE WON! IN YOUR POCKET: '+r.prize);
   if(r.dareMissed)bits.push('DARE MISSED · TRY AGAIN FOR THE PRIZE');
   if(r.rival)bits.push('THE STORY MOVES ON');
   if(r.knocked)bits.push('KNOCKED OUT IN THE '+r.knocked+' · THE TOURNAMENT STARTS AGAIN');
-  if(r.rp)bits.push('+'+r.rp+' RANKING POINTS · WORLD RANK #'+r.rank+(r.rankBefore>r.rank?' (▲'+(r.rankBefore-r.rank)+')':''));
+  if(r.rp)bits.push('+'+r.rp+' RANKING POINTS');
   if(r.goal)bits.push('SPONSOR GOAL DONE: '+r.goal);
   if(r.levels)bits.push('LEVEL UP! +'+r.levels+' SKILL POINT'+(r.levels>1?'S':''));
   if(r.tierDone)bits.push(r.tierDone+' COMPLETE!');
