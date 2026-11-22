@@ -7,7 +7,8 @@ import { STYLES } from '../game/constants.js';
 import { LOCS } from '../content/venues.js';
 import { WHO, pendingScene, preScene } from '../content/story.js';
 import { startGame, toMenu } from './ui.js';
-import { playCine, parkIntro, parkOutro } from '../render/cine.js';
+import { playCine, parkIntro, parkOutro, cinePlaying } from '../render/cine.js';
+import { storyCine } from '../content/staging.js';
 import { DRILLS, setPracticeCustom } from '../game/practice.js';
 import { settings } from '../game/settings.js';
 import { totalStars, eventStars, starGoals } from '../meta/stars.ts';
@@ -58,7 +59,14 @@ function renderCareer() {
 }
 
 /* ---------------- story scenes ---------------- */
-function playScene(s, done) { scene = { s, i: 0, done }; renderCareerTab() }
+/** Story scenes play as cutscenes on the stage; the text card view stays as a fallback. */
+function playScene(s, done) {
+  if (cinePlaying()) return;
+  let cine; try { cine = storyCine(s, profile().career, mkLook(S.myLookData)) } catch (e) { cine = null }
+  if (!cine) { scene = { s, i: 0, done }; return renderCareerTab() }
+  initAudio();
+  playCine(cine).then(() => { const c = profile().career; if (!c.seen.includes(s.id)) { c.seen.push(s.id); saveProfile() } done() });
+}
 function endScene() {
   const { s, done } = scene; scene = null;
   const c = profile().career; if (!c.seen.includes(s.id)) { c.seen.push(s.id); saveProfile() }

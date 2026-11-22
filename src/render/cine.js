@@ -15,12 +15,84 @@
 // Tap, click, Space or Enter speeds through the current step; SKIP ends the scene.
 import { R, L, circ, newCanvas, txt, txtW, shade, mulberry } from '../core/gfx.js';
 import { getSprite } from './sprites.js';
+import { LOCS, TOWNS } from '../content/venues.js';
+import { GRADES } from './grades.js';
 
 const W = 480, H = 270, GROUND = 228, SC = 2;
 let cur = null;
+// dev only: ?cinefast runs cutscenes 30x (headless screenshots get very few frames)
+const DEV_SPEED = import.meta.env?.DEV && typeof location !== 'undefined' && location.search.includes('cinefast') ? 30 : 1;
 
 /* ---------------- backdrops ---------------- */
 const BG = {
+
+  /** Side view of a career venue at its grade: town or stands behind, back glass, the court floor. */
+  venue(w, sc) {
+    const rnd = mulberry(13), L0 = LOCS[sc.loc] || LOCS.sunset, T = TOWNS[sc.loc] || TOWNS.sunset, G = GRADES[sc.grade] || GRADES[0];
+    const sky = newCanvas(W, H), far = newCanvas(w, H), near = newCanvas(w, H);
+    { const g = sky[1], B = G.arena ? ['#07060b', '#0c0a12', '#100d18', '#151120', '#1a1528', '#1f1930', '#241d38', '#29213f'] : L0.sky;
+      B.forEach((c, i) => R(g, 0, i * 22, W, 23, c));
+      if (L0.night && !G.arena) for (let k = 0; k < 30; k++) R(g, rnd() * W, rnd() * 60, 1, 1, '#fff8e0') }
+    { const g = far[1];
+      if (G.indoor) { R(g, 0, 0, w, 210, '#6a4a3e'); for (let y = 0; y < 210; y += 6) for (let x = (y / 6) % 2 * 8; x < w; x += 16) R(g, x, y, 1, 6, '#5a3e34'); R(g, 0, 0, w, 40, '#2a2430'); for (const x of [80, 240, 400]) { R(g, x - 20, 36, 40, 3, '#f4fbff'); g.fillStyle = 'rgba(230,245,255,0.07)'; g.fillRect(x - 50, 39, 100, 170) } }
+      else if (G.stand) {
+        const top = G.arena ? 20 : G.stand >= 3 ? 50 : G.stand === 2 ? 80 : 105;
+        for (let y = top; y < 170; y += 7) { R(g, 0, y, w, 7, G.arena ? '#1a1622' : '#4a4458'); for (let x = (y / 7) % 2 * 3; x < w; x += 6) if (rnd() < 0.85) { const c = ['#e4572e', '#f4ead2', '#3fa7a8', '#f2c14e', '#8e6cc1', '#6fae5f', '#d98ca0'][Math.floor(rnd() * 7)]; R(g, x, y + 2, 3, 4, G.arena ? shade(c, -60) : c); R(g, x, y, 3, 2, G.arena ? '#3a2a2a' : '#c98d62') } }
+        if (G.label) { const lw = txtW(G.label, 2) + 16; R(g, w / 2 - lw / 2, top - 22, lw, 18, '#17131c'); txt(g, G.label, w / 2 - lw / 2 + 8, top - 18, G.arena ? '#f2c14e' : '#f4ead2', 2) }
+      } else {
+        let x = -4, i = 0; while (x < w) { const bw = 30 + Math.floor(rnd() * 30), bh = 60 + Math.floor(rnd() * 60), p = T.pals[i++ % T.pals.length];
+          R(g, x, 175 - bh, bw, bh, p.wall); R(g, x, 175 - bh, bw, 3, p.trim);
+          for (let yy = 175 - bh + 8; yy < 165; yy += 12) for (let xx = x + 5; xx < x + bw - 6; xx += 10) R(g, xx, yy, 5, 6, L0.night ? '#f2c14e' : '#3a4a6a');
+          x += bw + 2 }
+        R(g, 0, 165, w, 12, '#3f6b45'); for (let k = 0; k < w; k += 3) R(g, k, 162 + rnd() * 3, 3, 4, '#4e7f50');
+      }
+      if (G.boards) for (let x = 0; x < w; x += 60) { R(g, x + 1, 170, 58, 12, G.boards === 'led' ? '#101828' : '#f4ead2'); txt(g, ['PIXEL', 'PADEL', 'SMASH', 'TOUR'][x / 60 % 4], x + 12, 173, G.boards === 'led' ? ['#6fe8ff', '#ff6ad5', '#f2c14e', '#9be37a'][x / 60 % 4] : '#e4572e') }
+    }
+    { const g = near[1];
+      // ground around the court
+      R(g, 0, 205, w, 65, G.floor || '#8f8577'); for (let k = 0; k < w * 2; k++) R(g, rnd() * w, 206 + rnd() * 64, 1, 1, shade(G.floor || '#8f8577', rnd() < 0.5 ? 8 : -8));
+      // back glass (fence on street courts)
+      const top = G.cracks ? 110 : 140;
+      if (G.cracks) { for (let y = top; y < 205; y += 6) for (let x = 0; x < w; x += 6) { L(g, x, y, x + 6, y + 6, 'rgba(93,102,112,0.7)'); L(g, x + 6, y, x, y + 6, 'rgba(93,102,112,0.7)') } }
+      else { g.fillStyle = G.dirty ? 'rgba(200,190,160,0.22)' : 'rgba(190,225,235,0.22)'; g.fillRect(0, top, w, 65); for (let k = 0; k < w; k += 40) L(g, k + 6, top + 8, k + 18, top + 40, 'rgba(255,255,255,0.25)');
+        if (!G.pano) for (let y = top - 22; y < top; y += 4) R(g, 0, y, w, 1, 'rgba(40,36,52,0.6)') }
+      for (let x = 0; x <= w; x += G.pano ? w : 80) R(g, x, top - (G.pano ? 0 : 22), 3, 205 - top + (G.pano ? 0 : 22), '#2f2d38');
+      if (G.graffiti) { txt(g, 'PADEL', 60, 150, '#e86ad5', 2); txt(g, 'KING?', 300, 160, '#6fe8ff', 2) }
+      // court floor
+      R(g, 0, 205, w, 30, L0.court); for (let k = 0; k < w * 2; k++) R(g, rnd() * w, 206 + rnd() * 28, 1, 1, shade(L0.court, rnd() < 0.5 ? 9 : -9)); R(g, 0, 205, w, 1, shade(L0.court, 25));
+      if (G.cracks) for (let c = 0; c < 8; c++) { let x = rnd() * w, y = 207; for (let s = 0; s < 5; s++) { const nx = x + (rnd() - 0.5) * 8; L(g, x, y, nx, y + 4, '#2a2630'); x = nx; y += 4 } }
+      // net at the right edge, umpire chair and tv camera at the big events
+      const nx = w - 50; R(g, nx, 180, 3, 45, '#2f2d38'); for (let y = 186; y < 222; y += 4) R(g, nx, y, 3, 1, '#e8eef5');
+      if (G.umpire) { R(g, nx + 16, 150, 3, 75, '#2f2d38'); R(g, nx + 30, 150, 3, 75, '#2f2d38'); R(g, nx + 12, 146, 24, 5, '#8a5a3c'); R(g, nx + 16, 126, 16, 20, '#1f2a44'); circ(g, nx + 24, 120, 6, '#e8b48a') }
+      if (G.camera) { R(g, 14, 170, 3, 55, '#2f2d38'); R(g, 6, 160, 28, 14, '#17131c'); R(g, 32, 163, 10, 8, '#3a3a44'); R(g, 10, 163, 2, 2, '#e4572e') }
+    }
+    return { sky: sky[0], far: far[0], near: near[0] };
+  },
+  /** On the road: the van drives past pines (drawn per frame in DYN.road). */
+  road(w) {
+    const sky = newCanvas(W, H), e = newCanvas(w, H)[0];
+    { const g = sky[1]; ['#f2b46a', '#f4c98a', '#f6dcae', '#cfe0e6', '#a9c9dc', '#8fb6d2', '#7aa6c8', '#6d9bbf'].reverse().forEach((c, i) => R(g, 0, i * 22, W, 23, c)); circ(g, 90, 150, 18, '#fff1c1') }
+    return { sky: sky[0], far: e, near: e };
+  },
+  /** A plane cabin: windows with clouds (DYN.plane), seats in front of the passengers. */
+  plane(w) {
+    const sky = newCanvas(W, H), near = newCanvas(w, H), e = newCanvas(w, H)[0];
+    { const g = sky[1]; R(g, 0, 0, W, H, '#7aa6d8') }
+    { const g = near[1]; R(g, 0, 0, w, 270, '#d8d4cc'); R(g, 0, 0, w, 30, '#c4bfb6'); R(g, 0, 236, w, 34, '#5a5566');
+      for (let x = 30; x < w; x += 110) { g.clearRect(x, 70, 44, 60); R(g, x - 3, 67, 50, 3, '#a8a398'); R(g, x - 3, 130, 50, 3, '#a8a398') }
+      for (let x = 10; x < w; x += 22) R(g, x, 12, 12, 6, '#f4f0e6') }
+    return { sky: sky[0], far: e, near: near[0] };
+  },
+  /** A hotel room at night: city lights in the window, a bed, a lamp. */
+  room(w) {
+    const rnd = mulberry(5), sky = newCanvas(W, H), near = newCanvas(w, H), e = newCanvas(w, H)[0];
+    { const g = sky[1]; R(g, 0, 0, W, H, '#1d2147'); for (let x = 0; x < W; x += 14) { const h = 40 + rnd() * 80; R(g, x, 180 - h, 12, h, '#2b2a4a'); for (let k = 0; k < 6; k++) R(g, x + 2 + rnd() * 8, 182 - h + rnd() * h, 2, 2, '#f2c14e') } }
+    { const g = near[1]; R(g, 0, 0, w, 270, '#5d4a5e'); for (let x = 0; x < w; x += 8) R(g, x, 0, 1, 230, '#544255');
+      g.clearRect(300, 50, 140, 110); R(g, 296, 46, 148, 4, '#3a2e3c'); R(g, 296, 160, 148, 4, '#3a2e3c'); R(g, 368, 50, 4, 110, '#3a2e3c');
+      R(g, 0, 230, w, 40, '#3a3040'); R(g, 20, 190, 120, 40, '#e8e0d0'); R(g, 20, 180, 30, 14, '#f4f0e6'); R(g, 20, 222, 120, 8, '#8a5a3c');
+      R(g, 170, 200, 24, 30, '#8a5a3c'); R(g, 178, 176, 8, 24, '#2f2d38'); R(g, 170, 168, 24, 10, '#f2c14e') }
+    return { sky: sky[0], far: e, near: near[0] };
+  },
   /** Sunset Park at dusk: a cracked public court behind a chain-link fence. */
   park(w) {
     const rnd = mulberry(7);
@@ -75,6 +147,27 @@ const BG = {
 
 /** Things drawn in the world after the backdrop that can flicker or change. */
 const DYN = {
+
+  venue(g, cam, t, sc) {
+    const G = GRADES[sc.grade] || GRADES[0];
+    if (G.arena) { for (const x of [100, 380]) { g.fillStyle = 'rgba(255,240,200,0.06)'; g.beginPath(); g.moveTo(x - 6, 0); g.lineTo(x + 6, 0); g.lineTo(x + 90, 236); g.lineTo(x - 90, 236); g.fill() }
+      for (let k = 0; k < 3; k++) if (Math.random() < 0.3) R(g, Math.random() * W, 20 + Math.random() * 140, 2, 2, '#ffffff') }
+  },
+  road(g, cam, t) {
+    const hill = (sp, y, c, step, hh) => { const off = (t * sp) % step; for (let x = -step; x < W + step; x += step) { const X = x - off; g.fillStyle = c; g.beginPath(); g.moveTo(X, y); g.lineTo(X + step / 2, y - hh); g.lineTo(X + step, y); g.fill() } };
+    hill(8, 170, '#8fa6b8', 120, 40);
+    const pine = (sp, y, s, c) => { const off = (t * sp) % 34; for (let x = -34; x < W + 34; x += 34) { const X = x - off + (Math.floor((x + t * sp) / 34) % 3) * 4; R(g, X + 7 * s, y - 6 * s, 2 * s, 6 * s, '#4a3a2a'); for (let k = 0; k < 4; k++) R(g, X + 2 * s + k * 1.5 * s, y - (10 + k * 5) * s, (12 - k * 3) * s, 5 * s, c) } };
+    pine(40, 196, 1, '#2d4f35'); R(g, 0, 196, W, 74, '#4a6a45'); R(g, 0, 210, W, 26, '#4a4652');
+    const dash = (t * 260) % 40; for (let x = -40; x < W; x += 40) R(g, x - dash, 222, 20, 2, '#f4ead2');
+    const b = Math.floor(t * 6) % 2, vx = 190, vy = 176 + b;
+    R(g, vx, vy, 96, 36, '#e8e0d0'); R(g, vx, vy, 96, 4, '#c9bba6'); R(g, vx + 70, vy + 6, 22, 14, '#7aa6c8'); R(g, vx + 8, vy + 6, 52, 12, '#7aa6c8'); R(g, vx, vy + 22, 96, 3, '#e4572e');
+    txt(g, 'RAY', vx + 12, vy + 26, '#2b2540');
+    for (const wx of [vx + 18, vx + 76]) { circ(g, wx, 214, 8, '#1c1a22'); circ(g, wx, 214, 3, '#9a948c') }
+    pine(140, 268, 2, '#1f3a26');
+  },
+  plane(g, cam, t) {
+    for (let x = 30; x < 480; x += 110) { g.save(); g.beginPath(); g.rect(x, 70, 44, 60); g.clip(); R(g, x, 70, 44, 60, '#8fbfe8'); for (let k = 0; k < 3; k++) { const cx = x + ((k * 30 - t * 30) % 70 + 70) % 70 - 10; R(g, cx, 85 + k * 14, 26, 6, '#ffffff') } g.restore() }
+  },
   park(g, cam, t, sc) {
     // lamps: the left one flickers
     for (const [lx, flick] of [[316, true], [cur.w - 26, false]]) {
@@ -88,6 +181,12 @@ const DYN = {
       R(g, fx - 1, fy - 1, 34, 24, '#17131c'); R(g, fx, fy, 32, 22, '#f4ead2'); txt(g, 'KING', fx + 2, fy + 2, '#e4572e'); txt(g, 'OF THE', fx + 2, fy + 8, '#2b2540'); txt(g, 'COURT', fx + 2, fy + 14, '#e4572e');
     }
   },
+};
+
+
+/** Drawn in front of the actors (seat backs in the plane). */
+const FRONTS = {
+  plane(g) { for (const x of [150, 250, 350]) { R(g, x - 30, 196, 60, 50, '#3b5b8c'); R(g, x - 30, 196, 60, 4, '#4d70a6') } },
 };
 
 /* ---------------- bubbles ---------------- */
@@ -119,11 +218,13 @@ export function playCine(scene) {
     const cv = document.createElement('canvas'); cv.width = W; cv.height = H; cv.id = 'cine';
     const skip = document.createElement('button'); skip.id = 'cineSkip'; skip.className = 'big alt'; skip.textContent = 'SKIP ▸▸';
     stage.append(cv, skip);
+    const menu = document.getElementById('menu'), menuWas = menu ? menu.hidden : true; if (menu) menu.hidden = true; // nothing shows through a cutscene
     const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
     const actors = {};
-    for (const a of scene.actors) actors[a.id] = { x: a.x, dir: a.dir || 1, look: a.look, pose: 'idle', walk: 0, bub: null, say: null };
+    for (const a of scene.actors) actors[a.id] = { x: a.x, dir: a.dir || 1, look: a.look, pose: 'idle', walk: 0, bub: null, say: null, talk: false };
     const sc = { ...scene, cam: scene.cam || 0, props: {}, ball: null };
-    const bg = BG[scene.bg](scene.w);
+    const bg = BG[scene.bg](scene.w, scene);
+    const box = document.createElement('div'); box.id = 'cineBox'; box.hidden = true; stage.append(box);
     let t = 0, last = performance.now(), queue = [...scene.steps], running = [], fast = false, raf = 0;
     const start = st => {
       const s = { st, t0: t, len: st.t ?? 0.6 };
@@ -138,6 +239,7 @@ export function playCine(scene) {
       else if (st.toss) s.len = st.t ?? 1;
       else if (st.prop) { sc.props[st.prop] = st.on === false ? 0 : t; s.len = st.t ?? 0 }
       else if (st.card) s.len = st.t ?? 2.2;
+      else if (st.line !== undefined) { s.len = 1e9; s.shown = 0; box.hidden = false; box.className = st.who ? '' : 'note'; box.innerHTML = (st.who ? `<span class="px">${st.name}${st.remote ? ' · ' + st.remote : ''}</span>` : '') + '<p></p><i>▼</i>'; if (st.who && actors[st.who]) actors[st.who].talk = true }
       else if (st.wait !== undefined) s.len = st.wait;
       return s;
     };
@@ -147,6 +249,7 @@ export function playCine(scene) {
       if (st.cam !== undefined) sc.cam = s.from + (st.cam - s.from) * e;
       if (st.move) { const a = actors[st.move]; a.x = s.from + (st.to - s.from) * k; a.walk = k < 1 ? t : 0 }
       if (st.emote && k >= 1) actors[st.emote].bub = null;
+      if (st.line !== undefined) { s.shown = Math.max(s.shown, Math.min(st.text.length, (t - s.t0) * 45)); box.querySelector('p').textContent = st.text.slice(0, Math.floor(s.shown)); box.classList.toggle('done', s.shown >= st.text.length); if (s.next) { if (st.who && actors[st.who]) actors[st.who].talk = false; box.hidden = true; return true } return false }
       if (st.say) actors[st.say].say = k < 1 ? { text: st.text, n: Math.ceil((t - s.t0) * 30) } : null;
       if (st.rally || st.toss) {
         const [A, B] = st.rally || st.toss, n = st.rally ? (st.n || 4) : 1, seg = Math.min(n - 1e-6, k * n), i = Math.floor(seg), u = seg - i;
@@ -158,13 +261,16 @@ export function playCine(scene) {
       }
       return k >= 1;
     };
-    const finish = () => { cancelAnimationFrame(raf); removeEventListener('keydown', key, true); cv.remove(); skip.remove(); cur = null; done() };
-    const key = e => { if (e.code === 'Escape') { e.preventDefault(); e.stopPropagation(); finish() } else if (['Space', 'Enter'].includes(e.code)) { e.preventDefault(); e.stopPropagation(); fast = true } };
+    const finish = () => { cancelAnimationFrame(raf); removeEventListener('keydown', key, true); cv.remove(); skip.remove(); box.remove(); if (menu) menu.hidden = menuWas; cur = null; done() };
+    /** Tap: finish typing the line, or go to the next one; elsewhere speed up the current step. */
+    const tap = () => { const ln = running.find(s => s.st.line !== undefined); if (!ln) { fast = true; return } if (ln.shown < ln.st.text.length) ln.shown = ln.st.text.length; else ln.next = true };
+    const key = e => { if (e.code === 'Escape') { e.preventDefault(); e.stopPropagation(); finish() } else if (['Space', 'Enter'].includes(e.code)) { e.preventDefault(); e.stopPropagation(); if (!e.repeat) tap() } };
     addEventListener('keydown', key, true);
-    cv.onpointerdown = () => { fast = true };
+    cv.onpointerdown = tap; box.onpointerdown = tap;
     skip.onclick = finish;
     cur = { finish };
     const draw = () => {
+      g.fillStyle = '#17131c'; g.fillRect(0, 0, W, H);
       g.drawImage(bg.sky, 0, 0);
       g.drawImage(bg.far, -Math.round(sc.cam * 0.4), 0);
       g.drawImage(bg.near, -Math.round(sc.cam), 0);
@@ -174,20 +280,21 @@ export function playCine(scene) {
         const x = Math.round(a.x - sc.cam), leg = a.walk ? (Math.floor(t * 8) % 2) + 1 : 0;
         const spr = getSprite(a.look, 'front', a.pose, leg);
         g.save(); g.translate(x, 0); if (a.dir < 0) g.scale(-1, 1);
-        g.drawImage(spr, -12 * SC, GROUND - 30 * SC + 4, 24 * SC, 30 * SC); g.restore();
+        g.drawImage(spr, -12 * SC, GROUND - 30 * SC + 4 - (a.talk && Math.floor(t * 6) % 2 ? 2 : 0), 24 * SC, 30 * SC); g.restore();
         g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(x - 14, GROUND + 3, 28, 3);
       }
+      FRONTS[scene.bg]?.(g);
       if (sc.ball) { circ(g, sc.ball.x - sc.cam, sc.ball.y, 2.5, '#e2ef3c'); R(g, sc.ball.x - sc.cam - 1, sc.ball.y - 1, 1, 1, '#ffffff') }
       for (const a of list) { const x = Math.round(a.x - sc.cam), top = GROUND - 30 * SC + 2;
         if (a.bub) bubble(g, x, top, a.bub);
         if (a.say) speech(g, x, top - (a.bub ? 16 : 0), a.say.text, a.say.n) }
       const card = running.find(s => s.st.card);
-      if (card) { const w = txtW(card.st.text, 2) + 16; R(g, 8, 8, w, 20, '#17131c'); R(g, 8, 26, w, 2, '#e4572e'); txt(g, card.st.text, 16, 12, '#f4ead2', 2) }
+      if (card) { const ct = String(card.st.text ?? card.st.card), w = txtW(ct, 2) + 16; R(g, 8, 8, w, 20, '#17131c'); R(g, 8, 26, w, 2, '#e4572e'); txt(g, ct, 16, 12, '#f4ead2', 2) }
       // letterbox bars
       R(g, 0, 0, W, 6, '#0c0a10'); R(g, 0, H - 14, W, 14, '#0c0a10');
     };
     const frame = now => {
-      let dt = Math.min(0.05, (now - last) / 1000); last = now; if (fast) dt *= 6;
+      let dt = Math.min(0.05, (now - last) / 1000); last = now; if (fast) dt *= 6; dt *= DEV_SPEED;
       t += dt;
       if (!running.length) { if (!queue.length) return finish(); fast = false; running.push(start(queue.shift())) }
       running = running.filter(s => !tick(s));

@@ -282,8 +282,8 @@ h1{margin:0;font-size:calc(var(--u)*17);line-height:1.1;color:#f7c993;text-shado
 .ltable{display:grid;grid-template-columns:calc(var(--u)*14) 1fr auto auto;column-gap:calc(var(--u)*8);row-gap:calc(var(--u)*1);font-size:calc(var(--u)*8);color:#d9ccb6;max-height:calc(var(--u)*60);overflow:auto}
 .ltable .px{font-size:calc(var(--u)*4.5);color:#9a8fa8;align-self:center}
 /* cinematic scenes */
-#cine{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;z-index:50;cursor:pointer}
-#cineSkip{position:absolute;right:calc(var(--u)*6);bottom:calc(var(--u)*1);z-index:51;font-size:calc(var(--u)*6);padding:calc(var(--u)*1) calc(var(--u)*4)}
+#cine{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;z-index:1000;cursor:pointer}
+#cineSkip{position:absolute;right:calc(var(--u)*6);bottom:calc(var(--u)*1);z-index:1002;font-size:calc(var(--u)*6);padding:calc(var(--u)*1) calc(var(--u)*4)}
 .chapter{display:flex;flex-direction:column;gap:calc(var(--u)*3);padding:calc(var(--u)*8);background:#211b29;border:calc(var(--u)*1.5) solid #0f0c13}
 .chapter span{color:#e4572e;font-size:calc(var(--u)*6)}
 .chapter b{color:#f4ead2;font-size:calc(var(--u)*12)}
@@ -313,3 +313,11 @@ h1{margin:0;font-size:calc(var(--u)*17);line-height:1.1;color:#f7c993;text-shado
 .gstat{color:#9be37a;font-size:calc(var(--u)*6)}
 .gon{color:#f2c14e;font-size:calc(var(--u)*6)}
 .glock{color:#8a7f98;font-size:calc(var(--u)*5.5)}
+/* cutscene dialogue box */
+#cineBox{position:absolute;left:calc(var(--u)*12);right:calc(var(--u)*12);bottom:calc(var(--u)*16);z-index:1001;background:rgba(23,19,28,.92);border:calc(var(--u)*1.5) solid #f4ead2;padding:calc(var(--u)*4) calc(var(--u)*6);color:#f4ead2;cursor:pointer;font-size:calc(var(--u)*9.5);line-height:1.35}
+#cineBox span{display:block;color:#ff8a5c;font-size:calc(var(--u)*6);margin-bottom:calc(var(--u)*1.5)}
+#cineBox p{margin:0;min-height:2.7em}
+#cineBox.note{border-color:#8a7f98;text-align:center;font-style:italic;color:#c9bba6}
+#cineBox i{position:absolute;right:calc(var(--u)*4);bottom:calc(var(--u)*2);font-style:normal;color:#f2c14e;opacity:0}
+#cineBox.done i{opacity:1;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
