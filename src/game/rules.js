@@ -23,6 +23,12 @@ export function newMatch(isDemo,seed){
   if(m==='practice')S.players=[mkPlayer(0,me,'h1',0)];
   else if(m==='1v1')S.players=[mkPlayer(0,me,'h1',0),mkPlayer(1,LOOKS.o1,'ai',0)];
   else if(m==='2v2')S.players=[mkPlayer(0,me,S.demo?'ai':'h1',2.4),mkPlayer(0,LOOKS.p2,'ai',-2.4),mkPlayer(1,LOOKS.o1,'ai',-2.4),mkPlayer(1,LOOKS.o2,'ai',2.4)];
+  else if(m==='online'&&S.net&&S.net.size===4){
+    // 2 vs 2 online. Slots 0,1 = team 0, slots 2,3 = team 1. Server: humans are 'net', empty slots are bots.
+    // Players: you are 'h1', everyone else (people and bots) moves from the server's snapshots.
+    const role=S.net.role,lk=S.net.looks||[],home=[2.4,-2.4,-2.4,2.4],fb=[LOOKS.p1,LOOKS.p2,LOOKS.o1,LOOKS.o2];
+    const ctrl=i=>role==='server'?(S.net.humans&&S.net.humans[i]?'net':'ai'):(i===S.net.slot?'h1':'net');
+    S.players=[0,1,2,3].map(i=>mkPlayer(i<2?0:1,lk[i]?mkLook(lk[i]):fb[i],ctrl(i),home[i]))}
   else if(m==='online'){
     // host: we are team 0. guest: our team comes from the host or server (P2P guests are team 1). server: both remote.
     const role=S.net&&S.net.role,lk=role==='host'?[S.myLookData,S.net.guestLook]:(S.net&&S.net.looks)||[];
@@ -160,7 +166,8 @@ export function onEvent(t,a,c,back){
   }else if(t==='roof'){if(r.serve&&r.bounces===0)serveFault('HIT THE ROOF');else endPoint(1-r.lastTeam,'HIT THE ROOF!');
   }else if(t==='net')r.net=true;
 }
-export function teamName(t,short){if(S.demo)return t?'BLUE':'RED';if(CAREER.active)return t?CAREER.event.opp:(CAREER.event.doubles&&!short?'YOU & '+((PARTNERS.find(x=>x.id===CAREER.event.partner)||PARTNERS[0]).name):'YOU');const m=settings.mode;if(m==='online')return t===H.myTeam()?'YOU':((S.net&&S.net.names&&S.net.names[t])||'RIVAL');if(m==='pvp')return t?'P2':'P1';if(m==='2v2')return t?(short?'CPU':'LEO & IVY'):(short?'YOU':'YOU & MIA');return t?'CPU':'YOU'}
+export function teamName(t,short){if(S.demo)return t?'BLUE':'RED';if(CAREER.active)return t?CAREER.event.opp:(CAREER.event.doubles&&!short?'YOU & '+((PARTNERS.find(x=>x.id===CAREER.event.partner)||PARTNERS[0]).name):'YOU');const m=settings.mode;if(m==='online'&&S.net&&S.net.size===4){const nm=S.net.names||[],hu=S.net.humans||[];const ns=(t?[2,3]:[0,1]).map(i=>i===S.net.slot?'YOU':hu[i]?(nm[i]||'P'+(i+1)):'BOT');return short?(t===H.myTeam()?'YOU':'RIVALS'):ns.join(' & ')}
+  if(m==='online')return t===H.myTeam()?'YOU':((S.net&&S.net.names&&S.net.names[t])||'RIVAL');if(m==='pvp')return t?'P2':'P1';if(m==='2v2')return t?(short?'CPU':'LEO & IVY'):(short?'YOU':'YOU & MIA');return t?'CPU':'YOU'}
 export function serveFault(reason){
   S.state='between';
   if(S.R0.faults===0){H.showMsg('FAULT',reason+' · 2ND SERVE');S.stateT=1.1;S.afterState=()=>setupServe(true)}

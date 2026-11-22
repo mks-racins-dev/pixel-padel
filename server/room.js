@@ -6,6 +6,10 @@
 // in one isolate), and the simulation keeps its state in module globals. So each room keeps
 // its own copy of that state and swaps it in around every step (JS is single-threaded,
 // so nothing else can run in between).
+//
+// A room is 1 vs 1 (2 slots) or 2 vs 2 (4 slots: 0,1 = team 0, 2,3 = team 1). In 2 vs 2 the host
+// starts the match from a lobby; empty slots are played by bots, and a player who leaves
+// mid-match is replaced by a bot.
 import { S } from '../src/state.js';
 import { settings } from '../src/game/config.js';
 import { H } from '../src/sim/hooks.js';
@@ -21,6 +25,8 @@ import { startCharge, releaseCharge, tryVibora } from '../src/game/actions.js';
 const VENUES = ['sunset', 'lv', 'ee', 'lt', 'es', 'by', 'us', 'ru'];
 const SNAP_EVERY = 1 / 30;
 const MAX_MSGS_PER_SEC = 120;
+export const SLOT_TEAM = { 2: [0, 1], 4: [0, 0, 1, 1] };
+const SLOT_ORDER = { 2: [0, 1], 4: [0, 2, 1, 3] }; // joiners go to the other team first
 
 // Fresh simulation state, taken before any room ran.
 const PRISTINE_S = { ...S };
@@ -36,7 +42,7 @@ Object.assign(H, {
   hideMsg: () => current && current.broadcast({ t: 'hide' }),
   pointWon: w => current && current.broadcast({ t: 'pt', w }),
   showEnd: () => { S.state = 'over'; if (current) { current.broadcast(mkSnap()); current.broadcast({ t: 'end' }); current.finished(S.score.winner) } },
-  inputOf: p => (current && current.players[p.team] ? current.players[p.team].input : { mx: 0, my: 0 }),
+  inputOf: p => { const q = current && current.players.find(x => x.slot === S.players.indexOf(p)); return q ? q.input : { mx: 0, my: 0 } },
   myTeam: () => 0,
 });
 
@@ -54,7 +60,10 @@ export class MatchRoom {
     this.seed = opts.seed;
     this.onResult = opts.onResult;
     this.reported = false;
-    this.players = [];      // [{ send, team, style, look, loc, input, msgs, msgT }]
+    this.players = [];      // [{ cid, slot, team, send, style, look, loc, input, msgs, msgT }]
+    this.size = 2;          // 4 once the host asks for a 2 vs 2 room
+    this.host = null;
+    this.cids = 0;
     this.fx = [];
     this.started = false;
     this.acc = 0; this.snapT = 0;
@@ -83,15 +92,22 @@ export class MatchRoom {
   /** A player connected. `send` takes a string; `who` is the signed-in player, if any. Returns their team, or -1 if refused. */
   join(send, who = {}) {
     if (this.closed) { send(JSON.stringify({ t: 'bye' })); return -1 } // someone left: this room is finished
-    if (this.players.length >= 2) { send(JSON.stringify({ t: 'full' })); return -1 }
-    const p = { send, team: this.players.length, id: who.id || null, name: who.name || null, style: 'allround', look: null, loc: 'sunset', input: { mx: 0, my: 0 }, hello: false, msgs: 0, msgT: 0 };
+    const slot = this.started ? undefined : SLOT_ORDER[this.size].find(i => !this.players.some(p => p.slot === i));
+    if (slot === undefined) { send(JSON.stringify({ t: 'full' })); return -1 }
+    const p = { cid: this.cids++, slot, team: SLOT_TEAM[this.size][slot], send, id: who.id || null, name: who.name || null, style: 'allround', look: null, loc: 'sunset', input: { mx: 0, my: 0 }, hello: false, msgs: 0, msgT: 0 };
     this.players.push(p);
-    return p.team;
+    return p.cid;
+  }
+  /** Who is in which slot, sent to everyone in a 2 vs 2 room while it waits to start. */
+  lobby() {
+    const slots = [0, 1, 2, 3].map(i => { const p = this.players.find(q => q.slot === i && q.hello); return p ? { name: p.name || 'PLAYER ' + (i + 1), style: p.style } : null });
+    for (const p of this.players) p.send(JSON.stringify({ t: 'lobby', slots, you: p.slot, host: this.host ? this.host.slot : -1, code: this.code }));
   }
 
   /** A player disconnected: the match is over for the other one. */
-  leaveRoom(team) {
-    const gone = this.players.find(p => p.team === team);
+  leaveRoom(cid) {
+    const gone = this.players.find(p => p.cid === cid);
+    if (gone && this.size === 4) return this.leave4(gone);
     // quitting a ranked match that is still running counts as a loss
     if (gone && this.started && this.run(() => S.state) !== 'over') { const other = this.players.find(p => p !== gone); if (other) this.report(other, gone, 'left') }
     this.players = this.players.filter(p => p !== gone);
@@ -100,9 +116,21 @@ export class MatchRoom {
     if (this.players.length) this.closed = true;
   }
 
+  /** 2 vs 2: a bot takes over the slot of a player who leaves; the lobby just frees it. */
+  leave4(gone) {
+    this.players = this.players.filter(p => p !== gone);
+    if (!this.players.length) { this.started = false; return }
+    if (this.host === gone) this.host = this.players.find(p => p.hello) || this.players[0];
+    if (this.started && this.run(() => S.state) !== 'over') {
+      this.run(() => { const pl = S.players[gone.slot]; if (pl) { pl.ctrl = 'ai'; pl.charging = null } });
+      this.broadcast({ t: 'msg', b: 'BOT TAKES OVER', s: (gone.name || 'a player') + ' left' });
+      this.broadcast({ t: 'swap', slot: gone.slot });
+    } else if (!this.started) this.lobby();
+  }
+
   get empty() { return this.players.length === 0 }
 
-  get ranked() { const [a, b] = this.players; return this.kind === 'quick' && !!a?.id && !!b?.id && a.id !== b.id }
+  get ranked() { if (this.size !== 2) return false; const [a, b] = this.players; return this.kind === 'quick' && !!a?.id && !!b?.id && a.id !== b.id }
   report(w, l, reason) {
     if (this.reported || this.kind !== 'quick' || !w.id || !l.id || w.id === l.id) return; // ranked = quick match between two signed-in players
     this.reported = true;
@@ -119,8 +147,8 @@ export class MatchRoom {
     for (const p of this.players) if (res[p.id]) p.send(JSON.stringify({ t: 'rating', season: res.season, ...res[p.id] }));
   }
 
-  message(team, raw, nowSec = 0) {
-    const p = this.players.find(q => q.team === team);
+  message(cid, raw, nowSec = 0) {
+    const p = this.players.find(q => q.cid === cid);
     if (!p) return;
     // basic flood protection
     if (nowSec - p.msgT >= 1) { p.msgT = nowSec; p.msgs = 0 }
@@ -130,18 +158,29 @@ export class MatchRoom {
 
     if (m.t === 'hello') {
       if (m.mode === 'join' && this.kind === 'private' && this.players.length === 1) { p.send(JSON.stringify({ t: 'nogame' })); return }
+      if (!this.host && m.mode !== 'join') { this.host = p; if (m.fmt === '2v2' && this.kind === 'private' && this.players.length === 1) this.size = 4 }
       p.hello = true;
+      if (typeof m.name === 'string' && !p.name) p.name = m.name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) || null;
       p.style = STYLES[m.style] ? m.style : 'allround';
       p.look = m.look ? cleanLook(m.look) : null;
       if (VENUES.includes(m.loc)) p.loc = m.loc;
-      p.send(JSON.stringify({ t: 'joined', team: p.team, code: this.code }));
+      p.send(JSON.stringify({ t: 'joined', team: p.team, slot: p.slot, size: this.size, code: this.code }));
+      if (this.size === 4) { if (!this.started) this.lobby(); return }
       if (this.players.length === 2 && this.players.every(q => q.hello)) this.start();
       return;
+    }
+    if (this.size === 4) {
+      const waiting = !this.started || this.run(() => S.state) === 'over';
+      if (m.t === 'slot' && waiting && [0, 1, 2, 3].includes(m.i) && !this.players.some(q => q.slot === m.i)) {
+        p.slot = m.i; p.team = SLOT_TEAM[4][m.i]; this.started = false; this.lobby(); return }
+      if ((m.t === 'go' || m.t === 'again') && waiting && p === this.host) { this.start(); return }
+      if (m.t === 'again' && waiting) return;
     }
     if (m.t === 'again') { if (this.started && this.run(() => S.state) === 'over') this.start(); return }
     if (!this.started) return;
     this.run(() => {
-      const pl = S.players[p.team];
+      const pl = S.players[p.slot];
+      if (pl && pl.ctrl === 'ai') return; // a bot plays this slot
       if (!pl) return;
       if (m.t === 'm') p.input = { mx: clamp1(m.mx), my: clamp1(m.my) };
       else if (m.t === 'd' && (m.a === 'drive' || m.a === 'lob')) startCharge(pl, m.a);
@@ -151,7 +190,8 @@ export class MatchRoom {
   }
 
   start() {
-    const [a, b] = this.players;
+    if (this.size === 4) return this.start4();
+    const [a, b] = [0, 1].map(i => this.players.find(p => p.slot === i));
     const loc = this.kind === 'private' ? a.loc : VENUES[Math.floor(Math.random() * VENUES.length)];
     const seed = this.seed ?? ((Date.now() ^ (Math.random() * 0x7fffffff)) >>> 0);
     this.net = { role: 'server', looks: [a.look, b.look], styles: [a.style, b.style], fx: this.fx };
@@ -162,6 +202,23 @@ export class MatchRoom {
     this.started = true; this.acc = 0; this.snapT = 0; this.reported = false;
     const names = [a.name, b.name], ranked = this.ranked;
     for (const p of this.players) p.send(JSON.stringify({ t: 'start', team: p.team, styles: [a.style, b.style], looks: [a.look, b.look], names, ranked, loc, games: 3 }));
+  }
+
+  /** 2 vs 2: humans in their slots, bots everywhere else. */
+  start4() {
+    const by = i => this.players.find(p => p.slot === i && p.hello);
+    const slots = [0, 1, 2, 3].map(by);
+    const loc = this.host ? this.host.loc : 'sunset';
+    const seed = this.seed ?? ((Date.now() ^ (Math.random() * 0x7fffffff)) >>> 0);
+    const looks = slots.map(p => (p ? p.look : null)), styles = slots.map(p => (p ? p.style : 'allround'));
+    const humans = slots.map(p => !!p), names = slots.map(p => (p ? p.name || null : null));
+    this.net = { role: 'server', size: 4, humans, looks, styles, fx: this.fx };
+    this.run(() => {
+      Object.assign(settings, { mode: 'online', games: 3, loc });
+      newMatch(false, seed);
+    });
+    this.started = true; this.acc = 0; this.snapT = 0;
+    for (const p of this.players) p.send(JSON.stringify({ t: 'start', team: p.team, slot: p.slot, size: 4, humans, styles, looks, names, ranked: false, loc, games: 3 }));
   }
 
   /** Advance real time by `dt` seconds: fixed simulation steps plus snapshots at 30 Hz. */

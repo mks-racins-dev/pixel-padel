@@ -1,4 +1,5 @@
 import { wsAuth } from './account.ts';
+import { profile } from '../meta/profile.ts';
 import { S } from '../state.js';
 import { mkSnap, r3 } from '../sim/snapshot.js';
 export { mkSnap, r3 };
@@ -29,11 +30,11 @@ export function wsConn(url){
   return c;
 }
 /** Connect to a match room on the game server. mode: 'create' | 'join' | 'quick'. */
-export function joinServerRoom(code,mode){
+export function joinServerRoom(code,mode,fmt){
   netClose();
-  const n={role:'guest',server:true,code,mode,conn:null,inp:{mx:9,my:9},inT:0,snap:null,snapAt:0,hk:'',team:null};S.net=n;
+  const n={role:'guest',server:true,code,mode,fmt:fmt||'1v1',size:2,slot:null,conn:null,inp:{mx:9,my:9},inT:0,snap:null,snapAt:0,hk:'',team:null};S.net=n;
   const q=wsAuth(),c=wsConn(SERVER_URL+'/room/'+code+(q?'?'+q:''));n.conn=c;bindConn(c);
-  c.on('open',()=>c.send({t:'hello',mode,style:settings.style,look:S.myLookData,loc:settings.loc}));
+  c.on('open',()=>c.send({t:'hello',mode,fmt:fmt||'1v1',name:profile().name||'',style:settings.style,look:S.myLookData,loc:settings.loc}));
   c.on('error',()=>{if(S.net===n)onStatus('Could not reach the game server.')});
 }
 /** Find a random opponent: the lobby pairs two waiting players and gives them a room code. */
@@ -54,6 +55,8 @@ export function handleLeft(){if(!S.net)return;const n=S.net;S.net=null;try{n.pee
   if(!S.demo){S.paused=true;$('msgBig').textContent='RIVAL LEFT';$('msgSmall').textContent='back to menu…';$('msg').classList.add('show');setTimeout(()=>{$('msg').classList.remove('show');toMenu()},2200)}
   else{$('codeShow').textContent='';onStatus('Connection closed.')}}
 export function bindConn(c){c.on('data',onNet);c.on('close',()=>{if(S.net&&S.net.conn===c)handleLeft()});c.on('error',()=>{})}
+/** 2 vs 2 room on the game server: friends join with the code, the host starts, bots fill empty slots. */
+export function host2v2(){const code=mkCode();joinServerRoom(code,'create','2v2');$('codeShow').textContent=code;onStatus('Opening a 2 vs 2 room…')}
 export function hostGame(){
   if(useServer()){const code=mkCode();joinServerRoom(code,'create');$('codeShow').textContent=code;onStatus('Opening a room…');return}
   netClose();$('codeShow').textContent='';onStatus('Opening a room…');
@@ -85,7 +88,7 @@ export function onNet(m){
     else if(m.t==='u'){if(p.charging===m.a)releaseCharge(p)}
     else if(m.t==='v')tryVibora(p);
   }else{
-    if(m.t==='start'){if(m.team===0||m.team===1)S.net.team=m.team;S.net.names=Array.isArray(m.names)?m.names:[];S.net.ranked=!!m.ranked;settings.games=m.games;S.net.styles=m.styles;S.net.looks=Array.isArray(m.looks)?m.looks:[];if(LOCS[m.loc])setLoc(m.loc);S.net.snap=null;S.net.hk='';showGameUI();newMatch(false)}
+    if(m.t==='start'){$('lobby2').hidden=true;S.net.size=m.size===4?4:2;S.net.slot=m.slot??m.team;S.net.humans=m.humans||[];if(m.team===0||m.team===1)S.net.team=m.team;S.net.names=Array.isArray(m.names)?m.names:[];S.net.ranked=!!m.ranked;settings.games=m.games;S.net.styles=m.styles;S.net.looks=Array.isArray(m.looks)?m.looks:[];if(LOCS[m.loc])setLoc(m.loc);S.net.snap=null;S.net.hk='';showGameUI();newMatch(false)}
     else if(m.t==='s'){if(!S.demo)applySnap(m)}
     else if(m.t==='msg')showMsg(m.b,m.s);
     else if(m.t==='hide')$('msg').classList.remove('show');
@@ -94,10 +97,24 @@ export function onNet(m){
     else if(m.t==='full')onStatus('That room is already full.');
     else if(m.t==='rating'){const d=Math.round(m.after-m.before);const line='RANKED RATING: '+Math.round(m.before)+' → '+Math.round(m.after)+' ('+(d>=0?'+':'')+d+')';
       const el=$('endInfo');if(el)el.innerHTML=(el.innerHTML?el.innerHTML+'<br>':'')+line}
-    else if(m.t==='joined'){if(S.net.mode==='create')onStatus('Share this code. Waiting for your rival…');else onStatus('Connected! Starting…')}
+    else if(m.t==='joined'){S.net.size=m.size===4?4:2;S.net.slot=m.slot;S.net.team=m.team;if(S.net.size===4){$('codeShow').textContent=m.code;onStatus(S.net.mode==='create'?'Share the code. Start any time: bots fill empty slots.':'In the room. Pick a slot; the host starts.')}else if(S.net.mode==='create')onStatus('Share this code. Waiting for your rival…');else onStatus('Connected! Starting…')}
+    else if(m.t==='lobby')renderLobby(m);
+    else if(m.t==='swap'){const p=S.players[m.slot];if(p&&S.net.humans)S.net.humans[m.slot]=false;updateHud()}
     else if(m.t==='nogame'){onStatus('No game found with code '+S.net.code+'.');netClose()}
     else if(m.t==='bye')handleLeft();
   }
+}
+/** The 2 vs 2 waiting room: two teams of two slots. Click an empty slot to move there. */
+export function renderLobby(m){
+  if(!S.net)return;S.net.team=m.you<2?0:1;S.net.slot=m.you;
+  const el=$('lobby2');el.hidden=false;$('end').hidden=true;
+  if(!S.demo){$('hud').hidden=true;$('online').hidden=false;newMatch(true)}
+  const slot=i=>{const s=m.slots[i],me=i===m.you;return `<button class="lslot${me?' me':''}${s?'':' free'}" data-slot="${i}" ${s&&!me?'disabled':''}>${s?(me?'YOU':s.name)+(i===m.host?' ★':''):'+ JOIN SLOT (BOT)'}</button>`};
+  el.innerHTML=`<div class="lteam"><span class="px">TEAM A</span>${slot(0)}${slot(1)}</div><div class="lteam"><span class="px">TEAM B</span>${slot(2)}${slot(3)}</div>`
+    +(m.you===m.host?'<button class="big" id="lobbyGo">START MATCH ▸</button>':'<div class="help">Waiting for the host (★) to start.</div>');
+  el.querySelectorAll('[data-slot]').forEach(b=>b.onclick=()=>{const i=+b.dataset.slot;if(!m.slots[i])netSend({t:'slot',i})});
+  const go=$('lobbyGo');if(go)go.onclick=()=>netSend({t:'go'});
+  const n=m.slots.filter(Boolean).length;onStatus(n+' of 4 players · '+(4-n)+' bot'+(4-n===1?'':'s')+' will play the empty slots');
 }
 export function applySnap(m){
   S.net.snap=m;S.net.snapAt=performance.now();if(S.state!=='over')S.state=m.st;
@@ -123,9 +140,10 @@ export function guestTick(dt){
 /** One-time side effects (DOM wiring, saved settings). Called from main.js. */
 export function setup(){
   $('hostBtn').onclick=()=>{initAudio();hostGame()};
+  if(useServer()){$('host2Btn').hidden=false;$('host2Btn').onclick=()=>{initAudio();host2v2()}}
   if(useServer()){$('quickBtn').hidden=false;$('quickBtn').onclick=()=>{initAudio();quickMatch()}}
   $('joinBtn').onclick=()=>{initAudio();joinGame()};
   $('codeIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')joinGame()});
   $('codeIn').addEventListener('keyup',e=>e.stopPropagation());
-  $('onBack').onclick=()=>{netClose();$('online').hidden=true;$('menu').hidden=false};
+  $('onBack').onclick=()=>{netClose();$('lobby2').hidden=true;$('online').hidden=true;$('menu').hidden=false};
 }

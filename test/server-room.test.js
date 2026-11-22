@@ -85,3 +85,50 @@ describe('game server room', () => {
     expect(JSON.stringify(x1.last('s').b)).toBe(ref);
   });
 });
+
+describe('2 vs 2 rooms', () => {
+  const host2 = room => { const h = client(room); hello(h, { mode: 'create', fmt: '2v2' }); return h };
+  it('the host opens a 4-slot room; joiners go to the other team first', () => {
+    const room = new MatchRoom({ code: 'WXYZ', kind: 'private', seed: 2 });
+    const h = host2(room), b = client(room); hello(b, { mode: 'join' });
+    const lob = b.last('lobby');
+    expect(lob.you).toBe(2);
+    expect(lob.slots.filter(Boolean).length).toBe(2);
+    expect(h.last('start')).toBeUndefined(); // waits for the host
+  });
+  it('two players can choose to be partners, then bots fill the other team', () => {
+    const room = new MatchRoom({ code: 'WXYZ', kind: 'private', seed: 2 });
+    const h = host2(room), b = client(room); hello(b, { mode: 'join' });
+    b.say({ t: 'slot', i: 1 });
+    expect(b.last('lobby').you).toBe(1);
+    b.say({ t: 'go' }); expect(b.last('start')).toBeUndefined(); // only the host starts
+    h.say({ t: 'go' });
+    const st = h.last('start');
+    expect(st.size).toBe(4);
+    expect(st.humans).toEqual([true, true, false, false]);
+    expect(b.last('start').team).toBe(0);
+    run(room, 3);
+    const snap = h.last('s');
+    expect(snap.P.length).toBe(4);
+  });
+  it('a full room refuses a fifth player', () => {
+    const room = new MatchRoom({ code: 'WXYZ', kind: 'private' });
+    host2(room); for (let i = 0; i < 3; i++) hello(client(room), { mode: 'join' });
+    expect(client(room).team).toBe(-1);
+  });
+  it('a player who leaves mid-match is replaced by a bot and the match goes on', () => {
+    const room = new MatchRoom({ code: 'WXYZ', kind: 'private', seed: 3 });
+    const h = host2(room), b = client(room); hello(b, { mode: 'join' });
+    h.say({ t: 'go' }); run(room, 1);
+    room.leaveRoom(b.team);
+    expect(h.last('swap').slot).toBe(2);
+    expect(h.last('bye')).toBeUndefined();
+    const before = h.got.length; run(room, 1);
+    expect(h.got.length).toBeGreaterThan(before);
+  });
+  it('a solo host can start a match against bots', () => {
+    const room = new MatchRoom({ code: 'WXYZ', kind: 'private', seed: 4 });
+    const h = host2(room); h.say({ t: 'go' });
+    expect(h.last('start').humans).toEqual([true, false, false, false]);
+  });
+});
