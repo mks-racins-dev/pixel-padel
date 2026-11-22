@@ -6,7 +6,7 @@ The plan assumes one developer working part-time, plus a hired pixel artist and 
 
 Status key: ✅ done · 🟡 partly done · ⬜ not started
 
-Last updated: 2026-11-21 (Phase 3 started)
+Last updated: 2026-11-22 (story career: Acts 1–4)
 
 ---
 
@@ -64,19 +64,24 @@ Last updated: 2026-11-21 (Phase 3 started)
 |---|---|
 | Saved profile (versioned, repairs damaged saves) | ✅ |
 | XP, levels, skill points (speed, power, accuracy, wall play) | ✅ |
-| Career mode: 4 tiers, 12 named opponents, tier finals | ✅ |
+| Story career: 4 acts, 25 matches, about 30 story scenes | ✅ |
+| Act 1: town map, 4 street courts with physics twists (wind, sand, chain-link fence, low roof), dares and prizes | ✅ |
+| Acts 2–4: knockout tournaments, ranking points and world rank, Kebab King sponsor goals | ✅ |
+| Act 3: no bounce marker (coach away), playing identity with a permanent bonus | ✅ |
+| Act 4: press conferences and fans, El Maestro final, world #1 and epilogue | ✅ |
+| Endless seasons after the story (weekly calendar, defending world #1) | ⬜ |
 | Unlockable ball trails | ✅ |
 | Daily and weekly challenges | ✅ |
 | Weekly Cup (same seeded knockout for everyone each week) | ✅ |
 | New main menu (side list with detail panels, keyboard and gamepad) | ✅ |
 | Different looks for career opponents | ⬜ |
-| Doubles partner and chemistry in career | ⬜ |
+| Doubles partner and chemistry in career (set up by the Ruta story) | ⬜ |
 | More cosmetics: outfits, rackets, celebrations | ⬜ |
 | Cloud saves | ✅ (Phase 3) |
 | Pixel artist: sprite sheets, animations, venues | ⬜ hire |
 | Composer: one chiptune track per country, sound effects | ⬜ hire |
 
-**Gate:** **15% or more still playing after 7 days**, and players finishing at least the first career tier. Launch the Steam "Coming Soon" page and aim for **5,000+ wishlists**.
+**Gate:** **15% or more still playing after 7 days**, and players finishing at least Act 1 (King of the Court). Launch the Steam "Coming Soon" page and aim for **5,000+ wishlists**.
 
 ---
 
@@ -149,7 +154,7 @@ Last updated: 2026-11-21 (Phase 3 started)
 
 ## Next steps
 
-1. **Playtest** the career club tier, the 5 practice drills and the new menu, and tune difficulty and XP.
+1. **Playtest** the story career from Act 1 to the El Maestro final: tune opponent skill, court twists (`wind`, `roof` in `src/meta/career.ts`), XP and ranking points. Also check the 5 practice drills and the new menu.
 2. **Run the Phase 1 gate:** post the web build on itch.io and r/padel, and set `ANALYTICS_URL` so retention can be measured.
 3. Write briefs for the pixel artist and composer.
 4. Finish the small Phase 1 leftovers (key remapping, simple controls) if playtests ask for them.
