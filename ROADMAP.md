@@ -6,7 +6,7 @@ The plan assumes one developer working part-time, plus a hired pixel artist and 
 
 Status key: ✅ done · 🟡 partly done · ⬜ not started
 
-Last updated: 2026-11-22 (story career: Acts 1–4)
+Last updated: 2026-11-22 (story career: Acts 1–4, endless seasons)
 
 ---
 
@@ -69,7 +69,7 @@ Last updated: 2026-11-22 (story career: Acts 1–4)
 | Acts 2–4: knockout tournaments, ranking points and world rank, Kebab King sponsor goals | ✅ |
 | Act 3: no bounce marker (coach away), playing identity with a permanent bonus | ✅ |
 | Act 4: press conferences and fans, El Maestro final, world #1 and epilogue | ✅ |
-| Endless seasons after the story (weekly calendar, defending world #1) | ⬜ |
+| Endless seasons after the story: 3 seeded title defences a week, defence streaks, crown trail | ✅ |
 | Unlockable ball trails | ✅ |
 | Daily and weekly challenges | ✅ |
 | Weekly Cup (same seeded knockout for everyone each week) | ✅ |
