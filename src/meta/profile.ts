@@ -8,7 +8,7 @@ export interface Profile {
   level: number;
   points: number;          // unspent skill points
   alloc: Record<Stat, number>;
-  career: { won: string[] };   // ids of won career events
+  career: { won: string[]; dares: string[]; seen: string[] }; // events done, dares won, story scenes seen
   unlocked: string[];      // cosmetic ids (trails)
   trail: string;           // equipped trail
   name: string;            // nickname shown to opponents and on the leaderboard ('' = not chosen yet)
@@ -23,7 +23,7 @@ export const MAX_LEVEL = 30;
 export const MAX_ALLOC = 8;     // points per stat
 export const PER_POINT = 0.25;  // stat gain per point (styles use a 1–5 scale)
 
-const fresh = (): Profile => ({ v: VERSION, xp: 0, level: 1, points: 0, alloc: { spd: 0, pow: 0, acc: 0, wall: 0 }, career: { won: [] }, unlocked: ['classic'], trail: 'classic', name: '', updatedAt: 0 });
+const fresh = (): Profile => ({ v: VERSION, xp: 0, level: 1, points: 0, alloc: { spd: 0, pow: 0, acc: 0, wall: 0 }, career: { won: [], dares: [], seen: [] }, unlocked: ['classic'], trail: 'classic', name: '', updatedAt: 0 });
 
 let cur: Profile | null = null;
 
@@ -37,7 +37,16 @@ export function migrate(raw: unknown): Profile {
   p.xp = num(r.xp, 0, 1e6, 0);
   p.points = num(r.points, 0, MAX_LEVEL * 2, 0);
   for (const k of Object.keys(p.alloc) as Stat[]) p.alloc[k] = num(r.alloc?.[k], 0, MAX_ALLOC, 0);
-  if (Array.isArray(r.career?.won)) p.career.won = r.career!.won.filter(x => typeof x === 'string');
+  const strs = (a: unknown) => (Array.isArray(a) ? a.filter(x => typeof x === 'string') as string[] : []);
+  p.career.won = strs(r.career?.won); p.career.dares = strs(r.career?.dares); p.career.seen = strs(r.career?.seen);
+  // saves from before Act 1: the old 3-match club ladder maps onto the town courts
+  const LEGACY: Record<string, string[]> = { club1: ['a1_tomi'], club2: ['a1_market'], club3: ['a1_roof', 'a1_camp', 'a1_ware', 'a1_ruta', 'a1_king'] };
+  for (const [old, now] of Object.entries(LEGACY)) if (p.career.won.includes(old)) {
+    p.career.won = p.career.won.filter(x => x !== old);
+    for (const n of now) if (!p.career.won.includes(n)) p.career.won.push(n);
+  }
+  if (p.career.won.includes('a1_tomi')) for (const k of ['intro', 'ray']) if (!p.career.seen.includes(k)) p.career.seen.push(k);
+  if (p.career.won.includes('a1_king')) for (const k of ['ruta', 'ruta_loss', 'king', 'act1']) if (!p.career.seen.includes(k)) p.career.seen.push(k);
   if (Array.isArray(r.unlocked)) p.unlocked = [...new Set(['classic', ...r.unlocked.filter(x => typeof x === 'string')])];
   p.trail = typeof r.trail === 'string' && p.unlocked.includes(r.trail) ? r.trail : 'classic';
   if (typeof r.name === 'string') p.name = r.name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);

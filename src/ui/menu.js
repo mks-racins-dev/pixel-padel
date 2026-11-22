@@ -121,7 +121,7 @@ function buildSteppers() {
 }
 
 function buildVenueCards() {
-  $('venueCards').innerHTML = Object.entries(LOCS).map(([k, l]) => {
+  $('venueCards').innerHTML = Object.entries(LOCS).filter(([, l]) => !l.street).map(([k, l]) => {
     const sky = [l.sky[1], l.sky[4], l.sky[7]].map(c => `<span style="background:${c}"></span>`).join('');
     return `<button data-v="${k}" aria-label="${l.city}"><span class="vsky" aria-hidden="true">${sky}<span style="background:${l.court}" class="vcourt"></span></span><span class="vname">${l.city}</span></button>`;
   }).join('');

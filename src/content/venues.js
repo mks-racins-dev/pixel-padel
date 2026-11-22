@@ -10,8 +10,13 @@ export const TOWNS={
   us:{flat:true,roof:'deco',land:'palms',neon:'#ff6ad5',neon2:'#6fe8ff',far:'#5a3f8a',farL:'#3a2f6a',pals:[{wall:'#f6b6c8',brick:'#eaaabc',dark:'#c8889a',trim:'#fff0f4'},{wall:'#9fe0d6',brick:'#93d4ca',dark:'#72b2a8',trim:'#effcf8'},{wall:'#fbe3a0',brick:'#efd794',dark:'#ccb472',trim:'#fffaea'},{wall:'#c8b4f0',brick:'#bca8e4',dark:'#9a86c2',trim:'#f4eeff'}],w:[58,30],h:[36,20]},
   ru:{roof:'merlon',roofC:'#8a3430',land:'onion',far:'#3a3560',farL:'#4c4878',pals:[{wall:'#a8483c',brick:'#983c32',dark:'#7a2e26',trim:'#d8a090'},{wall:'#e6d8b8',brick:'#d8caa8',dark:'#b4a684',trim:'#f8eed8'},{wall:'#d6b04c',brick:'#c8a240',dark:'#a4822c',trim:'#f0dc98'},{wall:'#8aa0b8',brick:'#7e94ac',dark:'#62788e',trim:'#c4d0dc'}],w:[46,26],h:[22,12]}
 };
+for(const k of ['roof','market','camp','ware'])TOWNS[k]=TOWNS.sunset;
 /* ---------------- venues ---------------- */
 export const LOCS={
+  roof:{street:true,name:'ROOFTOP',sub:'parking garage · level 5',city:'ROOFTOP',flag:null,court:'#5d6470',sun:['#fff3c8','#fffbe6'],sky:['#4f7fb8','#5f8cc0','#709ac8','#83a8d0','#97b6d8','#acc4df','#c2d2e6','#d9e2ec']},
+  market:{street:true,name:'SUPERMARKET',sub:'behind the supermarket',city:'BACK LOT',flag:null,court:'#3f7a4a',sun:['#fbd99a','#fde7b3'],sky:['#6a6f9a','#7b7aa0','#8e86a6','#a393aa','#b8a1ab','#cdb0aa','#dfc0a8','#eed2aa']},
+  camp:{street:true,name:'CAMPSITE',sub:'campsite court · sandy',city:'CAMPSITE',flag:null,court:'#b8935a',sun:['#fff0a8','#fffbd8'],sky:['#3f8fc8','#4c99cd','#5ba3d2','#6cadd7','#7fb8dc','#94c3e1','#aacee6','#c2daeb']},
+  ware:{street:true,name:'WAREHOUSE',sub:'old warehouse · mind the beams',city:'WAREHOUSE',flag:null,court:'#7a4a3a',sun:['#e8d8b0','#f4ead0'],night:true,sky:['#2a2230','#332a3a','#3d3244','#483b4e','#544558','#614f62','#6f5a6c','#7e6676']},
   sunset:{name:'SUNSET',sub:'sunset club',city:'SUNSET',flag:null,court:'#2f63b0',sun:['#fbd99a','#fde7b3'],sky:['#6b5b96','#7f639d','#9a6c9f','#b8789d','#d48896','#e89c8f','#f2b28c','#f7c993']},
   lv:{name:'LATVIA',sub:'riga · old town courts',city:'RIGA',flag:{s:[['#9e3039',2],['#ffffff',1],['#9e3039',2]]},court:'#2f63b0',sun:['#f3dfc8','#fbeee0'],sky:['#4a5d8f','#5b6fa0','#6f82b0','#8596bf','#9fabcb','#bcc2d6','#d8d3dc','#efe2d8']},
   ee:{name:'ESTONIA',sub:'tallinn · baltic breeze',city:'TALLINN',flag:{s:[['#0072ce',1],['#111111',1],['#ffffff',1]]},court:'#2e7f6a',sun:['#fff3c8','#fffbe6'],sky:['#5a86b8','#6893c1','#78a0ca','#8aaed2','#9dbcda','#b2cbe2','#c8dae9','#dfe9f0']},

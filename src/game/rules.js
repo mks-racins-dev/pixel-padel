@@ -7,7 +7,7 @@ import { isPractice, practiceLanded, practiceMiss, startPractice, stopPractice }
 import { rand, seedSim } from '../core/rng.ts';
 import { S } from '../state.js';
 import { DIFF, G, HL, REACH, STYLES, SVC, overhit, powK, sweet } from './constants.js';
-import { stepBall } from './physics.js';
+import { stepBall, setCourt } from './physics.js';
 import { mkLook, mkPlayer } from './player.js';
 
 export function newMatch(isDemo,seed){
@@ -16,6 +16,7 @@ export function newMatch(isDemo,seed){
   S.demo=isDemo;
   if(!isDemo)H.matchStart({career:career?CAREER.event.id:null,mode:career?CAREER.kind:settings.mode,diff:settings.diff,venue:settings.loc,games:settings.games,style:settings.style});
   stopPractice();
+  setCourt(career&&CAREER.event.court||null);
   const m=S.demo?'2v2':career?'1v1':settings.mode;const me=mkLook(S.myLookData);
   if(m==='practice')S.players=[mkPlayer(0,me,'h1',0)];
   else if(m==='1v1')S.players=[mkPlayer(0,me,'h1',0),mkPlayer(1,LOOKS.o1,'ai',0)];
@@ -148,6 +149,7 @@ export function onEvent(t,a,c,back){
     if(back&&c&&r.bounces>=1&&a!==r.lastTeam)r.backWall=a;
   }else if(t==='out'){
     if(r.bounces>=1)endPoint(r.lastTeam,S.ball.porTres?'POR TRES!':'OUT OF THE CAGE!');else if(r.serve)serveFault('SERVE OUT');else endPoint(1-r.lastTeam,'OUT');
+  }else if(t==='roof'){if(r.serve&&r.bounces===0)serveFault('HIT THE ROOF');else endPoint(1-r.lastTeam,'HIT THE ROOF!');
   }else if(t==='net')r.net=true;
 }
 export function teamName(t,short){if(S.demo)return t?'BLUE':'RED';if(CAREER.active)return t?CAREER.event.opp:'YOU';const m=settings.mode;if(m==='online')return t===H.myTeam()?'YOU':((S.net&&S.net.names&&S.net.names[t])||'RIVAL');if(m==='pvp')return t?'P2':'P1';if(m==='2v2')return t?(short?'CPU':'LEO & IVY'):(short?'YOU':'YOU & MIA');return t?'CPU':'YOU'}
@@ -188,7 +190,7 @@ export function contraparedVel(p,aimX){
     const vx=(wantX-S.ball.x)*0.12;
     const b={x:S.ball.x,y:S.ball.y,z:Math.max(0.3,S.ball.z),vx,vy:-dir*vy,vz,out:false,rolling:false,spin:0};
     let land=null,bad=false,wall=false;
-    for(let i=0;i<480&&!land&&!bad;i++)stepBall(b,1/120,(t,a,g,back)=>{if(t==='wall'){if(back&&a===p.team)wall=true;else bad=true}else if(t==='net'||t==='out')bad=true;else if(t==='floor'||t==='roll')land={x:b.x,y:b.y,side:a}});
+    for(let i=0;i<480&&!land&&!bad;i++)stepBall(b,1/120,(t,a,g,back)=>{if(t==='wall'){if(back&&a===p.team)wall=true;else bad=true}else if(t==='net'||t==='out'||t==='roof')bad=true;else if(t==='floor'||t==='roll')land={x:b.x,y:b.y,side:a}});
     if(bad||!wall||!land||land.side===p.team)continue;
     const sc=Math.abs(land.y-dir*6.5)+Math.abs(land.x-wantX)*0.5;if(sc<bs){bs=sc;best={vx,vy:-dir*vy,vz}}
   }
