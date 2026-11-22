@@ -10,6 +10,8 @@ export const WHO = {
   dani: { name: 'BIG DANI', c: '#f2c14e', hair: '#5a3a20' },
   kebab: { name: 'KEBAB KING', c: '#c4613a', hair: '#f4ead2' },
   dasha: { name: 'DASHA', c: '#3d4a8a', hair: '#e8e0d0' },
+  maestro: { name: 'EL MAESTRO', c: '#1d1a24', hair: '#9a9aa8' },
+  press: { name: 'REPORTER', c: '#6fd3d2', hair: '#2a2333' },
   note: { name: '', c: '#2a2333', hair: '#2a2333' },
 };
 
@@ -141,6 +143,56 @@ export const SCENES = [
     ['ray', 'And kid. The PRO TOUR sent an invitation. Madrid. The home of padel.'],
     ['ray', 'Somebody there is waiting for me. An old friend. We will talk about him on the plane.'],
     ['note', 'ACT 3 COMPLETE. THE PRO TOUR IS OPEN.'],
+  ] },
+  // ---------------- act 4: the pro tour ----------------
+  { id: 'plane', pre: 'p_mad1', lines: [
+    ['note', 'A plane to Madrid. Ray has the window seat and a new back brace.'],
+    ['you', 'So. The old friend.'],
+    ['ray', 'Javier. They call him EL MAESTRO now. Twenty years ago he was my doubles partner.'],
+    ['ray', 'The week before the world final, he left me for a better partner. Then he beat me in that final.'],
+    ['you', '...That sounds familiar.'],
+    ['ray', 'He is still number 1. Win Madrid and Miami, and you get him in the WORLD FINALS.'],
+  ] },
+  { id: 'madrid_win', when: c => c.won.includes('p_mad3'), lines: [
+    ['note', 'MADRID MASTER CHAMPION. Cameras everywhere. Someone puts a microphone in your face.'],
+    ['press', 'Two months ago nobody knew your name. What do you say to your new fans?'],
+  ] },
+  { id: 'miami', pre: 'p_mia1', lines: [
+    ['note', 'Miami. Neon lights, palm trees, a court on the beach. It is midnight and still 30 degrees.'],
+    ['kebab', 'SURPRISE! I closed the shop for a week! I have a flag with your face on it!'],
+    ['ray', 'He has been here since 6 am. He told the hotel he is your manager.'],
+  ] },
+  { id: 'ruta_sorry', pre: 'p_mia2', lines: [
+    ['note', 'In the players\' lounge, Ruta sits alone. Dasha left the partnership after one month.'],
+    ['ruta', 'Go on. Say it. I deserve it.'],
+    ['you', 'Win your next match. That\'s all I\'ll say.'],
+    ['ruta', '...You know, El Maestro did the same to your coach. Everybody on tour knows that story.'],
+    ['ruta', 'Beat him. For Ray. And maybe a little for me.'],
+  ] },
+  { id: 'miami_win', when: c => c.won.includes('p_mia2'), lines: [
+    ['note', 'MIAMI NEON SLAM CHAMPION. The Kebab King cries on live TV.'],
+    ['press', 'Next week, the World Finals against El Maestro. Are you scared?'],
+  ] },
+  { id: 'maestro', pre: 'p_fin', lines: [
+    ['note', 'Madrid. The World Finals. Twelve thousand people. In the tunnel, a tall man in black waits.'],
+    ['maestro', 'Ramon. You found a student. And a bad back, I hear.'],
+    ['ray', 'Javier. You found grey hair.'],
+    ['maestro', '(to you) He was the best partner I ever had. I was too young to know it. Play well, kid.'],
+    ['ray', '(quietly) First to five. Every wall is yours. Go.'],
+  ] },
+  { id: 'act4', when: c => c.won.includes('p_fin'), lines: [
+    ['note', 'WORLD CHAMPION. The arena is shaking. Somewhere in the crowd, a kebab-shaped balloon floats up.'],
+    ['maestro', '(shaking Ray\'s hand) Twenty years. You finally beat me, Ramon. Through this kid.'],
+    ['ray', 'No, Javier. The kid beat you. I just drove the van.'],
+    ['note', 'WORLD RANK #1.'],
+  ] },
+  { id: 'epilogue', when: c => c.seen.includes('act4'), lines: [
+    ['note', 'One week later. A parking garage rooftop. Pigeons. Wind.'],
+    ['tomi', 'You came back! Everyone is here. Even Big Dani.'],
+    ['note', 'On a plastic table: the world trophy, a small metal trophy from Riga, and a spray-painted shuttlecock on a napkin.'],
+    ['tomi', 'So. Friday. King of the Court. You in?'],
+    ['you', 'Always.'],
+    ['note', 'THE END. THANK YOU FOR PLAYING. YOUR CAREER STAYS OPEN: REPLAY ANY COURT, BEAT YOUR OLD SCORES.'],
   ] },
 ];
 

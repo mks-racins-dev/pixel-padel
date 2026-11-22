@@ -62,10 +62,17 @@ export const TIERS: Tier[] = [
     { id: 'e_mos2', opp: 'IGOR', venue: 'ru', skill: 0.74, games: 3, style: 'allround', stop: 'moscow', stage: 'SEMI-FINAL', rp: 40, noMarker: true },
     { id: 'e_mos3', opp: 'DASHA', venue: 'ru', skill: 0.78, games: 4, style: 'sniper', stop: 'moscow', stage: 'FINAL', rp: 70, final: true, noMarker: true },
   ] },
-  { id: 'pro', name: 'PRO TOUR', events: [
-    { id: 'pro1', opp: 'PACO', venue: 'es', skill: 0.85, games: 4, style: 'speed' },
-    { id: 'pro2', opp: 'JAY', venue: 'us', skill: 0.92, games: 4, style: 'power' },
-    { id: 'pro3', opp: 'EL MAESTRO', venue: 'es', skill: 1.0, games: 5, final: true, style: 'sniper' },
+  { id: 'pro', name: 'PRO TOUR', stops: [
+    { id: 'madrid', name: 'MADRID MASTER', venue: 'es' },
+    { id: 'miami', name: 'MIAMI NEON SLAM', venue: 'us' },
+    { id: 'finals', name: 'WORLD FINALS', venue: 'es' },
+  ], events: [
+    { id: 'p_mad1', opp: 'PACO', venue: 'es', skill: 0.82, games: 4, style: 'speed', stop: 'madrid', stage: 'ROUND 1', rp: 40 },
+    { id: 'p_mad2', opp: 'LUCIA', venue: 'es', skill: 0.85, games: 4, style: 'sniper', stop: 'madrid', stage: 'SEMI-FINAL', rp: 60 },
+    { id: 'p_mad3', opp: 'ALVARO', venue: 'es', skill: 0.88, games: 4, style: 'power', stop: 'madrid', stage: 'FINAL', rp: 90 },
+    { id: 'p_mia1', opp: 'JAY', venue: 'us', skill: 0.9, games: 4, style: 'power', stop: 'miami', stage: 'SEMI-FINAL', rp: 60 },
+    { id: 'p_mia2', opp: 'BROOKE', venue: 'us', skill: 0.93, games: 4, style: 'speed', stop: 'miami', stage: 'FINAL', rp: 100 },
+    { id: 'p_fin', opp: 'EL MAESTRO', venue: 'es', skill: 1.0, games: 5, style: 'sniper', stop: 'finals', stage: 'FINAL', rp: 200, final: true },
   ] },
 ];
 export const ALL_EVENTS = TIERS.flatMap((t, ti) => t.events.map(e => ({ ...e, tier: ti })));
@@ -108,11 +115,13 @@ export const GOALS: Goal[] = [
   { id: 'g_comeback', text: 'WIN A TOUR MATCH AFTER LOSING 2 GAMES', xp: 110, rp: 20, check: r => r.won && r.gamesLost >= 2 },
   { id: 'g_streak3', text: 'WIN 3 TOUR MATCHES IN A ROW', xp: 130, rp: 25, check: r => r.streak >= 3 },
   { id: 'g_night', text: 'WIN A MATCH AT MOSCOW NIGHTS', xp: 150, rp: 30, check: r => r.won && r.id.startsWith('e_mos') },
+  { id: 'g_pro', text: 'WIN A PRO TOUR MATCH LOSING AT MOST 1 GAME', xp: 180, rp: 40, check: r => r.won && r.gamesLost <= 1 && r.id.startsWith('p_') },
+  { id: 'g_miami', text: 'WIN A MATCH IN MIAMI', xp: 200, rp: 40, check: r => r.won && r.id.startsWith('p_mia') },
 ];
 export const sponsorSigned = () => profile().career.seen.includes('sponsor');
 export const activeGoal = () => sponsorSigned() ? GOALS.find(g => !profile().career.goals.includes(g.id)) : undefined;
 /** World ranking from ranking points: #412 for a newcomer, about #150 after the Baltic tour. */
-export const worldRank = (rp = profile().career.rp) => Math.max(1, Math.round(412 * Math.exp(-rp / 270)));
+export const worldRank = (rp = profile().career.rp) => profile().career.won.includes('p_fin') ? 1 : Math.max(2, Math.round(412 * Math.exp(-rp / 270)));
 /** Playing identities, chosen once in Act 3. Each adds a permanent bonus to career stats. */
 export const IDENTITIES = [
   { id: 'wall', name: 'WALL WIZARD', text: 'lives off the glass: +1 WALL PLAY', bonus: { wall: 1 } },
@@ -121,6 +130,21 @@ export const IDENTITIES = [
 ];
 export const needsIdentity = () => profile().career.won.includes('e_min3') && !profile().career.identity;
 export function chooseIdentity(id: string) { if (IDENTITIES.some(i => i.id === id)) { profile().career.identity = id; saveProfile() } }
+/** Press conferences after a pro final: the answer wins fans. */
+export const PRESS_AFTER: Record<string, string> = { p_mad3: 'madrid', p_mia2: 'miami' };
+export const PRESS = [
+  { id: 'cocky', name: 'COCKY', quote: '"I came here to win. Next question."', fans: 9000 },
+  { id: 'humble', name: 'HUMBLE', quote: '"I just want to thank Coach Ray. And the Kebab King."', fans: 6000 },
+  { id: 'funny', name: 'FUNNY', quote: '"Two months ago my trophy was a napkin. This one is heavier."', fans: 7500 },
+];
+/** The press conference waiting for an answer, if any. */
+export const pendingPress = () => { const c = profile().career; return Object.entries(PRESS_AFTER).find(([id, k]) => c.won.includes(id) && !c.press.some(x => x.startsWith(k + ':')))?.[1] };
+export function answerPress(choice: string) {
+  const k = pendingPress(), c = PRESS.find(x => x.id === choice); if (!k || !c) return;
+  profile().career.press.push(k + ':' + choice); saveProfile();
+}
+/** Fans: grow with ranking points and press answers. */
+export const fans = () => { const c = profile().career; return 120 + c.rp * 25 + c.press.reduce((n, x) => n + (PRESS.find(p => p.id === x.split(':')[1])?.fans || 0), 0) };
 export const townDone = () => TIERS[0].events.every(e => profile().career.won.includes(e.id));
 
 type Diff = { spd: number; err: number; react: number; volley: boolean; miss: number };

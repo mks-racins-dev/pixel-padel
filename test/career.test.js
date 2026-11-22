@@ -4,7 +4,7 @@ import { newMatch, diffOf, teamName, matchGames } from '../src/game/rules.js';
 import { DIFF, STYLES } from '../src/game/constants.js';
 import { settings } from '../src/game/settings.js';
 import { profile, addXp, spendPoint, migrate, resetProfileCache, xpToNext, MAX_ALLOC } from '../src/meta/profile.ts';
-import { worldRank, activeGoal, GOALS, needsIdentity, chooseIdentity } from '../src/meta/career.ts';
+import { worldRank, activeGoal, GOALS, needsIdentity, chooseIdentity, pendingPress, answerPress, fans } from '../src/meta/career.ts';
 import { CAREER, TIERS, ALL_EVENTS, nextEvent, startCareerEvent, finishCareerMatch, leaveCareer, oppDiff, tierUnlocked, eventOpen, prizes, streetRep } from '../src/meta/career.ts';
 import { COURT } from '../src/game/physics.js';
 import { stepBall } from '../src/game/physics.js';
@@ -224,7 +224,7 @@ describe('act 3: the east open', () => {
   it('beating dasha completes act 3 and opens the pro tour', () => {
     for (const e of TIERS[2].events) result(e.id, true, 2);
     expect(tierUnlocked(3)).toBe(true);
-    expect(nextEvent().id).toBe('pro1');
+    expect(nextEvent().id).toBe('p_mad1');
   });
   it('the old tallinn goal can still be finished on any final', () => {
     profile().career.goals.push('g_close', 'g_streak', 'g_clean');
@@ -233,5 +233,31 @@ describe('act 3: the east open', () => {
     expect(activeGoal().id).toBe('g_tallinn');
     result('e_min3', true, 2);
     expect(activeGoal().id).toBe('g_comeback');
+  });
+});
+
+describe('act 4: the pro tour', () => {
+  const before = ['a1_tomi', 'a1_roof', 'a1_market', 'a1_camp', 'a1_ware', 'a1_ruta', 'a1_king', 'b_riga1', 'b_riga2', 'b_riga3', 'b_tal1', 'b_tal2', 'b_vil1', 'b_vil2', 'e_min1', 'e_min2', 'e_min3', 'e_mos1', 'e_mos2', 'e_mos3'];
+  const result = (id, won, lost = 0) => { startCareerEvent(id); return finishCareerMatch(won, won ? 4 : 1, lost) };
+  beforeEach(() => { profile().career.won.push(...before) });
+  it('winning madrid calls a press conference; the answer wins fans', () => {
+    for (const id of ['p_mad1', 'p_mad2', 'p_mad3']) result(id, true, 2);
+    expect(pendingPress()).toBe('madrid');
+    const f = fans();
+    answerPress('cocky');
+    expect(pendingPress()).toBeUndefined();
+    expect(fans()).toBe(f + 9000);
+  });
+  it('beating el maestro wins the career and makes you world number 1', () => {
+    let r;
+    for (const e of TIERS[3].events) r = result(e.id, true, 2);
+    expect(r.last).toBe(true);
+    expect(worldRank()).toBe(1);
+    expect(pendingPress()).toBe('madrid'); // press answers are still waiting
+  });
+  it('old pro saves move onto the new tour', () => {
+    const p = migrate({ career: { won: ['club3', 'bal1', 'bal2', 'bal3', 'east1', 'east2', 'east3', 'pro1'] } });
+    expect(p.career.won).toEqual(expect.arrayContaining(['p_mad3']));
+    expect(p.career.press).toContain('madrid:humble');
   });
 });

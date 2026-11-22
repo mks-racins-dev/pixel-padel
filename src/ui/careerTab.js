@@ -1,7 +1,7 @@
 // Career panel. Act 1 is a town map of street courts played in any order, with story scenes
 // between matches. Later tiers show the next match (venue, opponent, reward, tour progress).
 // Also a skills view for spending skill points and choosing a ball trail.
-import { TIERS, nextEvent, tierUnlocked, startCareerEvent, xpForWin, eventState, prizes, streetRep, streetRepMax, townDone, worldRank, activeGoal, sponsorSigned, SPONSOR, GOALS, IDENTITIES, needsIdentity, chooseIdentity } from '../meta/career.ts';
+import { TIERS, nextEvent, tierUnlocked, startCareerEvent, xpForWin, eventState, prizes, streetRep, streetRepMax, townDone, worldRank, activeGoal, sponsorSigned, SPONSOR, GOALS, IDENTITIES, needsIdentity, chooseIdentity, PRESS, pendingPress, answerPress, fans } from '../meta/career.ts';
 import { profile, saveProfile, spendPoint, refundPoints, xpToNext, MAX_ALLOC, MAX_LEVEL, TRAILS, LEVEL_UNLOCKS, equipTrail } from '../meta/profile.ts';
 import { STYLES } from '../game/constants.js';
 import { LOCS } from '../content/venues.js';
@@ -24,6 +24,7 @@ export function renderCareerTab() {
   const s = pendingScene(profile().career);
   if (s) return playScene(s, () => renderCareerTab());
   if (needsIdentity()) return renderIdentity(box);
+  if (pendingPress()) return renderPress(box);
   if (!view) view = townDone() ? 'match' : 'map';
   if (view === 'skills') return renderSkills(box);
   if (view === 'map') return renderMap(box);
@@ -108,6 +109,16 @@ function renderMap(box) {
   document.getElementById('skillsBtn').onclick = () => { view = 'skills'; renderCareerTab() };
 }
 
+/* ---------------- act 4: press conference ---------------- */
+function renderPress(box) {
+  box.innerHTML = `
+    <div class="mtitle px">PRESS CONFERENCE</div>
+    <div class="help">Pick your answer. Fans remember.</div>
+    <div class="tids">${PRESS.map(x => `<button class="tid" data-id="${x.id}"><b class="px">${x.name}</b><span>${x.quote}</span><span class="txp">+${x.fans.toLocaleString('en')} FANS</span></button>`).join('')}</div>`;
+  box.querySelectorAll('[data-id]').forEach(b => b.onclick = () => { answerPress(b.dataset.id); renderCareerTab() });
+  box.querySelector('[data-id]').focus();
+}
+
 /* ---------------- act 3: choose a playing identity ---------------- */
 function renderIdentity(box) {
   box.innerHTML = `
@@ -136,7 +147,7 @@ function renderTour(box, nx) {
     <div class="chead"><span class="csky" aria-hidden="true">${sky}</span>
       <span class="px csub">ACT ${nx.tier + 1} · ${tier.name} · ${stop.name}</span>
       <span class="px ccity">${nx.stage}</span>
-      <span class="px trank">WORLD RANK #${worldRank()} · ${p.career.rp} RP</span></div>
+      <span class="px trank">WORLD RANK #${worldRank()} · ${p.career.rp} RP${nx.tier >= 3 ? ' · ' + fans().toLocaleString('en') + ' FANS' : ''}</span></div>
     <div class="tstops">${stops}</div>
     <div class="ccards">
       <div class="ccard"><span>${nx.stage} · ${city(nx.venue)}</span><b class="px">${nx.opp}</b><span>${st.name} · FIRST TO ${nx.games}</span><span class="cstyle">SPD ${bar(st.spd)} PWR ${bar(st.pow)} ACC ${bar(st.acc)}</span><span class="txp">+${xpForWin(nx)} XP · +${nx.rp} RP</span></div>
