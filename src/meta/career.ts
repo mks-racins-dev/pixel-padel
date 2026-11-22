@@ -18,6 +18,7 @@ export interface CareerEvent {
   stop?: string;           // tour stop (a knockout tournament) this match belongs to
   stage?: string;          // round name in that tournament
   rp?: number;             // ranking points for winning this round the first time
+  noMarker?: boolean;      // no coach: the bounce marker is off for this match
 }
 export interface Stop { id: string; name: string; venue: string }
 export interface Tier { id: string; name: string; reward?: string; free?: boolean; stops?: Stop[]; events: CareerEvent[] }
@@ -50,10 +51,16 @@ export const TIERS: Tier[] = [
     { id: 'b_vil1', opp: 'LUKAS', venue: 'lt', skill: 0.51, games: 3, style: 'sniper', stop: 'vilnius', stage: 'SEMI-FINAL', rp: 30 },
     { id: 'b_vil2', opp: 'RUTA', venue: 'lt', skill: 0.56, games: 3, style: 'speed', stop: 'vilnius', stage: 'FINAL', rp: 60, final: true },
   ] },
-  { id: 'east', name: 'EAST OPEN', events: [
-    { id: 'east1', opp: 'ALES', venue: 'by', skill: 0.62, games: 3, style: 'power' },
-    { id: 'east2', opp: 'IGOR', venue: 'ru', skill: 0.7, games: 3, style: 'allround' },
-    { id: 'east3', opp: 'DASHA', venue: 'ru', skill: 0.78, games: 4, final: true, style: 'sniper' },
+  { id: 'east', name: 'EAST OPEN', stops: [
+    { id: 'minsk', name: 'MINSK CHALLENGER', venue: 'by' },
+    { id: 'moscow', name: 'MOSCOW NIGHTS', venue: 'ru' },
+  ], events: [
+    { id: 'e_min1', opp: 'ALES', venue: 'by', skill: 0.6, games: 3, style: 'power', stop: 'minsk', stage: 'ROUND 1', rp: 20, noMarker: true },
+    { id: 'e_min2', opp: 'OKSANA', venue: 'by', skill: 0.63, games: 3, style: 'speed', stop: 'minsk', stage: 'SEMI-FINAL', rp: 30, noMarker: true },
+    { id: 'e_min3', opp: 'VIKTOR', venue: 'by', skill: 0.66, games: 3, style: 'allround', stop: 'minsk', stage: 'FINAL', rp: 50, noMarker: true },
+    { id: 'e_mos1', opp: 'SASHA', venue: 'ru', skill: 0.7, games: 3, style: 'sniper', stop: 'moscow', stage: 'ROUND 1', rp: 25, noMarker: true },
+    { id: 'e_mos2', opp: 'IGOR', venue: 'ru', skill: 0.74, games: 3, style: 'allround', stop: 'moscow', stage: 'SEMI-FINAL', rp: 40, noMarker: true },
+    { id: 'e_mos3', opp: 'DASHA', venue: 'ru', skill: 0.78, games: 4, style: 'sniper', stop: 'moscow', stage: 'FINAL', rp: 70, final: true, noMarker: true },
   ] },
   { id: 'pro', name: 'PRO TOUR', events: [
     { id: 'pro1', opp: 'PACO', venue: 'es', skill: 0.85, games: 4, style: 'speed' },
@@ -91,18 +98,29 @@ export const prizes = () => ALL_EVENTS.filter(e => e.prize && profile().career.d
 export const streetRep = () => { const c = profile().career; return TIERS[0].events.filter(e => c.won.includes(e.id)).length + c.dares.length };
 export const streetRepMax = () => TIERS[0].events.length + TIERS[0].events.filter(e => e.dare).length;
 /** Sponsor goals in order; the first one not done is active once the sponsor has signed you. */
-export interface Goal { id: string; text: string; xp: number; rp: number; check: (r: { won: boolean; gamesLost: number; streak: number; id: string }) => boolean }
+export interface Goal { id: string; text: string; xp: number; rp: number; check: (r: { won: boolean; gamesLost: number; streak: number; id: string; stage?: string }) => boolean }
 export const SPONSOR = 'KEBAB KING';
 export const GOALS: Goal[] = [
   { id: 'g_close', text: 'WIN A TOUR MATCH LOSING AT MOST 1 GAME', xp: 60, rp: 10, check: r => r.won && r.gamesLost <= 1 },
   { id: 'g_streak', text: 'WIN 2 TOUR MATCHES IN A ROW', xp: 70, rp: 10, check: r => r.streak >= 2 },
   { id: 'g_clean', text: 'WIN A TOUR MATCH WITHOUT LOSING A GAME', xp: 90, rp: 15, check: r => r.won && r.gamesLost === 0 },
-  { id: 'g_tallinn', text: 'WIN THE TALLINN CUP', xp: 100, rp: 20, check: r => r.won && r.id === 'b_tal2' },
+  { id: 'g_tallinn', text: 'WIN A TOURNAMENT FINAL', xp: 100, rp: 20, check: r => r.won && r.stage === 'FINAL' },
+  { id: 'g_comeback', text: 'WIN A TOUR MATCH AFTER LOSING 2 GAMES', xp: 110, rp: 20, check: r => r.won && r.gamesLost >= 2 },
+  { id: 'g_streak3', text: 'WIN 3 TOUR MATCHES IN A ROW', xp: 130, rp: 25, check: r => r.streak >= 3 },
+  { id: 'g_night', text: 'WIN A MATCH AT MOSCOW NIGHTS', xp: 150, rp: 30, check: r => r.won && r.id.startsWith('e_mos') },
 ];
 export const sponsorSigned = () => profile().career.seen.includes('sponsor');
 export const activeGoal = () => sponsorSigned() ? GOALS.find(g => !profile().career.goals.includes(g.id)) : undefined;
 /** World ranking from ranking points: #412 for a newcomer, about #150 after the Baltic tour. */
 export const worldRank = (rp = profile().career.rp) => Math.max(1, Math.round(412 * Math.exp(-rp / 270)));
+/** Playing identities, chosen once in Act 3. Each adds a permanent bonus to career stats. */
+export const IDENTITIES = [
+  { id: 'wall', name: 'WALL WIZARD', text: 'lives off the glass: +1 WALL PLAY', bonus: { wall: 1 } },
+  { id: 'smash', name: 'SMASH MACHINE', text: 'ends points from the air: +0.75 POWER', bonus: { pow: 0.75 } },
+  { id: 'counter', name: 'COUNTER-PUNCHER', text: 'gets everything back: +0.5 SPEED, +0.5 ACCURACY', bonus: { spd: 0.5, acc: 0.5 } },
+];
+export const needsIdentity = () => profile().career.won.includes('e_min3') && !profile().career.identity;
+export function chooseIdentity(id: string) { if (IDENTITIES.some(i => i.id === id)) { profile().career.identity = id; saveProfile() } }
 export const townDone = () => TIERS[0].events.every(e => profile().career.won.includes(e.id));
 
 type Diff = { spd: number; err: number; react: number; volley: boolean; miss: number };
@@ -143,7 +161,7 @@ export function finishCareerMatch(won: boolean, gamesWon: number, gamesLost = 0)
     }
     p.career.streak = won ? p.career.streak + 1 : 0;
     const g = activeGoal();
-    if (g && g.check({ won, gamesLost, streak: p.career.streak, id: e.id })) { p.career.goals.push(g.id); xp += g.xp; rp += g.rp; goal = g.text }
+    if (g && g.check({ won, gamesLost, streak: p.career.streak, id: e.id, stage: e.stage })) { p.career.goals.push(g.id); xp += g.xp; rp += g.rp; goal = g.text }
     p.career.rp += rp;
   }
   if (first || prize || e.rival || e.stop) saveProfile();

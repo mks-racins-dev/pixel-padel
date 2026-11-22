@@ -4,7 +4,7 @@ import { newMatch, diffOf, teamName, matchGames } from '../src/game/rules.js';
 import { DIFF, STYLES } from '../src/game/constants.js';
 import { settings } from '../src/game/settings.js';
 import { profile, addXp, spendPoint, migrate, resetProfileCache, xpToNext, MAX_ALLOC } from '../src/meta/profile.ts';
-import { worldRank, activeGoal, GOALS } from '../src/meta/career.ts';
+import { worldRank, activeGoal, GOALS, needsIdentity, chooseIdentity } from '../src/meta/career.ts';
 import { CAREER, TIERS, ALL_EVENTS, nextEvent, startCareerEvent, finishCareerMatch, leaveCareer, oppDiff, tierUnlocked, eventOpen, prizes, streetRep } from '../src/meta/career.ts';
 import { COURT } from '../src/game/physics.js';
 import { stepBall } from '../src/game/physics.js';
@@ -198,5 +198,40 @@ describe('act 2: the baltic tour', () => {
     const p = migrate({ career: { won: ['club3', 'bal1', 'bal2'] } });
     expect(p.career.won).toEqual(expect.arrayContaining(['b_riga3', 'b_tal2']));
     expect(p.career.won).not.toContain('b_vil1');
+  });
+});
+
+describe('act 3: the east open', () => {
+  const before = ['a1_tomi', 'a1_roof', 'a1_market', 'a1_camp', 'a1_ware', 'a1_ruta', 'a1_king', 'b_riga1', 'b_riga2', 'b_riga3', 'b_tal1', 'b_tal2', 'b_vil1', 'b_vil2'];
+  const result = (id, won, lost = 0) => { startCareerEvent(id); return finishCareerMatch(won, won ? 3 : 1, lost) };
+  beforeEach(() => { profile().career.won.push(...before) });
+  it('starts in minsk with no bounce marker', () => {
+    expect(nextEvent().id).toBe('e_min1');
+    settings.assist = 'on';
+    startCareerEvent(); newMatch(false, 1);
+    expect(CAREER.event.noMarker).toBe(true);
+  });
+  it('winning minsk asks for an identity, which boosts career stats', () => {
+    for (const id of ['e_min1', 'e_min2', 'e_min3']) result(id, true, 2);
+    expect(needsIdentity()).toBe(true);
+    chooseIdentity('wall');
+    expect(needsIdentity()).toBe(false);
+    startCareerEvent(); newMatch(false, 1);
+    expect(S.players[0].sk.wall).toBeCloseTo(1);
+    chooseIdentity('nope');
+    expect(profile().career.identity).toBe('wall');
+  });
+  it('beating dasha completes act 3 and opens the pro tour', () => {
+    for (const e of TIERS[2].events) result(e.id, true, 2);
+    expect(tierUnlocked(3)).toBe(true);
+    expect(nextEvent().id).toBe('pro1');
+  });
+  it('the old tallinn goal can still be finished on any final', () => {
+    profile().career.goals.push('g_close', 'g_streak', 'g_clean');
+    profile().career.seen.push('sponsor');
+    for (const id of ['e_min1', 'e_min2']) result(id, true, 2);
+    expect(activeGoal().id).toBe('g_tallinn');
+    result('e_min3', true, 2);
+    expect(activeGoal().id).toBe('g_comeback');
   });
 });

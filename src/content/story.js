@@ -9,6 +9,7 @@ export const WHO = {
   ruta: { name: 'RUTA', c: '#b05cc8', hair: '#151018' },
   dani: { name: 'BIG DANI', c: '#f2c14e', hair: '#5a3a20' },
   kebab: { name: 'KEBAB KING', c: '#c4613a', hair: '#f4ead2' },
+  dasha: { name: 'DASHA', c: '#3d4a8a', hair: '#e8e0d0' },
   note: { name: '', c: '#2a2333', hair: '#2a2333' },
 };
 
@@ -105,6 +106,41 @@ export const SCENES = [
     ['kebab', '(on speaker) THAT\'S MY PLAYER! FREE KEBABS FOR A YEAR!'],
     ['ray', 'Kid. They want you in the EAST OPEN. Night matches. Serious players.'],
     ['note', 'ACT 2 COMPLETE. THE EAST OPEN IS OPEN.'],
+  ] },
+  // ---------------- act 3: the east open ----------------
+  { id: 'ray_sick', pre: 'e_min1', lines: [
+    ['note', 'The night before Minsk. The van is packed. Ray is not in it.'],
+    ['ray', '(on the phone) My back is gone, kid. The doctor says no driving, no travelling. Weeks.'],
+    ['you', 'Then I\'ll wait.'],
+    ['ray', 'No. You go. And listen: no more help from me. No bounce marker in your head. You read the ball yourself now.'],
+    ['note', 'ACT 3: NO COACH. THE BOUNCE MARKER IS OFF FOR THE EAST OPEN.'],
+  ] },
+  { id: 'minsk_win', when: c => c.won.includes('e_min3'), lines: [
+    ['note', 'Minsk Challenger champion. You call Ray from a grey hotel room. He cheers so loud the nurse comes in.'],
+    ['note', 'A knock on the door. It is Ruta.'],
+    ['ruta', 'I watched your final. You play like nobody else on this tour.'],
+    ['ruta', 'Next season. Doubles. You and me. We could win everything.'],
+    ['you', '...Deal.'],
+    ['ruta', 'Good. But first, decide who you are on court. Nobody fears a player who does a bit of everything.'],
+  ] },
+  { id: 'moscow', pre: 'e_mos1', lines: [
+    ['note', 'Moscow. Matches start at midnight under white lights. Cold breath. Loud crowds.'],
+    ['ray', '(text message) Watching on my phone. Proud of you. Get some sleep. (You will not.)'],
+    ['note', 'Everyone here talks about one name: DASHA. Unbeaten at home for two years.'],
+  ] },
+  { id: 'ruta_drop', pre: 'e_mos3', lines: [
+    ['note', 'An hour before the final, your phone buzzes. A tour news headline.'],
+    ['note', '"RUTA AND DASHA ANNOUNCE DOUBLES PARTNERSHIP FOR NEXT SEASON."'],
+    ['ruta', '(message) Sorry. It is business. She is number 9. You understand.'],
+    ['dasha', 'You look upset. Good. Upset players miss.'],
+    ['you', 'We\'ll see.'],
+  ] },
+  { id: 'act3', when: c => c.won.includes('e_mos3'), lines: [
+    ['note', 'You beat DASHA at home, at midnight, in front of her crowd. The arena goes quiet. Then it applauds.'],
+    ['ray', '(video call, standing up) Look! I\'m standing! Doctor says I can fly next month.'],
+    ['ray', 'And kid. The PRO TOUR sent an invitation. Madrid. The home of padel.'],
+    ['ray', 'Somebody there is waiting for me. An old friend. We will talk about him on the plane.'],
+    ['note', 'ACT 3 COMPLETE. THE PRO TOUR IS OPEN.'],
   ] },
 ];
 

@@ -214,6 +214,12 @@ h1{margin:0;font-size:calc(var(--u)*17);line-height:1.1;color:#f7c993;text-shado
 .tround span.won{background:#2f4a33;color:#bfe8b0}
 .tround span.next{background:#e4572e;color:#fff}
 .tspon b{font-size:calc(var(--u)*8.5);line-height:1.35}
+/* career act 3: identity */
+.tids{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:calc(var(--u)*6);flex:1}
+.tid{display:flex;flex-direction:column;gap:calc(var(--u)*4);align-items:flex-start;text-align:left;background:#211b29;border:calc(var(--u)*2) solid #0f0c13;box-shadow:calc(var(--u)*2.5) calc(var(--u)*2.5) 0 #0f0c13;padding:calc(var(--u)*7);color:#c9bba6;font-size:calc(var(--u)*8.5);cursor:pointer}
+.tid b{font-weight:normal;font-size:calc(var(--u)*6.5);color:#fff1c1}
+.tid:hover,.tid:focus-visible{border-color:#e4572e;outline:none}
+.tstops:has(.tstop:nth-child(2):last-child){grid-template-columns:repeat(2,minmax(0,1fr))}
 /* quick match */
 .qgrid{flex:1;display:grid;grid-template-columns:1fr calc(var(--u)*118);gap:calc(var(--u)*9);min-height:0}
 .qopts{display:flex;flex-direction:column;gap:calc(var(--u)*4)}

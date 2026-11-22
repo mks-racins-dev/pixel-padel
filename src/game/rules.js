@@ -127,7 +127,7 @@ export function performHit(p,type,aimX,power){
   setMarker(p.team);
 }
 export function setMarker(hitTeam){
-  S.marker=null;if(settings.assist!=='on'||S.demo)return;
+  S.marker=null;if(settings.assist!=='on'||S.demo||(CAREER.active&&CAREER.event&&CAREER.event.noMarker))return;
   const tgt=1-hitTeam;if(!teamOf(tgt).some(isHuman))return;
   const b={...S.ball};for(let i=0;i<400;i++){let hit=null;stepBall(b,1/120,(t)=>{if(t==='floor'||t==='roll')hit=true});if(hit){S.marker={x:b.x,y:b.y};return}if(b.out)return}
 }

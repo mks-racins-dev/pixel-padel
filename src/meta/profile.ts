@@ -8,7 +8,7 @@ export interface Profile {
   level: number;
   points: number;          // unspent skill points
   alloc: Record<Stat, number>;
-  career: { won: string[]; dares: string[]; seen: string[]; rp: number; goals: string[]; streak: number }; // events done, dares won, scenes seen, ranking points, sponsor goals done, tour win streak
+  career: { won: string[]; dares: string[]; seen: string[]; rp: number; goals: string[]; streak: number; identity: string }; // events done, dares won, scenes seen, ranking points, sponsor goals done, tour win streak
   unlocked: string[];      // cosmetic ids (trails)
   trail: string;           // equipped trail
   name: string;            // nickname shown to opponents and on the leaderboard ('' = not chosen yet)
@@ -23,7 +23,7 @@ export const MAX_LEVEL = 30;
 export const MAX_ALLOC = 8;     // points per stat
 export const PER_POINT = 0.25;  // stat gain per point (styles use a 1–5 scale)
 
-const fresh = (): Profile => ({ v: VERSION, xp: 0, level: 1, points: 0, alloc: { spd: 0, pow: 0, acc: 0, wall: 0 }, career: { won: [], dares: [], seen: [], rp: 0, goals: [], streak: 0 }, unlocked: ['classic'], trail: 'classic', name: '', updatedAt: 0 });
+const fresh = (): Profile => ({ v: VERSION, xp: 0, level: 1, points: 0, alloc: { spd: 0, pow: 0, acc: 0, wall: 0 }, career: { won: [], dares: [], seen: [], rp: 0, goals: [], streak: 0, identity: '' }, unlocked: ['classic'], trail: 'classic', name: '', updatedAt: 0 });
 
 let cur: Profile | null = null;
 
@@ -40,9 +40,11 @@ export function migrate(raw: unknown): Profile {
   const strs = (a: unknown) => (Array.isArray(a) ? a.filter(x => typeof x === 'string') as string[] : []);
   p.career.won = strs(r.career?.won); p.career.dares = strs(r.career?.dares); p.career.seen = strs(r.career?.seen);
   p.career.goals = strs(r.career?.goals); p.career.rp = num(r.career?.rp, 0, 1e5, 0); p.career.streak = num(r.career?.streak, 0, 1e4, 0);
+  p.career.identity = ['wall', 'smash', 'counter'].includes(r.career?.identity as string) ? r.career!.identity : '';
   // saves from before Act 1: the old 3-match club ladder maps onto the town courts
   const LEGACY: Record<string, string[]> = { club1: ['a1_tomi'], club2: ['a1_market'], club3: ['a1_roof', 'a1_camp', 'a1_ware', 'a1_ruta', 'a1_king'],
-    bal1: ['b_riga1', 'b_riga2', 'b_riga3'], bal2: ['b_tal1', 'b_tal2'], bal3: ['b_vil1', 'b_vil2'] };
+    bal1: ['b_riga1', 'b_riga2', 'b_riga3'], bal2: ['b_tal1', 'b_tal2'], bal3: ['b_vil1', 'b_vil2'],
+    east1: ['e_min1', 'e_min2', 'e_min3'], east2: ['e_mos1', 'e_mos2'], east3: ['e_mos3'] };
   for (const [old, now] of Object.entries(LEGACY)) if (p.career.won.includes(old)) {
     p.career.won = p.career.won.filter(x => x !== old);
     for (const n of now) if (!p.career.won.includes(n)) p.career.won.push(n);
@@ -51,6 +53,7 @@ export function migrate(raw: unknown): Profile {
   if (p.career.won.includes('a1_king')) for (const k of ['ruta', 'ruta_loss', 'king', 'act1']) if (!p.career.seen.includes(k)) p.career.seen.push(k);
   const seenIf = (id: string, ks: string[]) => { if (p.career.won.includes(id)) for (const k of ks) if (!p.career.seen.includes(k)) p.career.seen.push(k) };
   seenIf('b_riga1', ['van1']); seenIf('b_riga3', ['riga_win', 'sponsor']); seenIf('b_tal1', ['van2']); seenIf('b_vil1', ['van3']); seenIf('b_vil2', ['ruta2', 'act2']);
+  seenIf('e_min1', ['ray_sick']); seenIf('e_min3', ['minsk_win']); seenIf('e_mos1', ['moscow']); seenIf('e_mos3', ['ruta_drop', 'act3']);
   if (Array.isArray(r.unlocked)) p.unlocked = [...new Set(['classic', ...r.unlocked.filter(x => typeof x === 'string')])];
   p.trail = typeof r.trail === 'string' && p.unlocked.includes(r.trail) ? r.trail : 'classic';
   if (typeof r.name === 'string') p.name = r.name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
@@ -100,8 +103,10 @@ export function refundPoints() { const p = profile(); for (const k of Object.key
 
 /** Player stats for career matches: the chosen play style plus spent skill points. */
 export function careerSkills(base: { spd: number; pow: number; acc: number }) {
-  const a = profile().alloc;
-  return { ...base, spd: base.spd + a.spd * PER_POINT, pow: base.pow + a.pow * PER_POINT, acc: base.acc + a.acc * PER_POINT, wall: a.wall * PER_POINT };
+  const a = profile().alloc, id = profile().career.identity;
+  const b = id === 'wall' ? { wall: 1 } : id === 'smash' ? { pow: 0.75 } : id === 'counter' ? { spd: 0.5, acc: 0.5 } : {} as Record<string, number>;
+  const x = (k: string) => (b as Record<string, number>)[k] || 0; // identity bonus (see IDENTITIES in career.ts)
+  return { ...base, spd: base.spd + a.spd * PER_POINT + x('spd'), pow: base.pow + a.pow * PER_POINT + x('pow'), acc: base.acc + a.acc * PER_POINT + x('acc'), wall: a.wall * PER_POINT + x('wall') };
 }
 
 export function unlock(id: string): boolean { const p = profile(); if (p.unlocked.includes(id)) return false; p.unlocked.push(id); saveProfile(); return true }
