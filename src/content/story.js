@@ -16,7 +16,7 @@ export const WHO = {
 };
 
 export const SCENES = [
-  { id: 'intro', when: c => !c.won.length, lines: [
+  { id: 'intro', cine: 'park', when: c => !c.won.length, lines: [
     ['note', 'Your first week in a new town. In your aunt\'s garage, under a bike, you find an old padel racket.'],
     ['tomi', 'Is that a racket? You play? Friday is King of the Court at Sunset Club!'],
     ['tomi', 'It\'s not a real tournament. The sign-up sheet is a napkin. The trophy is a spray-painted shuttlecock.'],

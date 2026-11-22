@@ -54,3 +54,17 @@ describe('practice mode', () => {
     expect(PR.on).toBe(false);
   });
 });
+
+describe('one-off practice challenge', () => {
+  it('runs a custom drill and calls onDone instead of saving progress', async () => {
+    const { setPracticeCustom } = await import('../src/game/practice.js');
+    localStorage.clear(); settings.mode = 'practice';
+    let done = 0;
+    setPracticeCustom({ drill: { ...DRILLS[0], id: 'first', name: 'RETURN 3 BALLS', need: 3 }, onDone: () => done++ });
+    newMatch(false, 5); run(3);
+    for (let i = 0; i < 3; i++) { S.state = 'play'; S.R0.lastShot = 'drive'; practiceLanded({ x: 0, y: 5 }); run(1.2) }
+    expect(done).toBe(1);
+    expect(PR.custom).toBe(null);
+    expect(localStorage.getItem('pixelpadel-practice')).toBe(null);
+  });
+});

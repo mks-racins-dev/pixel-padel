@@ -281,3 +281,10 @@ h1{margin:0;font-size:calc(var(--u)*17);line-height:1.1;color:#f7c993;text-shado
 .lme b{font-weight:normal;font-size:calc(var(--u)*6);color:#f2c14e}
 .ltable{display:grid;grid-template-columns:calc(var(--u)*14) 1fr auto auto;column-gap:calc(var(--u)*8);row-gap:calc(var(--u)*1);font-size:calc(var(--u)*8);color:#d9ccb6;max-height:calc(var(--u)*60);overflow:auto}
 .ltable .px{font-size:calc(var(--u)*4.5);color:#9a8fa8;align-self:center}
+/* cinematic scenes */
+#cine{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;z-index:50;cursor:pointer}
+#cineSkip{position:absolute;right:calc(var(--u)*6);bottom:calc(var(--u)*1);z-index:51;font-size:calc(var(--u)*6);padding:calc(var(--u)*1) calc(var(--u)*4)}
+.chapter{display:flex;flex-direction:column;gap:calc(var(--u)*3);padding:calc(var(--u)*8);background:#211b29;border:calc(var(--u)*1.5) solid #0f0c13}
+.chapter span{color:#e4572e;font-size:calc(var(--u)*6)}
+.chapter b{color:#f4ead2;font-size:calc(var(--u)*12)}
+.chapter p{color:#c9bba6;margin:0}

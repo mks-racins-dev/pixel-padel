@@ -6,7 +6,14 @@ import { profile, saveProfile, spendPoint, refundPoints, xpToNext, MAX_ALLOC, MA
 import { STYLES } from '../game/constants.js';
 import { LOCS } from '../content/venues.js';
 import { WHO, pendingScene, preScene } from '../content/story.js';
-import { startGame } from './ui.js';
+import { startGame, toMenu } from './ui.js';
+import { playCine, parkIntro, parkOutro } from '../render/cine.js';
+import { DRILLS, setPracticeCustom } from '../game/practice.js';
+import { settings } from '../game/settings.js';
+import { mkLook } from '../game/player.js';
+import { S } from '../state.js';
+import { leaveCareer } from '../meta/career.ts';
+import { showPanel } from './menu.js';
 import { initAudio } from '../audio/sfx.js';
 import { seasonsOpen, seasonFor, seasonState, startSeasonEvent, CROWN_STREAK } from '../meta/season.ts';
 import { weekNumber } from '../meta/challenges.ts';
@@ -31,6 +38,7 @@ function renderCareer() {
   if (!box) return;
   if (scene) return renderScene(box);
   const s = pendingScene(profile().career);
+  if (s && s.cine) return renderChapter(box, s);
   if (s) return playScene(s, () => renderCareerTab());
   if (needsIdentity()) return renderIdentity(box);
   if (pendingPress()) return renderPress(box);
@@ -66,6 +74,32 @@ function renderScene(box) {
   document.getElementById('sceneNext').onclick = () => { if (scene.i < s.lines.length - 1) { scene.i++; renderCareerTab() } else endScene() };
   document.getElementById('sceneSkip').onclick = endScene;
   document.getElementById('sceneNext').focus();
+}
+
+/* ---------------- cinematic story chapters ---------------- */
+function renderChapter(box, s) {
+  box.innerHTML = `<div class="chapter"><span class="px">CHAPTER 1</span><b class="px">THE CRACKED COURT</b><p>A new town. A park at dusk. Someone is short a player.</p></div>
+    <div class="cacts"><button class="big" data-primary id="chapGo">▶ PLAY</button></div>`;
+  document.getElementById('chapGo').onclick = () => runParkIntro(s);
+}
+/** The opening: watch the park scene, return three balls (the first game), then the outro. */
+async function runParkIntro(s) {
+  initAudio();
+  const you = mkLook(S.myLookData);
+  await playCine(parkIntro(you));
+  const prev = settings.mode;
+  leaveCareer(); settings.mode = 'practice';
+  setPracticeCustom({
+    drill: { ...DRILLS[0], id: 'first', name: 'RETURN 3 BALLS', need: 3, tip: 'Hit the ball back over the net. Hit: Space/J.',
+      feed: () => ({ tx: (Math.random() - 0.5) * 3, ty: -5.5, spd: 8, clear: 1.5 }) },
+    onDone: async () => {
+      settings.mode = prev;
+      await playCine(parkOutro(you));
+      const c = profile().career; if (!c.seen.includes(s.id)) { c.seen.push(s.id); saveProfile() }
+      toMenu(); showPanel('career');
+    },
+  });
+  startGame();
 }
 
 function play(id) {

@@ -24,7 +24,10 @@ export const DRILLS = [
 ];
 
 const KEY = 'pixelpadel-practice';
-export const PR = { on: false, drill: 0, done: 0, feedT: 0, x: 0 };
+export const PR = { on: false, drill: 0, done: 0, feedT: 0, x: 0, custom: null };
+/** One-off challenge (e.g. the story's first rallies): { drill, onDone }. Used by the next practice start. */
+export function setPracticeCustom(c) { PR.custom = c }
+const drillNow = () => PR.custom ? PR.custom.drill : DRILLS[PR.drill];
 
 function saved() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') } catch (e) { return {} } }
 function save(o) { try { localStorage.setItem(KEY, JSON.stringify({ ...saved(), ...o })) } catch (e) {} }
@@ -43,16 +46,16 @@ export function stopPractice() { PR.on = false }
 
 function beginDrill(i) {
   PR.drill = i; PR.done = 0;
-  const d = DRILLS[i];
+  const d = drillNow();
   S.state = 'between'; S.afterState = () => feed(); S.stateT = 2.6;
   S.ball.held = true;
-  H.showMsg(`DRILL ${i + 1}/${DRILLS.length} · ${d.name}`, d.tip);
+  H.showMsg(PR.custom ? d.name : `DRILL ${i + 1}/${DRILLS.length} · ${d.name}`, d.tip);
   practiceHud();
 }
 
 /** The machine fires the next ball. */
 function feed() {
-  const d = DRILLS[PR.drill], p = S.players[0];
+  const d = drillNow(), p = S.players[0];
   if (d.energy) p.energy = 100;
   PR.x = (rand() - 0.5) * 4;
   Object.assign(S.ball, { x: PR.x, y: 9.4, z: 1.1, held: false });
@@ -66,7 +69,7 @@ function feed() {
 
 /** The player's shot landed in the far court. */
 export function practiceLanded(land) {
-  const d = DRILLS[PR.drill];
+  const d = drillNow();
   const good = d.ok({ shot: S.R0.lastShot, offWall: S.R0.lastOffWall }, land);
   S.state = 'between'; S.stateT = 0.9; S.afterState = () => { H.hideMsg(); next() };
   if (good) { PR.done++; S.floats.push({ x: land.x, y: land.y, t: 0.9, text: `${PR.done}/${d.need}`, c: '#9be37a' }); H.sfx('point') }
@@ -81,8 +84,9 @@ export function practiceMiss(reason) {
 }
 
 function next() {
-  const d = DRILLS[PR.drill];
+  const d = drillNow();
   if (PR.done < d.need) return feed();
+  if (PR.custom) { const cb = PR.custom.onDone; PR.custom = null; S.state = 'between'; S.stateT = 1e9; S.afterState = () => {}; H.showMsg('NICE!', ''); return cb && cb() }
   H.track('drill_done', { drill: d.id });
   H.emit({ type: 'drill', id: d.id });
   const done = new Set(saved().done || []); done.add(d.id); save({ done: [...done] });
@@ -93,14 +97,14 @@ function next() {
 }
 
 export function practiceHud() {
-  const d = DRILLS[PR.drill], el = id => document.getElementById(id);
+  const d = drillNow(), el = id => document.getElementById(id);
   if (!el('r0')) return;
   // row 1: which drill and good shots so far; row 2: drill name and how many are needed
-  el('r0').querySelector('.nm').textContent = `DRILL ${PR.drill + 1}/${DRILLS.length}`; el('r0').querySelector('.g').textContent = '';
+  el('r0').querySelector('.nm').textContent = PR.custom ? 'RETURNED' : `DRILL ${PR.drill + 1}/${DRILLS.length}`; el('r0').querySelector('.g').textContent = '';
   el('r0').querySelector('.pt').textContent = PR.done;
   el('r1').querySelector('.nm').textContent = d.name; el('r1').querySelector('.g').textContent = '';
   el('r1').querySelector('.pt').textContent = d.need;
-  el('info').textContent = 'PRACTICE';
+  el('info').textContent = PR.custom ? 'SUNSET PARK' : 'PRACTICE';
 }
 
 export const practiceSelected = () => settings.mode === 'practice';
