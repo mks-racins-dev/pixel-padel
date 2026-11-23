@@ -8,6 +8,10 @@ export const VENUE_RULES = {
   yard: { roof: 7.2 },
   beach: { sand: true, wind: 0.4 },
   docks: { wind: 0.5 },
+  bridge: { roof: 6.6 },
+  farm: { sand: true },
+  winter: { wind: -0.45 },
+  school: { deadBack: true },
 };
 export const VENUE_TWIST = {
   roof: 'WIND PUSHES HIGH BALLS',
@@ -17,5 +21,9 @@ export const VENUE_TWIST = {
   yard: 'WASHING LINES: NO BIG LOBS',
   beach: 'SAND AND A SEA BREEZE',
   docks: 'HARBOUR WIND',
+  bridge: 'LOW BRIDGE: NO BIG LOBS',
+  farm: 'LONG GRASS: LOW BOUNCES',
+  winter: 'COLD WIND FROM THE LAKE',
+  school: 'CHAIN-LINK BACK: NO GLASS',
 };
 export const QUICK_RULE_MODES = ['1v1', '2v2', 'pvp', 'couch'];

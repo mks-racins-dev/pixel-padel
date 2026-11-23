@@ -79,14 +79,47 @@ function groundPigeons(ctx, t) {
   }
 }
 function windsock(ctx, t) { const f = Math.floor(t * 8) % 2; R(ctx, 63, -1, 7, 2, '#ff7a3a'); R(ctx, 70, -1 + f, 4, 2, '#f4f4f0'); R(ctx, 74, f, 3, 1, '#ff7a3a') }
+function fireAt(ctx, t, wx, wy, z) {
+  const p = P(wx, wy, z), x = Math.round(p.x), y = Math.round(p.y);
+  ctx.fillStyle = 'rgba(255,170,80,0.12)'; ctx.fillRect(x - 10, y - 12, 20, 14);
+  for (let i = -2; i <= 2; i++) { const h = 2 + Math.round((Math.sin(t * 14 + i * 1.9) + 1) * 2) - Math.abs(i); if (h <= 0) continue; R(ctx, x + i, y - h, 1, h, '#e4572e'); if (h > 2) R(ctx, x + i, y - h + 1, 1, h - 2, '#ffb45a') }
+  for (let k = 0; k < 4; k++) { const life = (t * 0.5 + k / 4) % 1; ctx.fillStyle = 'rgba(160,150,170,' + (0.35 * (1 - life)).toFixed(2) + ')'; ctx.fillRect(Math.round(x + Math.sin(t + k) * 3 * life), Math.round(y - 6 - life * 22), 2, 2) }
+}
+function underpass(ctx, t) {
+  for (const [sp, ph, dir] of [[90, 0, 1], [70, 3, -1], [110, 7, 1]]) { const x = dir > 0 ? ((t + ph) * sp) % (W + 80) - 40 : W + 40 - ((t + ph) * sp) % (W + 80); R(ctx, x, 4, 10, 3, '#2b2633'); R(ctx, x + (dir > 0 ? 9 : -1), 5, 2, 1, dir > 0 ? '#fff4cf' : '#ff4a3a') }
+  if (Math.sin(t * 17) + Math.sin(t * 5.3) > 1.3) { R(ctx, 63, 31, 52, 11, '#1a0f2a') }
+  fireAt(ctx, t, -11.4, 1.4, 0.92);
+}
+function windmill(ctx, t) {
+  const cx = 407, cy = 20, a = t * 1.6; for (let b = 0; b < 4; b++) { const q = a + b * Math.PI / 2; for (let r = 2; r < 15; r++) { R(ctx, cx + Math.cos(q) * r, cy + Math.sin(q) * r, 1, 1, '#f4ead2'); if (r > 5) R(ctx, cx + Math.cos(q) * r + Math.cos(q + 1.57) * 2, cy + Math.sin(q) * r + Math.sin(q + 1.57) * 2, 1, 1, '#c9b48a') } }
+  R(ctx, cx - 1, cy - 1, 3, 3, '#5a3e2a');
+  for (const [x, y, ph] of [[9.4, -1.6, 0], [10.2, -2.4, 1.7], [8.8, -3.4, 3.1], [-11.2, 7.4, 2.2]]) {
+    const wx = x + Math.sin(t * 0.4 + ph) * 0.6, p = P(wx, y, 0), px = Math.round(p.x), py = Math.round(p.y), peck = Math.floor(t * 3 + ph) % 4 === 0 ? 1 : 0;
+    R(ctx, px - 2, py - 4, 4, 3, '#f4f4f0'); R(ctx, px + 1, py - 6 + peck, 2, 2, '#f4f4f0'); R(ctx, px + 1, py - 7 + peck, 1, 1, '#e4572e'); R(ctx, px + 3, py - 5 + peck, 1, 1, '#f2c14e'); R(ctx, px - 1, py - 1, 1, 1, '#f2c14e'); R(ctx, px + 1, py - 1, 1, 1, '#f2c14e');
+  }
+}
+function winter(ctx, t) {
+  for (const [x0, sp, c] of [[0, 9, '#c4313e'], [200, 6, '#3b6fb0'], [80, 7.5, '#f2c14e']]) { const x = (x0 + t * sp * 3) % (W + 20) - 10, y = 50 + Math.sin(t * 0.8 + x0) * 2, f = Math.floor(t * 4 + x0) % 2; R(ctx, x, y - 5, 2, 4, c); R(ctx, x, y - 7, 2, 2, '#e8b48a'); R(ctx, x - f, y - 1, 1, 2, '#2b2633'); R(ctx, x + 1 + f, y - 1, 1, 2, '#2b2633') }
+  for (const [x, y] of [[85, 28], [351, 28], [436, 28]]) for (let k = 0; k < 4; k++) { const life = (t * 0.3 + k / 4) % 1; ctx.fillStyle = 'rgba(240,244,248,' + (0.6 * (1 - life)).toFixed(2) + ')'; ctx.fillRect(Math.round(x + Math.sin(t + k) * 2 + life * 6), Math.round(y - life * 18), 2, 2) }
+  for (let k = 0; k < 70; k++) { const sp = 10 + (k % 5) * 4, x = (k * 53.7 + Math.sin(t * 0.7 + k) * 6 + t * 4) % W, y = (k * 37.3 + t * sp) % 270; R(ctx, x, y, k % 7 === 0 ? 2 : 1, k % 7 === 0 ? 2 : 1, 'rgba(255,255,255,0.85)') }
+}
+function school(ctx, t) {
+  const f = Math.floor(t * 5); for (let i = 0; i < 12; i++) { const y = 4 + Math.round(Math.sin(i / 3 + t * 6) * 1.2); R(ctx, 141 + i, y, 1, 3, '#c4313e'); R(ctx, 141 + i, y + 3, 1, 3, '#f4f4f0') }
+  const hp = (t * 1.6) % 1, bx = 10.3 + Math.sin(t * 0.9) * 0.6, z = 0.15 + Math.abs(Math.sin(hp * Math.PI)) * 1.2, p = P(bx, 5.4, z), g0 = P(bx, 5.4, 0);
+  R(ctx, g0.x - 1, g0.y, 3, 1, 'rgba(16,12,40,0.3)'); R(ctx, p.x - 1, p.y - 1, 3, 3, '#e4572e'); R(ctx, p.x - 1, p.y, 3, 1, '#8a2a1a');
+}
 /** Drawn every frame right after the venue background. */
 export function drawAmbient(ctx) {
   const t = S.time, G = grade(), sk = streetKind();
-  if (!G.indoor && !G.arena && !G.stand && !curLoc().night && sk !== 'market' && sk !== 'beach' && sk !== 'docks') birds(ctx, t);
+  if (!G.indoor && !G.arena && !G.stand && !curLoc().night && sk !== 'market' && sk !== 'beach' && sk !== 'docks' && sk !== 'winter') birds(ctx, t);
   if (sk === 'roof') { pigeons(ctx, t); fan(ctx, t); windsock(ctx, t) }
   else if (sk === 'yard') { swings(ctx, t); groundPigeons(ctx, t) }
   else if (sk === 'beach') { waves(ctx, t); seagulls(ctx, t) }
   else if (sk === 'docks') { crane(ctx, t); seagulls(ctx, t) }
+  else if (sk === 'bridge') underpass(ctx, t);
+  else if (sk === 'farm') windmill(ctx, t);
+  else if (sk === 'winter') winter(ctx, t);
+  else if (sk === 'school') school(ctx, t);
   else if (sk === 'market') marketSign(ctx, t);
   else if (sk === 'camp') { lake(ctx, t); campfire(ctx, t); butterflies(ctx, t) }
 }

@@ -1,7 +1,7 @@
 import { S } from '../state.js';
 import { LOCS, TOWNS, curLoc } from '../content/venues.js';
 import { H, R, W, WL, WQ, circ, mulberry, newCanvas, shade, txt, txtW, vivid } from '../core/gfx.js';
-import { curbColor, streetBack, streetFence, streetFloor, streetFront, streetGround, streetKind, streetLines, streetProps, streetWall } from './street.js';
+import { chainLink, curbColor, streetBack, streetFence, streetFloor, streetFront, streetGround, streetKind, streetLines, streetProps, streetWall } from './street.js';
 import { HW, NET_H, NET_POST, SVC } from '../game/constants.js';
 import { settings } from '../game/settings.js';
 import { grade, gradeGround, gradeBack, gradeFloor, gradeWall, gradeProps, gradeFront } from './grades.js';
@@ -60,9 +60,9 @@ export function buildBg(){
   gradeFloor(g);
   const FN=SK?streetFence:{post:'#2f2d38',mesh:'rgba(40,36,52,',glass:'rgba(190,225,235,'};
   // far wall
-  if(SK==='market'){for(let xx=-5;xx<=5.01;xx+=0.3)WL(g,[xx,10,0],[xx,10,3],FN.mesh+'0.55)');for(let z=0.25;z<3;z+=0.25)WL(g,[-5,10,z],[5,10,z],FN.mesh+'0.55)')}
+  if(chainLink(SK)){for(let xx=-5;xx<=5.01;xx+=0.3)WL(g,[xx,10,0],[xx,10,3],FN.mesh+'0.55)');for(let z=0.25;z<3;z+=0.25)WL(g,[-5,10,z],[5,10,z],FN.mesh+'0.55)')}
   else WQ(g,[[-5,10,0],[5,10,0],[5,10,3],[-5,10,3]],FN.glass+'0.22)');
-  if(SK){if(SK!=='market')for(let k=0;k<5;k++){const a=-5+k*2;WL(g,[a+0.3,10,0.6],[a+0.9,10,2.6],'rgba(255,255,255,0.18)')}streetWall(g,SK)}
+  if(SK){if(!chainLink(SK))for(let k=0;k<5;k++){const a=-5+k*2;WL(g,[a+0.3,10,0.6],[a+0.9,10,2.6],'rgba(255,255,255,0.18)')}streetWall(g,SK)}
   else for(let k=0;k<5;k++){const a=-5+k*2;WQ(g,[[a,10,0],[a+2,10,0],[a+2,10,0.45],[a,10,0.45]],['#e4572e','#2b2540','#3fa7a8','#2b2540','#f2c14e'][k]);WL(g,[a+0.3,10,0.6],[a+0.9,10,2.6],'rgba(255,255,255,0.25)')}
   gradeWall(g);for(let xx=-5;xx<=5.01;xx+=0.4)WL(g,[xx,10,3],[xx,10,4],FN.mesh+'0.6)');
   for(let z=3.2;z<4;z+=0.2)WL(g,[-5,10,z],[5,10,z],FN.mesh+'0.6)');
@@ -119,7 +119,7 @@ export function buildNet(){
 }
 export function buildFront(){
   const[c,g]=newCanvas(W,H);
-  if(streetKind()==='market'){for(let x=-5;x<=5.01;x+=0.3)WL(g,[x,-10,0],[x,-10,1.6],'rgba(104,72,52,0.22)');for(let z=0.25;z<1.6;z+=0.25)WL(g,[-5,-10,z],[5,-10,z],'rgba(104,72,52,0.22)')}
+  if(chainLink(streetKind())){for(let x=-5;x<=5.01;x+=0.3)WL(g,[x,-10,0],[x,-10,1.6],'rgba(104,72,52,0.22)');for(let z=0.25;z<1.6;z+=0.25)WL(g,[-5,-10,z],[5,-10,z],'rgba(104,72,52,0.22)')}
   else{WQ(g,[[-5,-10,0],[5,-10,0],[5,-10,1.6],[-5,-10,1.6]],'rgba(205,235,245,0.07)');
   for(const a of[-5,-3,-1,1,3]){WL(g,[a+0.25,-10,0.2],[a+0.6,-10,1.4],'rgba(255,255,255,0.14)')}}
   for(const x of[-3,-1,1,3])WL(g,[x,-10,0],[x,-10,1.6],'rgba(30,28,40,0.22)');

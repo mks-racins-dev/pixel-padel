@@ -7,7 +7,11 @@ import { settings } from '../game/settings.js';
 import { L, P, R, W, H, WL, WQ, circ, mulberry, ring, shade, txt, txtW } from '../core/gfx.js';
 import { obj } from './background.js';
 
-export const STREET = ['roof', 'market', 'camp', 'yard', 'beach', 'docks'];
+import { VENUE_RULES } from '../game/venueRules.js';
+import { bikes } from './background.js';
+export const STREET = ['roof', 'market', 'camp', 'yard', 'beach', 'docks', 'bridge', 'farm', 'winter', 'school'];
+/** Street courts whose back walls are chain-link instead of glass. */
+export const chainLink = k => !!(k && VENUE_RULES[k]?.deadBack);
 /** Which street scene to draw, or null for every other venue. */
 export const streetKind = () => (S.grade === 1 && STREET.includes(settings.loc) ? settings.loc : null);
 
@@ -177,16 +181,17 @@ function campBack(g) {
   for (let x = -4; x < W; x += 6 + rnd() * 6) pineS(x, 60, 14 + rnd() * 10, '#2f5a45', '#264c3a');
   for (let x = -6; x < W; x += 8 + rnd() * 8) pineS(x, 68, 18 + rnd() * 12, '#244a3a', '#1c3d30');
 }
-const SEED = { roof: 1, market: 2, camp: 3, yard: 4, beach: 5, docks: 6 };
+const SEED = { roof: 1, market: 2, camp: 3, yard: 4, beach: 5, docks: 6, bridge: 7, farm: 8, winter: 9, school: 10 };
 export function streetBack(g, kind) {
   rnd = mulberry(100 + SEED[kind]);
-  ({ roof: roofBack, market: marketBack, camp: campBack, yard: yardBack, beach: beachBack, docks: docksBack })[kind](g);
+  ({ roof: roofBack, market: marketBack, camp: campBack, yard: yardBack, beach: beachBack, docks: docksBack, bridge: bridgeBack, farm: farmBack, winter: winterBack, school: schoolBack })[kind](g);
 }
 
 /* ================= ground around the court ================= */
 export function streetGround(g, kind) {
   rnd = mulberry(200 + SEED[kind]);
-  if (kind === 'yard' || kind === 'beach' || kind === 'docks') return ({ yard: yardGround, beach: beachGround, docks: docksGround })[kind](g);
+  const GR = { yard: yardGround, beach: beachGround, docks: docksGround, bridge: bridgeGround, farm: farmGround, winter: winterGround, school: schoolGround };
+  if (GR[kind]) return GR[kind](g);
   if (kind === 'roof') {
     R(g, 0, 68, W, H - 68, '#8f8d89'); noise(g, 0, 68, W, H - 68, '#8f8d89', 7, 0.22);
     for (let gx = -30; gx <= 30; gx += 5) WL(g, [gx, -13, 0], [gx, 16.4, 0], '#7d7b77');
@@ -220,7 +225,7 @@ export function streetGround(g, kind) {
     for (let k = 0; k < 90; k++) { const s = rnd() < 0.5 ? -1 : 1, p = P(s * (7.3 + rnd() * 0.6), -12 + rnd() * 24.6, 0); R(g, p.x, p.y - 2, 1, 2, '#5f8f3a') }
   }
 }
-export const curbColor = kind => ({ camp: '#8a6a48', market: '#6e6a70', yard: '#7a767c', beach: '#c9ae78', docks: '#6f6d6a' })[kind] || '#9a968e';
+export const curbColor = kind => ({ camp: '#8a6a48', market: '#6e6a70', yard: '#7a767c', beach: '#c9ae78', docks: '#6f6d6a', bridge: '#55525a', farm: '#8a6a48', winter: '#dfe8ef', school: '#7a767c' })[kind] || '#9a968e';
 
 /* ================= the court itself: patches, faded lines, worn walls ================= */
 export function streetFloor(g, kind, court) {
@@ -245,11 +250,11 @@ export function streetLines(g) {
 /** The far wall: home-made boards instead of sponsors, a cracked pane, tape. */
 export function streetWall(g, kind) {
   rnd = mulberry(77);
-  if (kind === 'market') { // chain-link fence instead of glass: zip-tied banners, no cracks to show
-    for (const [a, c, t] of [[-4.4, '#c4313e', 'SALE'], [1.6, '#f2c14e', 'MAXI']]) { WQ(g, [[a, 10, 0.6], [a + 2.2, 10, 0.6], [a + 2.2, 10, 1.3], [a, 10, 1.3]], c); const p = P(a + 1.1, 10, 1.12); txt(g, t, Math.round(p.x - txtW(t) / 2), Math.round(p.y), c === '#c4313e' ? '#fff4cf' : '#2b2016') }
+  if (chainLink(kind)) { // chain-link fence instead of glass: zip-tied banners, no cracks to show
+    for (const [a, c, t] of kind === 'school' ? [[-4.4, '#3b6fb0', 'SCHOOL'], [1.6, '#f2c14e', 'PE']] : [[-4.4, '#c4313e', 'SALE'], [1.6, '#f2c14e', 'MAXI']]) { WQ(g, [[a, 10, 0.6], [a + 2.2, 10, 0.6], [a + 2.2, 10, 1.3], [a, 10, 1.3]], c); const p = P(a + 1.1, 10, 1.12); txt(g, t, Math.round(p.x - txtW(t) / 2), Math.round(p.y), c === '#c4313e' ? '#fff4cf' : '#2b2016') }
     return;
   }
-  const boards = kind === 'camp' ? [['#b8875a', 'CAMP'], ['#a5774c', ''], ['#b8875a', 'PADEL'], ['#a5774c', ''], ['#b8875a', '']] : kind === 'market' ? [['#e9e2d0', 'MAXI'], ['#8f9aa4', ''], ['#c4313e', 'SALE'], ['#8f9aa4', ''], ['#e9e2d0', '-50']] : kind === 'yard' ? [['#7f9a6a', ''], ['#c9c2b0', 'DOM 12'], ['#7f9a6a', ''], ['#c4313e', ''], ['#7f9a6a', '']] : kind === 'beach' ? [['#f4ead2', 'SURF'], ['#3fa7a8', ''], ['#f2c14e', 'KIOSK'], ['#3fa7a8', ''], ['#f4ead2', '']] : kind === 'docks' ? [['#c4313e', ''], ['#3b6fb0', 'PORT'], ['#e8b23a', ''], ['#3f7a4a', 'PIER 4'], ['#c4313e', '']] : [['#9a968e', ''], ['#c4313e', 'P5'], ['#9a968e', ''], ['#3b6fb0', ''], ['#9a968e', '']];
+  const boards = kind === 'camp' ? [['#b8875a', 'CAMP'], ['#a5774c', ''], ['#b8875a', 'PADEL'], ['#a5774c', ''], ['#b8875a', '']] : kind === 'market' ? [['#e9e2d0', 'MAXI'], ['#8f9aa4', ''], ['#c4313e', 'SALE'], ['#8f9aa4', ''], ['#e9e2d0', '-50']] : kind === 'yard' ? [['#7f9a6a', ''], ['#c9c2b0', 'DOM 12'], ['#7f9a6a', ''], ['#c4313e', ''], ['#7f9a6a', '']] : kind === 'beach' ? [['#f4ead2', 'SURF'], ['#3fa7a8', ''], ['#f2c14e', 'KIOSK'], ['#3fa7a8', ''], ['#f4ead2', '']] : kind === 'docks' ? [['#c4313e', ''], ['#3b6fb0', 'PORT'], ['#e8b23a', ''], ['#3f7a4a', 'PIER 4'], ['#c4313e', '']] : kind === 'bridge' ? [['#2b2633', 'NO'], ['#ff6ad5', 'RULES'], ['#2b2633', ''], ['#6fe8ff', 'B-23'], ['#2b2633', '']] : kind === 'farm' ? [['#a8332a', 'EGGS'], ['#e9dcc0', ''], ['#a8332a', 'MILK'], ['#e9dcc0', ''], ['#a8332a', '']] : kind === 'winter' ? [['#f4f4f0', ''], ['#3b6fb0', 'SKI'], ['#f4f4f0', ''], ['#c4313e', 'SAUNA'], ['#f4f4f0', '']] : [['#9a968e', ''], ['#c4313e', 'P5'], ['#9a968e', ''], ['#3b6fb0', ''], ['#9a968e', '']];
   for (let k = 0; k < 5; k++) {
     const a = -5 + k * 2, [c, t] = boards[k]; WQ(g, [[a + 0.05, 10, 0], [a + 1.95, 10, 0], [a + 1.95, 10, 0.42], [a + 0.05, 10, 0.42]], c);
     for (let j = 0; j < 3; j++) { const p = P(a + 0.2 + rnd() * 1.6, 10, 0.05 + rnd() * 0.3); R(g, p.x, p.y, 1 + rnd() * 2, 1, shade(c, 30)) }
@@ -263,7 +268,7 @@ export const streetFence = { post: '#4e3e34', mesh: 'rgba(104,72,52,', glass: 'r
 /* ================= props per scene (world space, sorted far to near) ================= */
 export function streetProps(g, kind) {
   rnd = mulberry(400 + SEED[kind]);
-  let list = ({ yard: yardProps, beach: beachProps, docks: docksProps })[kind]?.();
+  let list = ({ yard: yardProps, beach: beachProps, docks: docksProps, bridge: bridgeProps, farm: farmProps, winter: winterProps, school: schoolProps })[kind]?.();
   if (list) { /* scene list above */ }
   else if (kind === 'roof') list = [
     { x: -12.4, y: 11.5, f: o => car(o, '#c4313e') }, { x: 12.4, y: 7, f: o => car(o, '#3b6fb0') }, { x: -12.8, y: -3.8, f: o => car(o, '#e8d8b0') },
@@ -298,6 +303,10 @@ export function streetFront(g, kind) {
   else if (kind === 'docks') { bollard(obj(g, -6.4, -10.9)); drum(obj(g, 6.6, -11), '#3b6fb0') }
   else if (kind === 'yard') { const o = obj(g, 6.6, -11); o.r(-0.35, 0, 0.7, 0.9, '#3b6fb0'); o.r(-0.38, 0.86, 0.76, 0.08, '#2f5a8a'); o.r(-0.2, 0.5, 0.4, 0.06, '#f4f4f0') }
   else if (kind === 'beach') { surfboard(obj(g, -6.6, -11), '#3fa7a8') }
+  else if (kind === 'winter') { for (const s of [-1, 1]) { const o = obj(g, s * 6.6, -11); o.c(0, 0.25, 0.6, '#f4f8fb'); o.c(-0.3, 0.2, 0.4, '#e6eef4') } }
+  else if (kind === 'farm') { hay(obj(g, -6.7, -11.1)) }
+  else if (kind === 'bridge') { barrel(obj(g, 6.7, -11)) }
+  else if (kind === 'school') { cone(obj(g, -6.3, -10.9)); cone(obj(g, 6.4, -11)) }
   else for (const s of [-1, 1]) for (let k = 0; k < 18; k++) { const p = P(s * (6 + rnd() * 2.5), -10.6 - rnd() * 0.8, 0); const h = 2 + Math.floor(rnd() * 4); R(g, p.x, p.y - h, 1, h, rnd() < 0.5 ? '#4f7f30' : '#6f9f45') }
 }
 
@@ -418,4 +427,120 @@ function docksProps() { return [
   { x: -9.15, y: 6.2, f: o => crate(o, '#3b6fb0') }, { x: -8.35, y: 5.7, f: o => crate(o, '#c4313e') }, { x: -7.9, y: 7.4, f: o => drum(o, '#c4313e') }, { x: -9.0, y: 3.2, f: o => crate(o, '#a5774c') },
   { x: 12.4, y: -2.6, f: o => drum(o, '#3f7a4a') }, { x: 12.9, y: -3.4, f: o => drum(o, '#3b6fb0') }, { x: 8.2, y: 1.6, f: bollard }, { x: 8.2, y: -5.4, f: bollard },
   { x: -12, y: 2, f: streetLamp }, { x: 10.4, y: -8.8, f: o => crate(o, '#a5774c') }, { x: 11.1, y: -9.2, f: o => crate(o, '#8a6a44') },
+] }
+
+/* ================= underpass: under the flyover at night ================= */
+function bridgeBack(g) {
+  for (let x = 0; x < W; x += 8 + rnd() * 14) { const h = 14 + rnd() * 30, w = 8 + rnd() * 14; R(g, x, 64 - h, w, h, '#232642'); for (let y = 66 - h; y < 62; y += 3) for (let xx = x + 1; xx < x + w - 1; xx += 3) if (rnd() < 0.3) R(g, xx, y, 1, 1, pick(['#ffd27a', '#f6b25e', '#9fd0ff'])) }
+  R(g, 0, 6, W, 16, '#6e6b78'); R(g, 0, 6, W, 2, '#8a8794'); R(g, 0, 20, W, 2, '#4a4754'); for (let x = 0; x < W; x += 24) R(g, x, 8, 1, 12, '#5f5c69');
+  R(g, 0, 2, W, 1, '#4a4754'); for (let x = 2; x < W; x += 10) R(g, x, 2, 1, 4, '#4a4754');
+  g.fillStyle = 'rgba(10,8,24,0.45)'; g.fillRect(0, 22, W, 44);
+  for (const x of [40, 160, 316, 440]) { R(g, x, 22, 22, 44, '#5a5764'); R(g, x, 22, 3, 44, '#6e6b78'); R(g, x + 19, 22, 3, 44, '#47444f'); R(g, x - 4, 20, 30, 4, '#6e6b78') }
+  txt(g, 'PADEL', 320, 58, '#ff6ad5', 1); txt(g, 'NO', 446, 30, '#6fe8ff'); txt(g, 'LIMIT', 442, 38, '#f2c14e');
+  L(g, 162, 50, 178, 40, '#9be37a', 2); L(g, 320, 30, 334, 48, '#ff8a5c', 2); txt(g, 'B23', 322, 52, '#f4f4f0');
+  R(g, 62, 30, 54, 13, '#17131c'); R(g, 63, 31, 52, 11, '#1a0f2a'); txt(g, 'UNDERPASS', 66, 34, '#ff6ad5');
+  for (const x of [130, 380]) { R(g, x, 26, 1, 40, '#3a3640'); R(g, x - 3, 25, 7, 2, '#3a3640'); R(g, x - 2, 27, 5, 1, '#ffb45a'); g.fillStyle = 'rgba(255,180,90,0.10)'; g.beginPath(); g.moveTo(x - 2, 28); g.lineTo(x + 3, 28); g.lineTo(x + 22, 66); g.lineTo(x - 21, 66); g.fill() }
+}
+function bridgeGround(g) {
+  R(g, 0, 66, W, H - 66, '#3f3c46'); noise(g, 0, 66, W, H - 66, '#3f3c46', 8, 0.3);
+  for (const s of [-1, 1]) for (let yy = -12; yy < 16; yy += 1.6) WL(g, [s * 7.2, yy, 0], [s * 7.2, yy + 0.9, 0], 'rgba(240,240,230,0.35)', 2);
+  for (const [x, y, r, c] of [[-10.4, -5.5, 1.4, '#ff6ad5'], [10.6, 9.5, 1.2, '#6fe8ff'], [-11.6, 9, 0.9, '#ffb45a']]) { ground(g, x, y, r, r, '#2c2a36'); ground(g, x + 0.1, y, r * 0.6, r * 0.35, c); const q = P(x - r * 0.3, y, 0); R(g, q.x, q.y, 3, 1, '#ffffff') }
+  for (let k = 0; k < 50; k++) { const x = (rnd() - 0.5) * 30, y = -12 + rnd() * 28; if (Math.abs(x) < 6 && Math.abs(y) < 11) continue; const p = P(x, y, 0); R(g, p.x, p.y, 1, 1, pick(['#6d6680', '#ff6ad5', '#9be37a', '#f4f4f0'])) }
+}
+function ramp(o) { shadow(o, 2.4); for (let i = 0; i < 10; i++) { const z = i * 0.12, w = 2.2 * (1 - Math.pow(i / 10, 2)); o.r(-1.1, z, w, 0.12, i % 3 ? '#8a6a44' : '#6b4a35') } o.r(-1.1, 1.18, 0.5, 0.06, '#9aa0a6'); o.r(-1.15, 0, 0.08, 1.24, '#4a4652') }
+function barrel(o) { shadow(o, 0.8); o.r(-0.32, 0, 0.64, 0.9, '#5a3e2a'); for (const z of [0.2, 0.6]) o.r(-0.32, z, 0.64, 0.05, '#2b2633'); o.r(-0.34, 0.86, 0.68, 0.06, '#3a281c'); o.r(-0.2, 0.05, 0.08, 0.75, '#7a5236') }
+function vanSide(o, c) { shadow(o, 3.2); o.r(-1.5, 0.25, 3, 1.4, c); o.r(-1.5, 1.6, 3, 0.08, shade(c, 25)); o.r(0.8, 0.95, 0.6, 0.45, '#3d4656'); o.r(-1.2, 0.6, 1.6, 0.4, shade(c, -30)); o.r(-1.2, 0, 0.42, 0.32, '#1c1a22'); o.r(0.8, 0, 0.42, 0.32, '#1c1a22'); const p = o.at(-0.4, 1.05); txt(o.g, 'PADEL', Math.round(p.x - 9), Math.round(p.y), '#ff6ad5') }
+function block2(o) { shadow(o, 0.9); o.r(-0.42, 0, 0.84, 0.48, '#8a8794'); o.r(-0.42, 0.44, 0.84, 0.05, '#a9a6b2'); o.r(-0.3, 0.1, 0.2, 0.2, '#6e6b78'); o.r(0.1, 0.1, 0.2, 0.2, '#6e6b78') }
+function bridgeProps() { return [
+  { x: 11.2, y: 9.2, f: ramp }, { x: -12.2, y: 9, f: o => vanSide(o, '#3b6fb0') }, { x: -11.4, y: 1.4, f: barrel }, { x: 12.6, y: 2.2, f: o => car(o, '#2b2633') },
+  { x: -9.15, y: 6.2, f: block2 }, { x: -8.35, y: 5.7, f: block2 }, { x: -9.0, y: 3.2, f: block2 }, { x: -7.8, y: 7.6, f: boombox },
+  { x: 9.6, y: -6.4, f: cone }, { x: 12.2, y: -8.6, f: o => cart(o, '#3b6fb0') }, { x: -8.4, y: -8.2, f: o => bag(o, '#2b2540') },
+] }
+
+/* ================= farm: behind the barn ================= */
+function farmBack(g) {
+  for (let x = 0; x < W; x++) { const h = 10 + 5 * Math.sin(x / 47) + 3 * Math.sin(x / 13); R(g, x, 46 - h, 1, h + 20, '#5f8f5a') }
+  for (let y = 40; y < 66; y += 4) R(g, 0, y, W, 2, (y / 4) % 2 ? '#d9c06a' : '#8fb05a');
+  for (let x = 0; x < W; x += 3) R(g, x, 38 + Math.sin(x / 9) * 2, 2, 3, '#3f6b45');
+  // barn
+  R(g, 16, 22, 92, 44, '#a8332a'); for (let x = 18; x < 108; x += 4) R(g, x, 22, 1, 44, '#8a2822');
+  for (let i = 0; i < 16; i++) R(g, 12 + i * 3, 22 - i * 1.2, 100 - i * 6, 2, i % 2 ? '#5a3e2a' : '#6b4a35');
+  R(g, 46, 40, 32, 26, '#f4ead2'); R(g, 48, 42, 28, 24, '#8a2822'); L(g, 48, 42, 76, 66, '#f4ead2', 2); L(g, 76, 42, 48, 66, '#f4ead2', 2);
+  R(g, 54, 26, 16, 10, '#f4ead2'); R(g, 56, 28, 12, 8, '#3a2c26');
+  R(g, 112, 12, 18, 54, '#b8b4ac'); for (let y = 16; y < 66; y += 5) R(g, 112, y, 18, 1, '#9a968e'); circ(g, 121, 12, 9, '#9a968e'); R(g, 112, 12, 18, 1, '#cfccc6');
+  // windmill (blades turn in ambient.js)
+  R(g, 404, 20, 6, 46, '#e9dcc0'); R(g, 402, 18, 10, 4, '#8a6a44'); R(g, 405, 44, 4, 8, '#5a3e2a');
+  for (let x = 160; x < W; x += 9) { R(g, x, 58, 2, 8, '#8a6a44'); R(g, x - 4, 60, 10, 1, '#a5774c') }
+  for (const x of [176, 190, 330, 346, 360]) { R(g, x, 50, 1, 12, '#3f7a4a'); circ(g, x, 50, 3, '#f2c14e'); R(g, x, 50, 1, 1, '#5a3e2a') }
+}
+function farmGround(g) {
+  R(g, 0, 66, W, H - 66, '#6a9c44'); noise(g, 0, 66, W, H - 66, '#6a9c44', 12, 0.3);
+  for (let k = 0; k < 600; k++) { const x = rnd() * W, y = 68 + rnd() * (H - 68); R(g, x, y - 2, 1, 2, rnd() < 0.5 ? '#4f7f30' : '#86b85a') }
+  for (const [x, y, rx] of [[-11, 8, 2.4], [11.5, -5, 2.2], [9, 10, 1.6]]) { ground(g, x, y, rx, rx * 0.8, '#8a6a44'); for (let k = 0; k < 30; k++) { const p = P(x + (rnd() - 0.5) * rx * 1.4, y + (rnd() - 0.5) * rx * 1.4, 0); R(g, p.x, p.y, 2, 1, rnd() < 0.5 ? '#d9c06a' : '#b8935a') } }
+  for (let k = 0; k < 120; k++) { const x = (rnd() - 0.5) * 30, y = -12 + rnd() * 28; if (Math.abs(x) < 5.8 && Math.abs(y) < 10.8) continue; const p = P(x, y, 0); R(g, p.x, p.y, 2, 1, '#d9c06a') }
+}
+function hay(o) { shadow(o, 1.3); o.c(0, 0.55, 0.6, '#d9b25a'); o.c(-0.1, 0.62, 0.42, '#e8c46a'); for (let k = 0; k < 3; k++) { const a = o.at(-0.5 + k * 0.1, 0.3 + k * 0.25), b = o.at(0.5 - k * 0.1, 0.3 + k * 0.25); L(o.g, a.x, a.y, b.x, b.y, '#b8903a') } }
+function haySquare(o) { shadow(o, 1.1); o.r(-0.5, 0, 1, 0.45, '#d9b25a'); o.r(-0.5, 0.4, 1, 0.06, '#e8c46a'); o.r(-0.2, 0, 0.04, 0.45, '#8a6a44'); o.r(0.2, 0, 0.04, 0.45, '#8a6a44') }
+function tractor(o) { shadow(o, 2.6); o.r(-1.1, 0.4, 1.6, 0.6, '#3f8f4a'); o.r(-0.1, 0.9, 0.7, 0.8, '#3f8f4a'); o.r(0, 1.0, 0.5, 0.5, '#3d4656'); o.r(-0.15, 1.7, 0.8, 0.06, '#2b2633'); o.c(0.55, 0.45, 0.45, '#1c1a22'); o.c(0.55, 0.45, 0.2, '#e8b23a'); o.c(-0.85, 0.28, 0.28, '#1c1a22'); o.c(-0.85, 0.28, 0.12, '#e8b23a'); o.r(-1.0, 1.0, 0.06, 0.5, '#4a4652') }
+function scarecrow(o) { o.r(-0.04, 0, 0.08, 1.8, '#6b4a35'); o.r(-0.6, 1.3, 1.2, 0.07, '#6b4a35'); o.r(-0.25, 0.8, 0.5, 0.6, '#3b6fb0'); o.c(0, 1.6, 0.17, '#e8c46a'); o.r(-0.25, 1.72, 0.5, 0.06, '#8a5a3c'); o.r(-0.14, 1.78, 0.28, 0.12, '#8a5a3c'); o.r(-0.55, 1.28, 0.12, 0.12, '#e8c46a'); o.r(0.43, 1.28, 0.12, 0.12, '#e8c46a') }
+function milk(o) { for (const x of [-0.2, 0.15]) { o.r(x - 0.12, 0, 0.24, 0.45, '#c9c3b6'); o.r(x - 0.08, 0.45, 0.16, 0.1, '#a9a397') } }
+function farmProps() { return [
+  { x: -12.4, y: 11.4, f: tractor }, { x: 12.4, y: 11.6, f: scarecrow }, { x: 10.6, y: 6.8, f: hay }, { x: 11.8, y: 5.6, f: hay },
+  { x: -9.15, y: 6.2, f: haySquare }, { x: -8.35, y: 5.7, f: haySquare }, { x: -9.0, y: 3.2, f: haySquare }, { x: -12.4, y: 0.5, f: milk },
+  { x: 12.6, y: -2.6, f: o => pallets(o, 2) }, { x: -11.6, y: -6.8, f: hay }, { x: 9.4, y: -8, f: o => crate(o, '#a5774c') },
+] }
+
+/* ================= winter park ================= */
+function winterBack(g) {
+  for (let x = 0; x < W; x++) { const h = 16 + 6 * Math.sin(x / 37) + 3 * Math.sin(x / 11); R(g, x, 50 - h, 1, h, '#b9c6d6'); R(g, x, 50 - h, 1, 2, '#f4f8fb') }
+  R(g, 0, 46, W, 8, '#a9c4dc'); for (let y = 47; y < 54; y += 2) R(g, 0, y, W, 1, '#c4d8ea');
+  const house = (x, w, c) => { R(g, x, 40, w, 16, c); for (let i = 0; i < 6; i++) R(g, x - 2 + i, 39 - i * 1.5, w + 4 - 2 * i, 2, '#f4f8fb'); R(g, x + 4, 44, 5, 5, '#ffd27a'); R(g, x + w - 9, 44, 5, 5, '#ffd27a'); R(g, x + w / 2 - 2, 49, 5, 7, '#5a3e2a'); R(g, x + w - 8, 28, 3, 7, '#6b4a35') };
+  house(60, 34, '#a8332a'); house(330, 30, '#c9a64a'); house(416, 36, '#3b6fb0');
+  const spine = (x, base, h) => { for (let i = 0; i < h; i++) { const w = Math.max(1, Math.round((h - i) * 0.45)); R(g, x - (w >> 1), base - i, w, 1, i % 4 === 0 ? '#f4f8fb' : '#2f5a45') } };
+  for (let x = -4; x < W; x += 7 + rnd() * 8) if (x < 56 || (x > 98 && x < 326) || x > 452 || rnd() < 0.3) spine(x, 66, 14 + rnd() * 12);
+}
+function winterGround(g) {
+  R(g, 0, 66, W, H - 66, '#e9f0f6'); noise(g, 0, 66, W, H - 66, '#e9f0f6', 8, 0.2);
+  for (let k = 0; k < 30; k++) { let x = (rnd() - 0.5) * 30, y = -12 + rnd() * 28; if (Math.abs(x) < 6.4 && Math.abs(y) < 11) continue; for (let st = 0; st < 6; st++) { x += 0.4; const p = P(x, y + (st % 2) * 0.22, 0); R(g, p.x, p.y, 2, 1, '#c4d2e0') } }
+  WQ(g, [[-6.6, -11.6, 0], [6.6, -11.6, 0], [6.6, 11.6, 0], [-6.6, 11.6, 0]], '#cdd8e4');
+  for (const s of [-1, 1]) for (let y = -11.5; y < 11.5; y += 0.6) { const p = P(s * (6.4 + rnd() * 0.5), y, 0); circ(g, p.x, p.y - 1, 2 + rnd() * 2, '#f6f9fc') }
+}
+function snowman(o) { shadow(o, 1); o.c(0, 0.4, 0.42, '#f6f9fc'); o.c(0, 1.0, 0.3, '#f6f9fc'); o.c(0, 1.45, 0.2, '#f6f9fc'); o.dot(-0.07, 1.5, '#2b2633'); o.dot(0.07, 1.5, '#2b2633'); o.r(0, 1.42, 0.16, 0.05, '#ff7a3a'); o.r(-0.22, 1.22, 0.44, 0.07, '#c4313e'); o.r(-0.15, 1.62, 0.3, 0.2, '#2b2633'); o.dot(0, 1.0, '#2b2633'); o.dot(0, 0.85, '#2b2633') }
+function sauna(o) { shadow(o, 2.6); o.r(-1.2, 0, 2.4, 1.3, '#8a5a3c'); for (let z = 0.15; z < 1.3; z += 0.22) o.r(-1.2, z, 2.4, 0.03, '#6b4a35'); for (let i = 0; i < 6; i++) o.r(-1.35 + i * 0.12, 1.3 + i * 0.12, 2.7 - i * 0.24, 0.12, i < 2 ? '#f4f8fb' : '#5a3e2a'); o.r(-0.3, 0, 0.5, 0.9, '#5a3e2a'); o.r(0.5, 0.6, 0.4, 0.3, '#ffd27a'); o.r(0.7, 1.4, 0.2, 0.5, '#4a4652'); const p = o.at(-0.05, 1.1); txt(o.g, 'SAUNA', Math.round(p.x - 9), Math.round(p.y), '#f4ead2') }
+function sled(o) { o.r(-0.6, 0.1, 1.2, 0.1, '#c4313e'); o.r(-0.6, 0, 1.2, 0.04, '#4a4652'); o.r(-0.65, 0.04, 0.06, 0.2, '#4a4652') }
+function skis(o) { const a = o.at(-0.4, 0), b = o.at(0.4, 1.7), c = o.at(0.4, 0), d = o.at(-0.4, 1.7); L(o.g, a.x, a.y, b.x, b.y, '#e4572e', 2); L(o.g, c.x, c.y, d.x, d.y, '#3b6fb0', 2) }
+function snowBench(o) { bench(o); o.r(-0.92, 0.5, 1.84, 0.06, '#f6f9fc'); o.r(-0.92, 0.86, 1.84, 0.05, '#f6f9fc') }
+function snowPine(o) { pine(o, true); for (let t = 0; t < 4; t++) { const z = (0.7 + t * 0.85) * 1.25 + 0.15, w = (2.5 - t * 0.55) * 1.25 * 0.7; o.r(-w / 2, z, w, 0.12, '#f4f8fb') } }
+function winterProps() { return [
+  { x: -13.4, y: 13, f: snowPine }, { x: 13.6, y: 13.2, f: snowPine }, { x: -11.4, y: 9.8, f: sauna }, { x: 11, y: 8.6, f: snowman },
+  { x: -8.7, y: 6, f: snowBench }, { x: -8.7, y: 3, f: snowBench }, { x: 12.2, y: 4.4, f: skis }, { x: 10.2, y: 2.6, f: sled },
+  { x: -12.6, y: -2.4, f: snowPine }, { x: 12.8, y: -5, f: snowman }, { x: -8.6, y: -8.4, f: o => cooler(o, '#c4313e') }, { x: 13.4, y: -9, f: snowPine },
+] }
+function bench(o) { shadow(o, 1.9); o.r(-0.9, 0.4, 1.8, 0.1, '#8a5a3c'); o.r(-0.85, 0, 0.1, 0.4, '#2b2633'); o.r(0.75, 0, 0.1, 0.4, '#2b2633'); o.r(-0.9, 0.62, 1.8, 0.08, '#8a5a3c'); o.r(-0.9, 0.78, 1.8, 0.08, '#8a5a3c') }
+
+/* ================= schoolyard ================= */
+function schoolBack(g) {
+  R(g, -4, 14, W + 8, 52, '#b8644a'); for (let y = 16; y < 66; y += 3) for (let x = ((y / 3) % 2) * 4; x < W; x += 8) R(g, x, y, 7, 1, '#a85a42');
+  R(g, -4, 12, W + 8, 3, '#e9dcc0'); R(g, -4, 38, W + 8, 2, '#e9dcc0');
+  for (let x = 6; x < W; x += 30) for (const y of [18, 42]) { R(g, x, y, 22, 14, '#f4ead2'); R(g, x + 1, y + 1, 20, 12, '#5a7a9a'); R(g, x + 11, y + 1, 1, 12, '#f4ead2'); R(g, x + 1, y + 7, 20, 1, '#f4ead2'); if (rnd() < 0.5) R(g, x + 2, y + 2, 4, 3, pick(['#f2c14e', '#e4572e', '#9be37a', '#f4f4f0'])); R(g, x + 2, y + 2, 1, 4, '#8fb0c8') }
+  R(g, 210, 0, 60, 14, '#b8644a'); R(g, 208, -1, 64, 2, '#e9dcc0'); circ(g, 240, 6, 5, '#f4f4f0'); ring(g, 240, 6, 5, '#2b2633'); R(g, 240, 3, 1, 3, '#2b2633'); R(g, 240, 6, 3, 1, '#2b2633');
+  R(g, 140, 4, 1, 34, '#9aa0a6');
+  for (let k = 0; k < 6; k++) R(g, 18 + k * 7, 62, 5, 4, pick(['#3b6fb0', '#e4572e', '#f2c14e', '#3f7a4a']));
+  txt(g, 'SCHOOL 7', 300, 3, '#f4ead2', 1);
+}
+function schoolGround(g) {
+  R(g, 0, 66, W, H - 66, '#7a777e'); noise(g, 0, 66, W, H - 66, '#7a777e', 8, 0.25);
+  const wl = 'rgba(244,240,232,0.6)';
+  for (let i = 0; i <= 16; i++) { const a = i / 16 * Math.PI; WL(g, [10.5 + Math.cos(a) * 2.2, 4 + Math.sin(a) * 2.2, 0], [10.5 + Math.cos(a + Math.PI / 16) * 2.2, 4 + Math.sin(a + Math.PI / 16) * 2.2, 0], wl) }
+  WL(g, [8.3, 4, 0], [12.7, 4, 0], wl);
+  for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2, b = (i + 1) / 24 * Math.PI * 2; WL(g, [-10.5 + Math.cos(a) * 1.6, -5 + Math.sin(a) * 1.6, 0], [-10.5 + Math.cos(b) * 1.6, -5 + Math.sin(b) * 1.6, 0], 'rgba(242,193,78,0.75)') }
+  for (let k = 0; k < 10; k++) { const p = P(-12 + rnd() * 3, -10 + rnd() * 3, 0); R(g, p.x, p.y, 2, 1, pick(['#ff8a5c', '#6fd3d2', '#f2c14e', '#ff6ad5'])) }
+}
+function hoop(o) { shadow(o, 1); o.r(-0.06, 0, 0.12, 2.9, '#4a4652'); o.r(-0.55, 2.6, 1.1, 0.75, '#f4f4f0'); o.r(-0.2, 2.75, 0.4, 0.3, '#e4572e'); o.r(-0.18, 2.6, 0.36, 0.04, '#e4572e'); o.r(-0.12, 2.25, 0.04, 0.35, '#f4f4f0'); o.r(0.08, 2.25, 0.04, 0.35, '#f4f4f0') }
+function bus(o) { shadow(o, 2.3); o.r(-1.1, 0.25, 2.2, 1.8, '#f2c14e'); o.r(-0.95, 1.25, 1.9, 0.6, '#3d4656'); o.r(-1.1, 0.25, 2.2, 0.12, '#2b2633'); o.r(-0.95, 0.55, 0.3, 0.15, '#fff4cf'); o.r(0.65, 0.55, 0.3, 0.15, '#fff4cf'); o.r(-0.4, 0.95, 0.8, 0.18, '#2b2633'); const p = o.at(0, 1.03); txt(o.g, 'BUS', Math.round(p.x - 5), Math.round(p.y - 1), '#f2c14e'); o.r(-1, 0, 0.35, 0.3, '#1c1a22'); o.r(0.65, 0, 0.35, 0.3, '#1c1a22') }
+function backpacks(o) { for (const [x, c] of [[-0.35, '#e4572e'], [0.05, '#3b6fb0'], [0.4, '#9be37a']]) { o.r(x - 0.16, 0, 0.32, 0.38, c); o.r(x - 0.1, 0.12, 0.2, 0.1, shade(c, -30)) } }
+function schoolProps() { return [
+  { x: -12.6, y: 9.4, f: bus }, { x: 10.5, y: 6.4, f: hoop }, { x: 12.8, y: 12, f: bikes },
+  { x: -8.7, y: 6, f: bench }, { x: -8.7, y: 3, f: bench }, { x: -7.8, y: 1.2, f: backpacks },
+  { x: 12.6, y: -2, f: o => cooler(o, '#3b6fb0') }, { x: 9.6, y: -7.6, f: cone }, { x: 10.4, y: -8.4, f: cone }, { x: -12.4, y: -2, f: o => crate(o, '#3b6fb0') },
 ] }
