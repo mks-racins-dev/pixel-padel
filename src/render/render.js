@@ -2,6 +2,7 @@ import { trailColor } from '../meta/profile.ts';
 import { isPractice, PR } from '../game/practice.js';
 import { cameraOffset, drawFx, zoomTransform, zoomOrigin } from './fx.ts';
 import { drawDrama } from './drama.ts';
+import { drawNpcs } from './npcs.ts';
 import { cv } from '../core/gfx.js';
 import { S } from '../state.js';
 import { L, P, R, ctx, shade, txt, txtW } from '../core/gfx.js';
@@ -38,6 +39,7 @@ export function drawBall(){
   R(ctx,x-1,y-1,3,3,'#e2ef3c');R(ctx,x-1,y-1,1,1,'#fbffb8');R(ctx,x+1,y+1,1,1,'#a9b82a');
 }
 export function drawSpectators(){
+  drawNpcs(ctx);
   gradeFrame(ctx);
   for(const s of S.spectators){const p=P(s.x,s.y,0.5);const x=Math.round(p.x),y=Math.round(p.y);
     const bob=(s.cheer>0)?(Math.floor(S.time*8+s.ph)%2):(!S.hush&&Math.floor(S.time*1.5+s.ph)%2===0&&Math.sin(S.time+s.ph)>0.6?1:0);

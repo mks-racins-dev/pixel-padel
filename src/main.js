@@ -21,6 +21,7 @@ import { render } from './render/render.js';
 import { buildBg, buildFront, buildNet } from './render/venue.js';
 import { setCrowd } from './render/grades.js';
 import { updateDrama } from './render/drama.ts';
+import { updateNpcs } from './render/npcs.ts';
 import { matchGames } from './game/rules.js';
 import { drawPreview } from './ui/preview.js';
 import { setHelp } from './ui/ui.js';
@@ -71,7 +72,7 @@ export function frame(now){const dt=Math.min(0.05,(now-S.last)/1000);S.last=now;
   if(S.net&&S.net.role==='guest'&&!S.demo)guestTick(dt);
   else if((!S.paused||(S.net&&!S.demo))&&S.state!=='over'){S.acc+=simTime(dt);while(S.acc>=STEP){update(STEP);S.acc-=STEP}}
   if(S.net&&S.net.role==='host'&&!S.demo&&S.net.conn&&S.net.conn.open){S.net.sendT-=dt;if(S.net.sendT<=0){S.net.sendT=1/30;netSend(mkSnap())}}
-  pollPads();updMascot(dt);updateFx(dt);updateDrama(dt,matchGames());render();drawPreview();drawHelp();playMusic(!$('menu').hidden?'menu':!S.demo&&S.state!=='over'&&!S.paused?'match':'none');requestAnimationFrame(frame)}
+  pollPads();updMascot(dt);updateFx(dt);updateNpcs(dt);updateDrama(dt,matchGames());render();drawPreview();drawHelp();playMusic(!$('menu').hidden?'menu':!S.demo&&S.state!=='over'&&!S.paused?'match':'none');requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 // dev only: ?grade=7&loc=es shows that court grade without the menu (for checking the look)
 if(import.meta.env.DEV){const q=new URLSearchParams(location.search);if(q.has('grade')){setLoc(q.get('loc')||settings.loc,+q.get('grade'));$('menu').hidden=true}}
