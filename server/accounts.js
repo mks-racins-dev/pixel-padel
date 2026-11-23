@@ -2,6 +2,7 @@
 // interface (get / put / list), so they run on Durable Object storage in production and on
 // a Map in tests.
 import { DEFAULT, rateMatch, seasonOf } from '../src/meta/glicko.ts';
+import { isOffensive } from './moderation.js';
 
 export const NAME_RE = /^[A-Z0-9]{3,10}$/;
 export const MAX_PROFILE_BYTES = 64 * 1024;
@@ -36,6 +37,7 @@ export class PlayerStore {
     if (body.name !== undefined) {
       const n = cleanName(body.name);
       if (!NAME_RE.test(n)) return 'Name must be 3–10 letters or digits.';
+      if (isOffensive(n)) return 'Please choose another name.';
       await this.st.put('name', n);
     }
     if (body.profile !== undefined) {

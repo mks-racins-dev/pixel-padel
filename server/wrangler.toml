@@ -31,4 +31,5 @@ new_sqlite_classes = ["Player", "LadderDO"]
 
 [vars]
 # Pages allowed to connect (comma-separated). Empty = allow all.
-ALLOWED_ORIGINS = "https://mks-racins-dev.github.io,http://localhost:5173,http://localhost:4173"
+# itch.io serves HTML5 games from a subdomain of itch.zone (and pages on itch.io)
+ALLOWED_ORIGINS = "https://mks-racins-dev.github.io,https://*.itch.zone,https://*.itch.io,https://itch.io,http://localhost:5173,http://localhost:4173"

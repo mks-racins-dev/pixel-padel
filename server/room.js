@@ -18,6 +18,7 @@ import { rngState, setRngState } from '../src/core/rng.ts';
 import { wallPref } from '../src/ai/ai.js';
 import { newMatch } from '../src/game/rules.js';
 import { update, STEP } from '../src/game/update.js';
+import { isOffensive } from './moderation.js';
 import { STYLES } from '../src/game/constants.js';
 import { cleanLook } from '../src/game/player.js';
 import { startCharge, releaseCharge, tryVibora } from '../src/game/actions.js';
@@ -100,7 +101,7 @@ export class MatchRoom {
     if (this.closed) { send(JSON.stringify({ t: 'bye' })); return -1 } // someone left: this room is finished
     const slot = this.started ? undefined : SLOT_ORDER[this.size].find(i => !this.players.some(p => p.slot === i));
     if (slot === undefined) { send(JSON.stringify({ t: 'full' })); return -1 }
-    const p = { cid: this.cids++, slot, team: SLOT_TEAM[this.size][slot], send, id: who.id || null, name: who.name || null, style: 'allround', look: null, loc: 'sunset', input: { mx: 0, my: 0 }, hello: false, msgs: 0, msgT: 0 };
+    const p = { cid: this.cids++, slot, team: SLOT_TEAM[this.size][slot], send, id: who.id || null, name: who.name || null, ip: who.ip || '', style: 'allround', look: null, loc: 'sunset', input: { mx: 0, my: 0 }, hello: false, msgs: 0, msgT: 0 };
     this.players.push(p);
     return p.cid;
   }
@@ -179,12 +180,13 @@ export class MatchRoom {
         this.host = p; if (m.fmt === '2v2' && this.kind === 'private' && this.players.length === 1) this.size = 4;
         // a public room shows in the room list; it may have a password
         if (m.pub && typeof m.pub === 'object' && this.kind === 'private') {
-          this.pub = { name: cleanRoomName(m.pub.name) || 'PADEL ROOM' };
+          const rn = cleanRoomName(m.pub.name);
+          this.pub = { name: rn && !isOffensive(rn) ? rn : 'PADEL ROOM' };
           this.pass = typeof m.pub.pass === 'string' ? m.pub.pass.slice(0, 16) : '';
         }
       }
       p.hello = true;
-      if (typeof m.name === 'string' && !p.name) p.name = m.name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) || null;
+      if (typeof m.name === 'string' && !p.name) { const n = m.name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10); p.name = n && !isOffensive(n) ? n : null }
       p.style = STYLES[m.style] ? m.style : 'allround';
       p.look = m.look ? cleanLook(m.look) : null;
       if (VENUES.includes(m.loc)) p.loc = m.loc;

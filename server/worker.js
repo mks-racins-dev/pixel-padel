@@ -15,12 +15,13 @@
 import { DurableObject } from 'cloudflare:workers';
 import { MatchRoom } from './room.js';
 import { PlayerStore, Ladder, randomId, sha256hex, cleanName, NAME_RE } from './accounts.js';
+import { RateLimiter, isOffensive, originAllowed } from './moderation.js';
 
 function allowedOrigin(req, env) {
   const allowed = (env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
   const origin = req.headers.get('Origin') || '';
   if (!allowed.length) return origin || '*';
-  return allowed.includes(origin) ? origin : null;
+  return originAllowed(origin, allowed) ? origin : null;
 }
 function json(data, status, origin) {
   return new Response(JSON.stringify(data), { status: status || 200, headers: {
@@ -31,6 +32,12 @@ function json(data, status, origin) {
 const player = (env, id) => env.PLAYER.get(env.PLAYER.idFromName(id));
 const ladder = env => env.LADDER.get(env.LADDER.idFromName('ladder'));
 const lobby = env => env.LOBBY.get(env.LOBBY.idFromName('lobby'));
+const ipOf = req => req.headers.get('CF-Connecting-IP') || '';
+/** Per-IP rate limit (kept in the Lobby object). True when the action is allowed. */
+async function allowed(env, kind, ip) {
+  if (!ip) return true;
+  try { return (await (await lobby(env).fetch('https://lobby/limit', { method: 'POST', body: JSON.stringify({ kind, ip }) })).json()).ok } catch (e) { return true }
+}
 
 /** Checks "<id>:<token>". Returns { id, name } or null. */
 async function authenticate(env, cred) {
@@ -55,9 +62,10 @@ export default {
         if (url.pathname === '/api/ladder') return json(await ladder(env).top(10, Date.now(), url.searchParams.get('by') || 'rating'), 200, origin);
         if (url.pathname === '/api/rooms') return json(await (await lobby(env).fetch('https://lobby/rooms')).json(), 200, origin);
         if (url.pathname === '/api/guest' && req.method === 'POST') {
+          if (!await allowed(env, 'guest', ipOf(req))) return json({ error: 'too many new accounts, try later' }, 429, origin);
           const body = await req.json().catch(() => ({}));
           let name = cleanName(body.name);
-          if (!NAME_RE.test(name)) name = 'PLAYER' + String(Math.floor(Math.random() * 9000) + 1000);
+          if (!NAME_RE.test(name) || isOffensive(name)) name = 'PLAYER' + String(Math.floor(Math.random() * 9000) + 1000);
           const id = randomId(10), token = randomId(32);
           if (!await player(env, id).init(await sha256hex(token), name)) return json({ error: 'try again' }, 409, origin);
           return json({ id, token, name }, 200, origin);
@@ -68,6 +76,10 @@ export default {
           if (req.method === 'PUT') {
             const body = await req.json().catch(() => null);
             if (!body) return json({ error: 'bad request' }, 400, origin);
+            if (body.name !== undefined) {
+              if (isOffensive(cleanName(body.name))) return json({ error: 'Please choose another name.' }, 400, origin);
+              if (!await allowed(env, 'name', ipOf(req))) return json({ error: 'too many name changes, try later' }, 429, origin);
+            }
             const err = await player(env, who.id).put(body);
             if (err) return json({ error: err }, 400, origin);
             if (body.name !== undefined) await ladder(env).rename(who.id, cleanName(body.name));
@@ -82,10 +94,12 @@ export default {
 
     if (req.headers.get('Upgrade') !== 'websocket') return new Response('Pixel Padel game server. Connect with a WebSocket.', { status: 426 });
     if (!origin) return new Response('Forbidden', { status: 403 });
+    if (!await allowed(env, 'conn', ipOf(req))) return new Response('Too many connections', { status: 429 });
     // who is connecting: set by us, never taken from the client
     const who = await authenticate(env, url.searchParams.get('auth'));
     const headers = new Headers(req.headers);
-    headers.delete('X-Player-Id'); headers.delete('X-Player-Name');
+    headers.delete('X-Player-Id'); headers.delete('X-Player-Name'); headers.delete('X-Client-IP');
+    headers.set('X-Client-IP', ipOf(req));
     if (who) { headers.set('X-Player-Id', who.id); headers.set('X-Player-Name', who.name || '') }
     const fwd = new Request(req, { headers });
     if (url.pathname === '/quick') return env.LOBBY.get(env.LOBBY.idFromName('lobby')).fetch(fwd);
@@ -101,9 +115,10 @@ const quickCode = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), b 
 /** Pairs up players who pressed "find an opponent", and keeps the list of public rooms
  *  (each room reports itself every few seconds; entries not refreshed for 30 s drop out). */
 export class Lobby {
-  constructor() { this.waiting = null; this.rooms = new Map() }
+  constructor() { this.waiting = null; this.rooms = new Map(); this.limiter = new RateLimiter() }
   async fetch(req) {
     const path = new URL(req.url).pathname;
+    if (path === '/limit') { const b = await req.json().catch(() => ({})); return Response.json({ ok: this.limiter.allow(b.kind, b.ip) }) }
     if (path === '/rooms') { const now = Date.now(); for (const [k, r] of this.rooms) if (now - r.at > 30000) this.rooms.delete(k); return Response.json({ rooms: [...this.rooms.values()].map(({ at, ...r }) => r) }) }
     if (path === '/rooms/put') { const r = await req.json(); if (r && r.code) this.rooms.set(r.code, { ...r, at: Date.now() }); return new Response('ok') }
     if (path === '/rooms/del') { const r = await req.json(); if (r && r.code) this.rooms.delete(r.code); return new Response('ok') }
@@ -141,7 +156,7 @@ export class Match {
     const room = this.room;
     const [client, ws] = Object.values(new WebSocketPair());
     ws.accept();
-    const team = room.join(s => { try { ws.send(s) } catch (e) {} }, { id: req.headers.get('X-Player-Id'), name: req.headers.get('X-Player-Name') });
+    const team = room.join(s => { try { ws.send(s) } catch (e) {} }, { id: req.headers.get('X-Player-Id'), name: req.headers.get('X-Player-Name'), ip: req.headers.get('X-Client-IP') || '' });
     if (team < 0) { setTimeout(() => { try { ws.close(1000, 'room unavailable') } catch (e) {} }, 200); return new Response(null, { status: 101, webSocket: client }) }
     ws.addEventListener('message', e => room.message(team, e.data, Date.now() / 1000));
     let left = false;
@@ -162,7 +177,15 @@ export class Match {
     return new Response(null, { status: 101, webSocket: client });
   }
   /** Tells the room list about this room (public rooms only). */
-  announce() { const info = this.room?.info(); if (info) this.post('/rooms/put', info) }
+  async announce() {
+    const room = this.room, info = room?.info(); if (!info) return;
+    if (!room.listed) { // first time in the room list: counts against the host's per-IP limit
+      room.listed = 'checking';
+      if (!await allowed(this.env, 'room', room.host?.ip)) { room.pub = null; room.host?.send(JSON.stringify({ t: 'msg', b: 'ROOM NOT LISTED', s: 'too many public rooms from you, share the code instead' })); return }
+      room.listed = true;
+    }
+    if (room.listed === true) this.post('/rooms/put', info);
+  }
   post(path, body) { lobby(this.env).fetch('https://lobby' + path, { method: 'POST', body: JSON.stringify(body) }).catch(() => {}) }
 }
 
