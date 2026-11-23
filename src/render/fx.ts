@@ -7,7 +7,6 @@ interface Part { x: number; y: number; z: number; vx: number; vy: number; vz: nu
 
 export const FX = {
   hitStop: 0,          // seconds of frozen simulation left
-  freeze: false,       // simulation paused while an instant replay plays
   slowT: 0,            // seconds of slow motion left (real time)
   slowK: 1,            // simulation speed while slowT > 0
   punch: { x: 0, y: 0, t: 0 },
@@ -31,7 +30,6 @@ export function punch(dx: number, dy: number) { FX.punch = { x: dx, y: dy, t: 0.
 
 /** How much simulation time to advance for `dt` of real time. */
 export function simTime(dt: number): number {
-  if (FX.freeze) return 0;
   if (FX.hitStop > 0) { FX.hitStop -= dt; return 0 }
   if (FX.slowT > 0) { FX.slowT -= dt; return dt * FX.slowK }
   return dt;
