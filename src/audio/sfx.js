@@ -2,7 +2,7 @@ import { fxForSound } from '../render/fx.ts';
 import { S } from '../state.js';
 import { vol } from '../game/opts.js';
 /** Sound effects go through one gain node so the SFX volume option applies to all of them. */
-export function sfxOut(){if(!S.sfxGain){S.sfxGain=S.AC.createGain();S.sfxGain.connect(sfxOut())}S.sfxGain.gain.value=vol('sfx')*1.25;return S.sfxGain}
+export function sfxOut(){if(!S.sfxGain){S.sfxGain=S.AC.createGain();S.sfxGain.connect(S.AC.destination)}S.sfxGain.gain.value=vol('sfx')*1.25;return S.sfxGain}
 
 export function initAudio(){try{if(!S.AC){S.AC=new(window.AudioContext||window.webkitAudioContext)();S.noiseBuf=S.AC.createBuffer(1,S.AC.sampleRate*0.3,S.AC.sampleRate);const d=S.noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}if(S.AC.state==='suspended')S.AC.resume()}catch(e){S.AC=null}}
 export function tone(type,f0,f1,dur,vol,delay){const t=S.AC.currentTime+(delay||0);const o=S.AC.createOscillator(),g=S.AC.createGain();o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(30,f1),t+dur);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.connect(g).connect(sfxOut());o.start(t);o.stop(t+dur+0.02)}
