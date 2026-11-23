@@ -448,3 +448,76 @@ html[lang="ru"] .mp .help,html[lang="ru"] .help.small{font-size:calc(var(--u)*6.
 html[lang="ru"] .ncard span,html[lang="ru"] .krow,html[lang="ru"] .sdesc{font-size:calc(var(--u)*6)}
 html[lang="ru"] .dchest>span:not(.chest){font-size:calc(var(--u)*5.5)}
 html[lang="ru"] .mhint{font-size:calc(var(--u)*6.5)}
+
+/* =====================================================================
+   MENU RESTYLE: premium pixel. Framed panels, a softly blurred court
+   behind the menu, coloured section markers, lift-on-hover buttons and
+   a short slide-in when a panel opens. Overrides the rules above.
+   ===================================================================== */
+:root{--ink:#0c0a10;--card:#1d1726;--card2:#261e31;--line:#3a3048;--hi:#4d4160;--txt:#f4ead2;--dim:#a99db8;--acc:#ff7a45;--acc2:#e4572e;--gold:#f2c14e;--go:#4fae63;--go2:#2f7a41}
+
+/* the court behind the menu: blurred, darker at the edges */
+#menu{background:radial-gradient(ellipse at 70% 40%,rgba(12,10,16,0) 0%,rgba(12,10,16,.55) 75%)}
+.mpanel{background:linear-gradient(100deg,rgba(18,14,24,.92) 0%,rgba(18,14,24,.78) 60%,rgba(18,14,24,.7) 100%);-webkit-backdrop-filter:blur(calc(var(--u)*2)) saturate(1.15);backdrop-filter:blur(calc(var(--u)*2)) saturate(1.15)}
+.mpanel::after{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px)}
+
+/* left navigation */
+.mnav{background:linear-gradient(180deg,#241c2e 0%,#1a1422 100%);border-right:calc(var(--u)*2) solid var(--ink);box-shadow:inset calc(var(--u)*-1) 0 0 var(--line)}
+.mnav h1{text-shadow:calc(var(--u)*1.5) calc(var(--u)*1.5) 0 var(--acc2),calc(var(--u)*3) calc(var(--u)*3) 0 var(--ink);letter-spacing:calc(var(--u)*.5)}
+.mi{position:relative;transition:background .12s,padding-left .12s;border-left:calc(var(--u)*2.5) solid transparent}
+.mi::before{content:'';width:calc(var(--u)*3.5);height:calc(var(--u)*3.5);background:var(--mc,#6d6680);box-shadow:0 0 0 var(--u) var(--ink);flex:none}
+.mi[data-p="career"]{--mc:#ff7a45}.mi[data-p="quick"]{--mc:#f2c14e}.mi[data-p="daily"]{--mc:#9be37a}.mi[data-p="cup"]{--mc:#ffd66e}
+.mi[data-p="practice"]{--mc:#6fd3d2}.mi[data-p="online"]{--mc:#b48cff}.mi.small{--mc:#5d5470}
+.mi:hover{background:rgba(255,255,255,.04);padding-left:calc(var(--u)*15)}
+.mi[aria-current="true"]{background:linear-gradient(90deg,color-mix(in srgb,var(--mc,var(--acc)) 30%,transparent),transparent 95%);color:#fff;box-shadow:none;border-left-color:var(--mc,var(--acc))}
+.mi[aria-current="true"]::before{background:var(--mc,var(--acc));box-shadow:0 0 0 var(--u) var(--ink),0 0 calc(var(--u)*4) var(--mc,var(--acc))}
+.mi[aria-current="true"] i{color:var(--gold)}
+.msep{opacity:.5}
+
+/* panel titles: an accent bar under the title */
+.mtitle{position:relative;padding-bottom:calc(var(--u)*5);text-shadow:calc(var(--u)*1.5) calc(var(--u)*1.5) 0 var(--acc2)}
+.mtitle::after{content:'';position:absolute;left:0;bottom:0;width:calc(var(--u)*24);height:calc(var(--u)*1.5);background:var(--acc);box-shadow:calc(var(--u)*26) 0 0 var(--gold),calc(var(--u)*30) 0 0 #6fd3d2}
+
+/* panels open with a short slide */
+.mp:not([hidden]){animation:mpIn .2s ease-out}
+@keyframes mpIn{from{opacity:0;transform:translateX(calc(var(--u)*6))}to{opacity:1;transform:none}}
+
+/* framed cards: dark fill, hard pixel border, inner highlight, drop shadow */
+.panel,.qcard,.ncards>*,.tcard,.scene,.chapter,.gitem,.lslot,.cslot,.bracket>*>div,.dlist>*,.dchal,.shotcard,.hcard{background:linear-gradient(180deg,var(--card2),var(--card));border:calc(var(--u)*1.5) solid var(--ink);box-shadow:inset 0 var(--u) 0 var(--hi),calc(var(--u)*2) calc(var(--u)*2) 0 rgba(0,0,0,.4)}
+
+/* buttons: lift on hover, press down on click, clear keyboard focus */
+.big{background:linear-gradient(180deg,#5cc070 0%,var(--go) 55%,#449a56 100%);box-shadow:inset 0 calc(var(--u)*-2.5) 0 var(--go2),inset 0 var(--u) 0 rgba(255,255,255,.25),calc(var(--u)*2) calc(var(--u)*2) 0 rgba(0,0,0,.45);text-shadow:var(--u) var(--u) 0 rgba(0,0,0,.35);transition:transform .08s,filter .12s}
+.big:hover{transform:translateY(calc(var(--u)*-1));filter:brightness(1.08)}
+.big:active{transform:translateY(var(--u));box-shadow:inset 0 calc(var(--u)*-1) 0 var(--go2)}
+.big.alt{background:linear-gradient(180deg,#463b55,#3a3146);box-shadow:inset 0 calc(var(--u)*-2.5) 0 #2a2333,inset 0 var(--u) 0 rgba(255,255,255,.12),calc(var(--u)*2) calc(var(--u)*2) 0 rgba(0,0,0,.45)}
+button:focus-visible{outline:calc(var(--u)*1.5) solid var(--gold);outline-offset:var(--u)}
+
+/* segmented choices: dark tiles, the chosen one glows */
+.seg button{background:linear-gradient(180deg,#3d3349,#332a3f);transition:transform .08s,filter .12s}
+.seg button:hover{transform:translateY(calc(var(--u)*-.5))}
+.seg button[aria-pressed="true"]{background:linear-gradient(180deg,#ff8a55,var(--acc2));box-shadow:inset 0 calc(var(--u)*-1.5) 0 #a83b1d,0 0 calc(var(--u)*5) rgba(255,122,69,.45)}
+.seg.cards button{transition:transform .1s}
+.seg.cards button:hover{transform:translateY(calc(var(--u)*-1.5))}
+.seg.cards button[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 0 var(--u) var(--gold),0 0 calc(var(--u)*7) rgba(242,193,78,.5)}
+.step{background:var(--ink);box-shadow:inset 0 0 0 var(--u) var(--line)}
+.step button{background:linear-gradient(180deg,#463b55,#3a3146)}
+.step button:hover{filter:brightness(1.2)}
+
+/* readable help text on the blurred court */
+.help{color:#ddd1c0}
+.help b{color:var(--gold)}
+
+/* how to play: rules as a single numbered column */
+.hrules{grid-template-columns:1fr;gap:calc(var(--u)*1.5);padding-left:calc(var(--u)*10)}
+
+/* weekly cup: bracket boxes on solid cards, the result next to its label */
+.bracket{background:rgba(12,10,16,.35);padding:calc(var(--u)*3);border:calc(var(--u)*1) solid var(--line)}
+
+/* online: the cards fill the width and grow, the button sits at the bottom */
+.mp[data-p="online"] #onlineStart{margin-top:auto}
+
+/* scrollbars inside panels */
+.mpanel ::-webkit-scrollbar{width:calc(var(--u)*3)}
+.mpanel ::-webkit-scrollbar-thumb{background:var(--line)}
+
+@media (prefers-reduced-motion:reduce){.mp:not([hidden]){animation:none}.big,.seg button,.mi{transition:none}}

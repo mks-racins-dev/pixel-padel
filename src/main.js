@@ -1,3 +1,7 @@
+// pixel fonts ship with the game (no Google Fonts request, works offline)
+import '@fontsource/press-start-2p';
+import '@fontsource/vt323';
+import '@fontsource/pixelify-sans';
 import './style.css';
 import './sim/clientHooks.js';
 import { simTime, updateFx } from './render/fx.ts';
@@ -73,3 +77,7 @@ requestAnimationFrame(frame);
 if(import.meta.env.DEV){const q=new URLSearchParams(location.search);if(q.has('grade')){setLoc(q.get('loc')||settings.loc,+q.get('grade'));$('menu').hidden=true}}
 // dev only: ?cine=plane plays that story scene (for checking cutscenes)
 if(import.meta.env.DEV){const q=new URLSearchParams(location.search);if(q.has('cine'))Promise.all([import('./content/story.js'),import('./content/staging.js'),import('./render/cine.js'),import('./game/player.js')]).then(([st,sg,ci,pl])=>{const s=st.SCENES.find(x=>x.id===q.get('cine'));ci.playCine(sg.storyCine(s,{won:['a1_tomi','a1_king','b_riga3','b_vil2','e_min3','e_mos3','p_mad3','p_mia2','p_fin'],seen:[]},pl.mkLook(S.myLookData)))})}
+// dev only: ?panel=quick opens a menu panel, ?play=1v1 starts a quick match (for screenshots)
+if(import.meta.env.DEV){const q=new URLSearchParams(location.search);
+  if(q.has('panel'))import('./ui/menu.js').then(m=>{if(q.get('mode'))settings.mode=q.get('mode');m.showPanel(q.get('panel'))});
+  if(q.has('play'))import('./ui/ui.js').then(u=>{settings.mode=q.get('play');if(q.get('loc'))setLoc(q.get('loc'),+(q.get('g')||0));u.startGame()})}
