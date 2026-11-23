@@ -15,7 +15,7 @@ const D = {
   q_mode: ['MODE', 'РЕЖИМ', 'REŽĪMS'], q_cpu: ['CPU', 'УРОВЕНЬ', 'LĪMENIS'], q_len: ['LENGTH', 'ДЛИНА', 'GARUMS'], q_venue: ['VENUE', 'КОРТ', 'LAUKUMS'],
   q_tour: ['TOUR', 'ТУР', 'TŪRE'], q_street: ['STREET COURTS', 'УЛИЧНЫЕ', 'IELU LAUKUMI'], q_card: ['MATCH CARD', 'КАРТОЧКА МАТЧА', 'SPĒLES KARTE'], q_start: ['START ▸', 'СТАРТ ▸', 'SĀKT ▸'],
   o_assist: ['ASSIST', 'ПОДСКАЗКА', 'PALĪGS'], o_bounce: ['BOUNCE MARK', 'МЕТКА ОТСКОКА', 'ATSITIENA ZĪME'], on: ['ON', 'ВКЛ', 'IESL.'], off: ['OFF', 'ВЫКЛ', 'IZSL.'],
-  o_sound: ['SOUND', 'ЗВУК', 'SKAŅA'], o_sfx: ['EFFECTS', 'ЭФФЕКТЫ', 'EFEKTI'], o_music: ['MUSIC', 'МУЗЫКА', 'MŪZIKA'], o_shake: ['SHAKE', 'ТРЯСКА', 'KRATĪŠANA'],
+  o_sound: ['SOUND', 'ЗВУК', 'SKAŅA'], o_sfx: ['EFFECTS', 'ЭФФЕКТЫ', 'EFEKTI'], o_music: ['MUSIC', 'МУЗЫКА', 'MŪZIKA'], o_radio: ['RADIO', 'РАДИО', 'RADIO'], o_shake: ['SHAKE', 'ТРЯСКА', 'KRATĪŠANA'],
   o_lang: ['LANGUAGE', 'ЯЗЫК', 'VALODA'], o_screen: ['SCREEN', 'ЭКРАН', 'EKRĀNS'], o_full: ['FULLSCREEN', 'НА ВЕСЬ ЭКРАН', 'PILNEKRĀNS'], o_window: ['WINDOW', 'В ОКНЕ', 'LOGĀ'],
   o_keys: ['KEYS', 'КЛАВИШИ', 'TAUSTIŅI'], o_move: ['MOVE', 'ДВИЖЕНИЕ', 'KUSTĪBA'], hit: ['HIT', 'УДАР', 'SITIENS'], lob: ['LOB', 'СВЕЧА', 'SVECE'],
   o_press: ['PRESS A KEY…', 'НАЖМИТЕ…', 'NOSPIED…'], o_reset: ['RESET KEYS', 'СБРОСИТЬ КЛАВИШИ', 'ATJAUNOT TAUSTIŅUS'],

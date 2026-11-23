@@ -56,7 +56,7 @@ export function fxForSound(k: string, v: number, b: { x: number; y: number; z: n
   if (k === 'hit') burst(b.x, b.y, b.z, 4 + Math.round(v * 4), ['#fbffb8', '#e2ef3c', '#ffffff'], 2 + v * 2, 1.2);
   else if (k === 'smash') { burst(b.x, b.y, b.z, 14, ['#fff1c1', '#ff8a5c', '#ffffff'], 5, 2.5); }
   else if (k === 'vibora') burst(b.x, b.y, b.z, 18, ['#ff8a5c', '#e4572e', '#fff1c1'], 5.5, 2);
-  else if (k === 'glass') burst(b.x, b.y, b.z, 6, ['#bfefff', '#ffffff', '#6fd3d2'], 1.6, 1, 4, 0.5);
+  else if (k === 'glass') burst(b.x, b.y, b.z, 3, ['#bfefff', '#6fd3d2'], 1.2, 0.8, 4, 0.35);
   else if (k === 'mesh') burst(b.x, b.y, b.z, 3, ['#9a95a6', '#c7c1d0'], 1, 0.6);
   else if (k === 'bounce' && v > 0.45) burst(b.x, b.y, 0.02, 3, ['#d9cbb8', '#ffffff'], 1.2, 0.8, 9.8, 0.3);
 }
@@ -85,14 +85,13 @@ export function cameraOffset(): { x: number; y: number } {
 function drawImpacts(ctx: CanvasRenderingContext2D) {
   for (const g of FX.glass) {
     const k = g.t / 0.45, a = 1 - k;
-    for (const r of [0.25 + k * 1.4, 0.1 + k * 0.8]) {
+    for (const r of [0.15 + k * 0.9]) {
       const pts: [number, number, number][] = [];
       for (let i = 0; i <= 16; i++) { const ang = i / 16 * Math.PI * 2, u = Math.cos(ang) * r, w = Math.sin(ang) * r * 0.8;
         pts.push(g.side ? [Math.sign(g.x) * 5, g.y + u, g.z + w] : [g.x + u, Math.sign(g.y) * 10, g.z + w]) }
-      const c = g.mesh ? `rgba(200,195,210,${a * 0.6})` : `rgba(220,250,255,${a * 0.85})`;
+      const c = g.mesh ? `rgba(200,195,210,${a * 0.3})` : `rgba(220,250,255,${a * 0.4})`;
       for (let i = 0; i < 16; i++) WL(ctx, pts[i], pts[i + 1], c);
     }
-    if (!g.mesh && g.t < 0.08) { const q = P(g.side ? Math.sign(g.x) * 5 : g.x, g.side ? g.y : Math.sign(g.y) * 10, g.z); ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fillRect(Math.round(q.x) - 3, Math.round(q.y) - 3, 7, 7) }
   }
   for (const r of FX.rings) {
     if (r.t > 0.16) continue;

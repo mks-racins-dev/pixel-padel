@@ -31,7 +31,7 @@ import { setupOptions } from './ui/options.js';
 import { setLang } from './ui/i18n.js';
 import { OPTS } from './game/opts.js';
 import { drawHelp } from './ui/help.js';
-import { playMusic } from './audio/music.js';
+import { playMusic, nextStation } from './audio/music.js';
 import { initAudio as initAudio2 } from './audio/sfx.js';
 import { setup as setupGamePlayer } from './game/player.js';
 import { setup as setupInputInput } from './input/input.js';
@@ -81,3 +81,5 @@ if(import.meta.env.DEV){const q=new URLSearchParams(location.search);if(q.has('c
 if(import.meta.env.DEV){const q=new URLSearchParams(location.search);
   if(q.has('panel'))import('./ui/menu.js').then(m=>{if(q.get('mode'))settings.mode=q.get('mode');m.showPanel(q.get('panel'))});
   if(q.has('play'))import('./ui/ui.js').then(u=>{settings.mode=q.get('play');if(q.get('loc'))setLoc(q.get('loc'),+(q.get('g')||0));u.startGame()})}
+// M switches the radio station (not while typing a name or remapping keys)
+addEventListener('keydown',e=>{if(e.code!=='KeyM'||e.repeat)return;const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'))return;initAudio2();nextStation(e.shiftKey?-1:1)});

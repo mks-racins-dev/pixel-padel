@@ -3,7 +3,7 @@ import { S } from '../state.js';
 import { OPTS, saveOpts } from '../game/opts.js';
 import { applyKeys, SCHEMES } from '../input/input.js';
 import { initAudio, sfx } from '../audio/sfx.js';
-import { refreshMusicVolume } from '../audio/music.js';
+import { refreshMusicVolume, nextStation, station } from '../audio/music.js';
 import { setLang, t } from './i18n.js';
 
 const $ = id => document.getElementById(id);
@@ -14,6 +14,7 @@ let waiting = null;
 const press = (seg, v) => seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === v ? 'true' : 'false'));
 export function renderOptions() {
   for (const el of document.querySelectorAll('.ostep')) el.querySelector('.sv').textContent = '▮'.repeat(OPTS[el.dataset.o]) + '▯'.repeat(10 - OPTS[el.dataset.o]);
+  { const st = station(); $('radioStep').querySelector('.sv').textContent = st.id === 'off' ? t('off') : st.name + ' · ' + st.sub.toUpperCase() }
   press($('shakeSeg'), OPTS.shake ? 'on' : 'off'); press($('langSeg'), OPTS.lang);
   $('fsBtn').textContent = t(document.fullscreenElement ? 'o_window' : 'o_full');
   const row = (a, lab) => `<div class="krow"><span>${lab}</span><button class="kbtn px${waiting === a ? ' wait' : ''}" data-a="${a}">${waiting === a ? t('o_press') : KEYNAME(SCHEMES.solo[a][0])}</button><i>${SCHEMES.solo[a].slice(1).map(KEYNAME).join(' · ')}</i></div>`;
@@ -29,6 +30,7 @@ export function setupOptions() {
     const go = d => { OPTS[k] = Math.max(0, Math.min(10, OPTS[k] + d)); saveOpts(); initAudio(); refreshMusicVolume(); if (k === 'sfx') sfx('hit', 0.8); renderOptions() };
     a.onclick = () => go(-1); b.onclick = () => go(1);
   }
+  { const [p, n] = $('radioStep').querySelectorAll('button'); p.onclick = () => { initAudio(); nextStation(-1); renderOptions() }; n.onclick = () => { initAudio(); nextStation(1); renderOptions() } }
   $('shakeSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; OPTS.shake = b.dataset.v === 'on'; saveOpts(); renderOptions() });
   $('langSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; OPTS.lang = b.dataset.v; saveOpts(); setLang(OPTS.lang); renderOptions() });
   $('fsBtn').onclick = () => { try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {}) } catch (e) {} setTimeout(renderOptions, 200) };

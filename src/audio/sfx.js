@@ -14,7 +14,7 @@ export function sfx(k,v){fxForSound(k,v==null?1:v,S.ball);if(S.net&&S.net.role==
   else if(k==='smash'){tone('square',260,80,0.14,0.22);noise(0.09,0.4,1800,0.6)}
   else if(k==='vibora'){tone('sawtooth',520,140,0.18,0.18);noise(0.14,0.45,2600,0.5);tone('square',990,990,0.06,0.07,0.05)}
   else if(k==='bounce'){tone('sine',170,90,0.07,0.3*v)}
-  else if(k==='glass'){tone('triangle',1100,700,0.06,0.12*v);noise(0.08,0.2*v,4200,2)}
+  else if(k==='glass'){tone('triangle',620,480,0.05,0.05*v);noise(0.05,0.07*v,2600,1.2)}
   else if(k==='mesh'){noise(0.12,0.25*v,900,0.7)}
   else if(k==='net'){noise(0.1,0.25,500,0.6)}
   else if(k==='point'){tone('square',660,660,0.08,0.08);tone('square',880,880,0.12,0.08,0.09)}

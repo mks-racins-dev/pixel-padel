@@ -8,6 +8,7 @@ import { settings } from '../game/settings.js';
 import { netSend } from '../net/online.js';
 import { togglePause } from '../ui/ui.js';
 import { couchJoin, couchLeave, couchLobbyOpen } from '../ui/couch.js';
+import { nextStation } from '../audio/music.js';
 
 /* ---------------- input ---------------- */
 export const keys={};
@@ -31,7 +32,7 @@ export function actVib(p){if(isGuest())netSend({t:'v'});else tryVibora(p)}
 /* ---------------- gamepad ---------------- */
 // Standard mapping: A = hit, B/X = lob, Y/RB/RT = vibora, Start = pause / menu confirm.
 // Player 1 uses the first connected pad; in 2-player mode player 2 uses the second.
-const PAD={drive:[0],lob:[1,2],vib:[3,5,7],start:[9]};
+const PAD={drive:[0],lob:[1,2],vib:[3,5,7],start:[9],radio:[8]};
 const padPrev={};let padNavPrev=0;
 function pads(){try{return[...(navigator.getGamepads?navigator.getGamepads():[])].filter(g=>g&&g.connected)}catch(e){return[]}}
 function padSlot(p){return settings.mode==='pvp'&&p.ctrl==='h2'?1:0}
@@ -56,6 +57,7 @@ export function pollPads(){
     if(slot===0&&vy&&vy!==padNavPrev&&document.getElementById('menu')&&!document.getElementById('menu').hidden)menuMove(vy);
     if(slot===0)padNavPrev=vy;
     if(couchLobbyOpen()){if(pressed('drive'))couchJoin('pad'+g.index);if(pressed('lob'))couchLeave('pad'+g.index);if(pressed('start'))menuConfirm(true);return}
+    if(pressed('radio'))nextStation(1); // Back / Select: next radio station
     if(pressed('start')){menuConfirm(true);return}
     if(pressed('drive')&&slot===0&&menuConfirm(false))return;
     if(S.demo||S.paused)return;
