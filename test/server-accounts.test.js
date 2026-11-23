@@ -101,3 +101,20 @@ describe('ladder win streaks', () => {
     expect((await lad.me('aaa', T)).best).toBe(3);
   });
 });
+
+describe('ladder anti-farming', () => {
+  it('the same pair is rated at most 3 times a day', async () => {
+    const lad = new Ladder(new MapStorage()), A = { id: 'aaa', name: 'ANNA' }, B = { id: 'bbb', name: 'BEN' }, T = Date.UTC(2026, 10, 21);
+    for (let i = 0; i < 3; i++) expect(await lad.report(A, B, T + i)).toBeTruthy();
+    expect(await lad.report(B, A, T + 10)).toBe(null); // fourth match that day, either way round
+    expect((await lad.me('aaa', T)).w).toBe(3);
+    expect(await lad.report(A, B, T + 86400001)).toBeTruthy(); // next day counts again
+  });
+  it('two accounts from one connection are not rated', () => {
+    let reported = null;
+    const room = new MatchRoom({ code: 'QQQQQQQQ', kind: 'quick', onResult: r => { reported = r } });
+    const a = room.join(() => {}, { id: 'aaa', name: 'ANNA', ip: '1.2.3.4' }), b = room.join(() => {}, { id: 'bbb', name: 'BEN', ip: '1.2.3.4' });
+    room.report(room.players[0], room.players[1], 'played');
+    expect(reported).toBe(null);
+  });
+});

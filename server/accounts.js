@@ -50,6 +50,9 @@ export class PlayerStore {
   }
 }
 
+/** How many rated matches the same two players can play against each other per day. */
+export const PAIR_LIMIT = 3;
+
 /** Ranked ratings, one table per monthly season. */
 export class Ladder {
   constructor(storage) { this.st = storage; this.cache = null }
@@ -60,6 +63,10 @@ export class Ladder {
   /** Records a ranked match and returns each player's rating before and after. */
   async report(winner, loser, now = Date.now()) {
     if (!winner?.id || !loser?.id || winner.id === loser.id) return null;
+    // the same two accounts count for rating at most PAIR_LIMIT times a day (stops win trading)
+    const pk = 'pair:' + [winner.id, loser.id].sort().join(':'), recent = ((await this.st.get(pk)) || []).filter(t => now - t < 86400000);
+    if (recent.length >= PAIR_LIMIT) return null;
+    await this.st.put(pk, [...recent, now]);
     const season = seasonOf(now);
     const W = await this.row(season, winner.id, winner.name), L = await this.row(season, loser.id, loser.name);
     const [w2, l2] = rateMatch(W, L);

@@ -150,6 +150,7 @@ export class MatchRoom {
   get ranked() { if (this.size !== 2) return false; const [a, b] = this.players; return this.kind === 'quick' && !!a?.id && !!b?.id && a.id !== b.id }
   report(w, l, reason) {
     if (this.reported || this.kind !== 'quick' || !w.id || !l.id || w.id === l.id) return; // ranked = quick match between two signed-in players
+    if (w.ip && w.ip === l.ip) { this.reported = true; return } // two accounts on one connection: not rated (no farming with a second account)
     this.reported = true;
     this.onResult?.({ winner: { id: w.id, name: w.name }, loser: { id: l.id, name: l.name }, reason });
   }

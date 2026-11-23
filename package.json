@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm test && npm run build",
     "server:dev": "wrangler dev --config server/wrangler.toml",
-    "server:deploy": "wrangler deploy --config server/wrangler.toml"
+    "server:deploy": "wrangler deploy --config server/wrangler.toml",
+    "build:itch": "node scripts/build-itch.mjs"
   },
   "devDependencies": {
     "jsdom": "^25.0.1",
