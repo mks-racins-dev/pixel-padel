@@ -4,6 +4,7 @@
 import { S } from '../state.js';
 import { P, R, L } from '../core/gfx.js';
 import { grade } from './grades.js';
+import { settings } from '../game/settings.js';
 
 type Kind = 'cyclist' | 'smoker' | 'dog';
 interface Npc { kind: Kind; x: number; y: number; dir: number; stage: number; t: number; c: string[]; wait: number; tx: number; ty: number }
@@ -13,6 +14,8 @@ const npcs: Npc[] = [];
 const puffs: { x: number; y: number; t: number }[] = [];
 let spawnT = 4, flashT = 0, flashAt = { x: 0, y: 0 }, pull = { t: 0, rest: 0 };
 
+/** Where a pull-up bar fits: only street courts where people would work out (not a car park or a farm). */
+const BAR: Record<string, [number, number]> = { beach: [-12.2, 1.5], school: [-12.2, 1.5], yard: [12.4, -1.0], bridge: [8.9, -1.5], camp: [10.4, -0.8] };
 const outdoor = () => { const g = grade() as any; return !g.floor && !g.indoor && !g.stand };
 
 function spawn() {
@@ -68,7 +71,8 @@ function bike(ctx: CanvasRenderingContext2D, x: number, y: number) {
 export function drawNpcs(ctx: CanvasRenderingContext2D) {
   if (!outdoor()) return;
   // pull-up bar on the left of the court, between the benches and the near corner
-  { const b = P(-12.2, 1.5, 0), x = Math.round(b.x), y = Math.round(b.y);
+  const bar = BAR[settings.loc];
+  if (bar) { const b = P(bar[0], bar[1], 0), x = Math.round(b.x), y = Math.round(b.y);
     R(ctx, x - 8, y - 26, 1, 26, '#3a3540'); R(ctx, x + 8, y - 26, 1, 26, '#3a3540'); R(ctx, x - 8, y - 26, 17, 1, '#9a948c');
     const up = pull.rest > 0 ? 0 : (Math.sin(pull.t * 3.2) + 1) / 2, hy = y - 25;
     const c = ['#c98d62', '#e4572e', '#2d2a3a', '#2b1d14'];

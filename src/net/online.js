@@ -139,8 +139,11 @@ export function guestTick(dt){
 
 /** One-time side effects (DOM wiring, saved settings). Called from main.js. */
 export function setup(){
-  $('hostBtn').onclick=()=>{initAudio();hostGame()};
-  if(useServer()){$('host2Btn').hidden=false;$('host2Btn').onclick=()=>{initAudio();host2v2()}}
+  // host: choose 1 vs 1 or 2 vs 2 first (2 vs 2 needs the game server; bots fill the empty places)
+  let hostFmt='1v1';const fmtSeg=$('hostFmt');
+  const showFmt=()=>{fmtSeg.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===hostFmt?'true':'false'));$('hostFmtHelp').hidden=hostFmt!=='2v2';$('hostBtn').textContent=hostFmt==='2v2'?'HOST 2 VS 2':'HOST A GAME'};
+  if(useServer()){fmtSeg.hidden=false;fmtSeg.onclick=e=>{const b=e.target.closest('button');if(!b)return;hostFmt=b.dataset.v;showFmt()};showFmt()}
+  $('hostBtn').onclick=()=>{initAudio();if(hostFmt==='2v2'&&useServer())host2v2();else hostGame()};
   if(useServer()){$('quickBtn').hidden=false;$('quickBtn').onclick=()=>{initAudio();quickMatch()}}
   $('joinBtn').onclick=()=>{initAudio();joinGame()};
   $('codeIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')joinGame()});
