@@ -15,6 +15,7 @@
 // Tap, click, Space or Enter speeds through the current step; SKIP ends the scene.
 import { R, L, circ, newCanvas, txt, txtW, shade, mulberry } from '../core/gfx.js';
 import { getSprite } from './sprites.js';
+import { S } from '../state.js';
 import { LOCS, TOWNS } from '../content/venues.js';
 import { GRADES } from './grades.js';
 
@@ -261,7 +262,7 @@ export function playCine(scene) {
       }
       return k >= 1;
     };
-    const finish = () => { cancelAnimationFrame(raf); removeEventListener('keydown', key, true); cv.remove(); skip.remove(); box.remove(); if (menu) menu.hidden = menuWas; cur = null; done() };
+    const finish = () => { cancelAnimationFrame(raf); removeEventListener('keydown', key, true); cv.remove(); skip.remove(); box.remove(); if (menu) menu.hidden = S.demo ? false : menuWas; cur = null; done() };
     /** Tap: finish typing the line, or go to the next one; elsewhere speed up the current step. */
     const tap = () => { const ln = running.find(s => s.st.line !== undefined); if (!ln) { fast = true; return } if (ln.shown < ln.st.text.length) ln.shown = ln.st.text.length; else ln.next = true };
     const key = e => { if (e.code === 'Escape') { e.preventDefault(); e.stopPropagation(); finish() } else if (['Space', 'Enter'].includes(e.code)) { e.preventDefault(); e.stopPropagation(); if (!e.repeat) tap() } };

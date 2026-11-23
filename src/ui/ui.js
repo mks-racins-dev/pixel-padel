@@ -87,7 +87,7 @@ export function startGame(){
   resetStars(!!(CAREER.active&&CAREER.kind==='career'));
   if(CAREER.active)setLoc(CAREER.event.venue,gradeFor(CAREER.event));else if(S.grade)setLoc(settings.loc,0);
   showGameUI();newMatch(false)}
-export function toMenu(){if(S.grade)setLoc(settings.loc,0);matchQuit();leaveCareer();renderMenu();netClose();$('online').hidden=true;S.paused=false;$('pause').hidden=true;$('end').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('menu').hidden=false;hideMsg();newMatch(true)}
+export function toMenu(){if(S.grade)setLoc(settings.loc,0);matchQuit();leaveCareer();netClose();$('online').hidden=true;S.paused=false;$('pause').hidden=true;$('end').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('menu').hidden=false;hideMsg();newMatch(true);renderMenu()}
 export function togglePause(){if(S.net&&!S.demo){$('pause').hidden=!$('pause').hidden;return}S.paused=!S.paused;$('pause').hidden=!S.paused}
 
 function cupSummary(r){
