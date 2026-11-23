@@ -83,3 +83,21 @@ describe('ranked rooms', () => {
     expect(got[1].at(-1)).toMatchObject({ t: 'rating', after: 1338, won: false });
   });
 });
+
+describe('ladder win streaks', () => {
+  const T = Date.UTC(2026, 10, 21);
+  it('counts current and best win streaks and sorts by them', async () => {
+    const lad = new Ladder(new MapStorage()), A = { id: 'aaa', name: 'ANNA' }, B = { id: 'bbb', name: 'BEN' }, C = { id: 'ccc', name: 'CAT' };
+    for (let i = 0; i < 3; i++) await lad.report(A, B, T);
+    await lad.report(C, A, T); // Anna's run ends at 3
+    await lad.report(C, B, T);
+    const best = await lad.top(10, T, 'best');
+    expect(best.by).toBe('best');
+    expect(best.top[0]).toMatchObject({ name: 'ANNA', best: 3, streak: 0 });
+    const hot = await lad.top(10, T, 'streak');
+    expect(hot.top.map(r => r.name)).toEqual(['CAT']); // only players on a run
+    expect(hot.top[0].streak).toBe(2);
+    expect((await lad.top(10, T, 'wins')).top[0].name).toBe('ANNA');
+    expect((await lad.me('aaa', T)).best).toBe(3);
+  });
+});

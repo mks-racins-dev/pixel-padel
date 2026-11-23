@@ -24,6 +24,7 @@ import { renderDailyTab, renderCupTab } from './dailyTab.js';
 import { initAudio } from '../audio/sfx.js';
 import { startGame, setHelp } from './ui.js';
 import { renderCouch, couchReady } from './couch.js';
+import { renderRooms, renderLeaders } from './rooms.js';
 import { useServer } from '../net/online.js';
 import { account, ladder as getLadder, setName } from '../net/account.ts';
 
@@ -59,6 +60,8 @@ export function menuPrimary() {
 
 function renderPanel(id) {
   if (id === 'career') renderCareerTab();
+  else if (id === 'rooms') renderRooms();
+  else if (id === 'leaders') renderLeaders();
   else if (id === 'daily') renderDailyTab();
   else if (id === 'cup') renderCupTab();
   else if (id === 'practice') renderPractice();

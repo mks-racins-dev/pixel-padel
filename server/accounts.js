@@ -61,8 +61,9 @@ export class Ladder {
     const season = seasonOf(now);
     const W = await this.row(season, winner.id, winner.name), L = await this.row(season, loser.id, loser.name);
     const [w2, l2] = rateMatch(W, L);
-    const nw = { ...W, ...w2, name: winner.name || W.name, w: W.w + 1, last: now };
-    const nl = { ...L, ...l2, name: loser.name || L.name, l: L.l + 1, last: now };
+    const streak = (W.streak || 0) + 1;
+    const nw = { ...W, ...w2, name: winner.name || W.name, w: W.w + 1, last: now, streak, best: Math.max(W.best || 0, streak) };
+    const nl = { ...L, ...l2, name: loser.name || L.name, l: L.l + 1, last: now, streak: 0, best: L.best || 0 };
     await this.st.put(this.key(season, winner.id), nw);
     await this.st.put(this.key(season, loser.id), nl);
     this.cache = null;
@@ -79,10 +80,13 @@ export class Ladder {
     this.cache = { season, at: Date.now(), rows };
     return rows;
   }
-  async top(n = 10, now = Date.now()) {
+  /** The top n by 'rating', 'best' (longest win streak), 'streak' (current run) or 'wins'. */
+  async top(n = 10, now = Date.now(), by = 'rating') {
     const season = seasonOf(now);
-    const rows = await this.all(season);
-    return { season, players: rows.length, top: rows.slice(0, n).map((r, i) => ({ rank: i + 1, name: r.name, r: Math.round(r.r), rd: Math.round(r.rd), w: r.w, l: r.l })) };
+    let rows = await this.all(season);
+    const key = { best: r => r.best || 0, streak: r => r.streak || 0, wins: r => r.w }[by];
+    if (key) rows = rows.filter(r => key(r) > 0).sort((a, b) => key(b) - key(a) || b.r - a.r);
+    return { season, by: key ? by : 'rating', players: (await this.all(season)).length, top: rows.slice(0, n).map((r, i) => ({ rank: i + 1, name: r.name, r: Math.round(r.r), rd: Math.round(r.rd), w: r.w, l: r.l, streak: r.streak || 0, best: r.best || 0 })) };
   }
   async me(id, now = Date.now()) {
     const season = seasonOf(now);
@@ -90,7 +94,7 @@ export class Ladder {
     const i = rows.findIndex(r => r.id === id);
     if (i < 0) return { season, r: DEFAULT.r, rd: DEFAULT.rd, w: 0, l: 0, rank: null };
     const r = rows[i];
-    return { season, r: Math.round(r.r), rd: Math.round(r.rd), w: r.w, l: r.l, rank: i + 1 };
+    return { season, r: Math.round(r.r), rd: Math.round(r.rd), w: r.w, l: r.l, rank: i + 1, streak: r.streak || 0, best: r.best || 0 };
   }
   async rename(id, name, now = Date.now()) {
     const season = seasonOf(now), k = this.key(season, id), row = await this.st.get(k);

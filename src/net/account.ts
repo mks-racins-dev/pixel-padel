@@ -87,9 +87,14 @@ export async function setName(raw: string): Promise<string | null> {
   catch (e: any) { return e.message || 'Could not save the name.' }
 }
 
+/** Public rooms on the game server (the ROOMS panel). */
+export async function roomList(): Promise<{ rooms: { code: string; name: string; fmt: string; players: number; max: number; locked: boolean; playing: boolean }[] }> {
+  return await api('/api/rooms');
+}
+
 /** The ranked leaderboard and the player's own rating. */
-export async function ladder(): Promise<{ season: string; players: number; top: LadderRow[]; me: MyRating | null }> {
-  const lad = await api('/api/ladder');
+export async function ladder(by = 'rating'): Promise<{ season: string; by?: string; players: number; top: LadderRow[]; me: MyRating | null }> {
+  const lad = await api('/api/ladder?by=' + encodeURIComponent(by));
   if (acct) { try { rating = (await api('/api/me')).rating } catch (e) {} }
   return { ...lad, me: rating };
 }

@@ -48,6 +48,9 @@ Object.assign(H, {
 
 const clamp1 = v => Math.max(-1, Math.min(1, +v || 0));
 
+/** Room names: letters, digits, spaces and a few symbols, up to 24 characters. */
+export const cleanRoomName = n => (typeof n === 'string' ? n.replace(/[^\p{L}\p{N} .,!?#&+\-|]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 24) : '');
+
 export class MatchRoom {
   /**
    * @param {{ code: string, kind: 'quick'|'private', seed?: number,
@@ -107,7 +110,8 @@ export class MatchRoom {
   /** A player disconnected: the match is over for the other one. */
   leaveRoom(cid) {
     const gone = this.players.find(p => p.cid === cid);
-    if (gone && this.size === 4) return this.leave4(gone);
+    if (!gone) return; // already removed (e.g. refused with a wrong password)
+    if (this.size === 4) return this.leave4(gone);
     // quitting a ranked match that is still running counts as a loss
     if (gone && this.started && this.run(() => S.state) !== 'over') { const other = this.players.find(p => p !== gone); if (other) this.report(other, gone, 'left') }
     this.players = this.players.filter(p => p !== gone);
@@ -129,6 +133,12 @@ export class MatchRoom {
   }
 
   get empty() { return this.players.length === 0 }
+  /** What the room list shows for a public room (null for private and quick rooms). */
+  info() {
+    if (!this.pub || this.closed) return null;
+    const playing = this.started && this.run(() => S.state) !== 'over';
+    return { code: this.code, name: this.pub.name, fmt: this.size === 4 ? '2v2' : '1v1', players: this.players.filter(p => p.hello).length, max: this.size, locked: !!this.pass, playing };
+  }
 
   get ranked() { if (this.size !== 2) return false; const [a, b] = this.players; return this.kind === 'quick' && !!a?.id && !!b?.id && a.id !== b.id }
   report(w, l, reason) {
@@ -158,7 +168,15 @@ export class MatchRoom {
 
     if (m.t === 'hello') {
       if (m.mode === 'join' && this.kind === 'private' && this.players.length === 1) { p.send(JSON.stringify({ t: 'nogame' })); return }
-      if (!this.host && m.mode !== 'join') { this.host = p; if (m.fmt === '2v2' && this.kind === 'private' && this.players.length === 1) this.size = 4 }
+      if (m.mode === 'join' && this.pass && m.pass !== this.pass) { p.send(JSON.stringify({ t: 'badpass' })); this.players = this.players.filter(q => q !== p); return }
+      if (!this.host && m.mode !== 'join') {
+        this.host = p; if (m.fmt === '2v2' && this.kind === 'private' && this.players.length === 1) this.size = 4;
+        // a public room shows in the room list; it may have a password
+        if (m.pub && typeof m.pub === 'object' && this.kind === 'private') {
+          this.pub = { name: cleanRoomName(m.pub.name) || 'PADEL ROOM' };
+          this.pass = typeof m.pub.pass === 'string' ? m.pub.pass.slice(0, 16) : '';
+        }
+      }
       p.hello = true;
       if (typeof m.name === 'string' && !p.name) p.name = m.name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) || null;
       p.style = STYLES[m.style] ? m.style : 'allround';

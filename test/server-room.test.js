@@ -132,3 +132,27 @@ describe('2 vs 2 rooms', () => {
     expect(h.last('start').humans).toEqual([true, false, false, false]);
   });
 });
+
+describe('public rooms', () => {
+  it('a public room reports its name, format and players; private rooms stay hidden', () => {
+    const room = new MatchRoom({ code: 'PUBL', kind: 'private', seed: 5 });
+    const h = client(room); hello(h, { mode: 'create', fmt: '2v2', pub: { name: '  Riga <b>Night</b> 2v2 ', pass: '' } });
+    const i = room.info();
+    expect(i).toMatchObject({ code: 'PUBL', fmt: '2v2', players: 1, max: 4, locked: false, playing: false });
+    expect(i.name).toBe('Riga bNightb 2v2'); // tags and odd symbols are removed
+    const priv = new MatchRoom({ code: 'PRIV', kind: 'private' }); hello(client(priv), { mode: 'create' });
+    expect(priv.info()).toBe(null);
+  });
+  it('a password room refuses a wrong password without closing the room', () => {
+    const room = new MatchRoom({ code: 'LOCK', kind: 'private', seed: 6 });
+    const h = client(room); hello(h, { mode: 'create', pub: { name: 'Closed club', pass: 'pad3l' } });
+    expect(room.info().locked).toBe(true);
+    const bad = client(room); hello(bad, { mode: 'join', pass: 'nope' });
+    expect(bad.last('badpass')).toBeTruthy();
+    room.leaveRoom(bad.team); // their connection closes
+    expect(h.last('bye')).toBeUndefined();
+    const ok = client(room); hello(ok, { mode: 'join', pass: 'pad3l' });
+    expect(ok.last('start')).toBeTruthy();
+    expect(room.info().playing).toBe(true);
+  });
+});

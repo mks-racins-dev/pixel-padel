@@ -30,6 +30,7 @@ function json(data, status, origin) {
 }
 const player = (env, id) => env.PLAYER.get(env.PLAYER.idFromName(id));
 const ladder = env => env.LADDER.get(env.LADDER.idFromName('ladder'));
+const lobby = env => env.LOBBY.get(env.LOBBY.idFromName('lobby'));
 
 /** Checks "<id>:<token>". Returns { id, name } or null. */
 async function authenticate(env, cred) {
@@ -51,7 +52,8 @@ export default {
       const who = await authenticate(env, (req.headers.get('Authorization') || '').replace(/^Bearer /, ''));
       try {
         if (url.pathname === '/api/time') return json({ now: Date.now() }, 200, origin);
-        if (url.pathname === '/api/ladder') return json(await ladder(env).top(10), 200, origin);
+        if (url.pathname === '/api/ladder') return json(await ladder(env).top(10, Date.now(), url.searchParams.get('by') || 'rating'), 200, origin);
+        if (url.pathname === '/api/rooms') return json(await (await lobby(env).fetch('https://lobby/rooms')).json(), 200, origin);
         if (url.pathname === '/api/guest' && req.method === 'POST') {
           const body = await req.json().catch(() => ({}));
           let name = cleanName(body.name);
@@ -96,10 +98,15 @@ export default {
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const quickCode = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), b => CODE_CHARS[b % CODE_CHARS.length]).join('');
 
-/** Pairs up players who pressed "find an opponent". */
+/** Pairs up players who pressed "find an opponent", and keeps the list of public rooms
+ *  (each room reports itself every few seconds; entries not refreshed for 30 s drop out). */
 export class Lobby {
-  constructor() { this.waiting = null }
-  async fetch() {
+  constructor() { this.waiting = null; this.rooms = new Map() }
+  async fetch(req) {
+    const path = new URL(req.url).pathname;
+    if (path === '/rooms') { const now = Date.now(); for (const [k, r] of this.rooms) if (now - r.at > 30000) this.rooms.delete(k); return Response.json({ rooms: [...this.rooms.values()].map(({ at, ...r }) => r) }) }
+    if (path === '/rooms/put') { const r = await req.json(); if (r && r.code) this.rooms.set(r.code, { ...r, at: Date.now() }); return new Response('ok') }
+    if (path === '/rooms/del') { const r = await req.json(); if (r && r.code) this.rooms.delete(r.code); return new Response('ok') }
     const [client, ws] = Object.values(new WebSocketPair());
     ws.accept();
     const w = this.waiting;
@@ -141,16 +148,22 @@ export class Match {
     const gone = () => {
       if (left) return; left = true;
       room.leaveRoom(team);
-      if (room.empty && this.room === room) { clearInterval(this.timer); this.timer = null; this.room = null }
+      if (room.empty && this.room === room) { clearInterval(this.timer); this.timer = null; this.room = null; if (room.pub) this.post('/rooms/del', { code: room.code }) }
+      else this.announce();
     };
     ws.addEventListener('close', gone);
     ws.addEventListener('error', gone);
     if (!this.timer) {
       let last = Date.now();
-      this.timer = setInterval(() => { const now = Date.now(); if (this.room) this.room.tick((now - last) / 1000); last = now }, 1000 / 60);
+      let beat = 0;
+      this.timer = setInterval(() => { const now = Date.now(); if (this.room) { this.room.tick((now - last) / 1000); if (now - beat > 5000) { beat = now; this.announce() } } last = now }, 1000 / 60);
     }
+    setTimeout(() => this.announce(), 300);
     return new Response(null, { status: 101, webSocket: client });
   }
+  /** Tells the room list about this room (public rooms only). */
+  announce() { const info = this.room?.info(); if (info) this.post('/rooms/put', info) }
+  post(path, body) { lobby(this.env).fetch('https://lobby' + path, { method: 'POST', body: JSON.stringify(body) }).catch(() => {}) }
 }
 
 /** One player's account (RPC methods are called by the Worker above). */
@@ -167,7 +180,7 @@ export class Player extends DurableObject {
 export class LadderDO extends DurableObject {
   constructor(ctx, env) { super(ctx, env); this.l = new Ladder(ctx.storage) }
   report(w, l) { return this.l.report(w, l) }
-  top(n) { return this.l.top(n) }
+  top(n, now, by) { return this.l.top(n, now, by) }
   me(id) { return this.l.me(id) }
   rename(id, name) { return this.l.rename(id, name) }
 }

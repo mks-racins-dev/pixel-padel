@@ -30,11 +30,12 @@ export function wsConn(url){
   return c;
 }
 /** Connect to a match room on the game server. mode: 'create' | 'join' | 'quick'. */
-export function joinServerRoom(code,mode,fmt){
+/** extra: { pub: {name, pass} } to open a public room, { pass } to join a locked one. */
+export function joinServerRoom(code,mode,fmt,extra){
   netClose();
   const n={role:'guest',server:true,code,mode,fmt:fmt||'1v1',size:2,slot:null,conn:null,inp:{mx:9,my:9},inT:0,snap:null,snapAt:0,hk:'',team:null};S.net=n;
   const q=wsAuth(),c=wsConn(SERVER_URL+'/room/'+code+(q?'?'+q:''));n.conn=c;bindConn(c);
-  c.on('open',()=>c.send({t:'hello',mode,fmt:fmt||'1v1',name:profile().name||'',style:settings.style,look:S.myLookData,loc:settings.loc}));
+  c.on('open',()=>c.send({t:'hello',mode,fmt:fmt||'1v1',name:profile().name||'',style:settings.style,look:S.myLookData,loc:settings.loc,...(extra||{})}));
   c.on('error',()=>{if(S.net===n)onStatus('Could not reach the game server.')});
 }
 /** Find a random opponent: the lobby pairs two waiting players and gives them a room code. */
@@ -101,6 +102,7 @@ export function onNet(m){
     else if(m.t==='lobby')renderLobby(m);
     else if(m.t==='swap'){const p=S.players[m.slot];if(p&&S.net.humans)S.net.humans[m.slot]=false;updateHud()}
     else if(m.t==='nogame'){onStatus('No game found with code '+S.net.code+'.');netClose()}
+    else if(m.t==='badpass'){onStatus('Wrong password for that room.');netClose()}
     else if(m.t==='bye')handleLeft();
   }
 }

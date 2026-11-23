@@ -8,7 +8,7 @@ const D = {
   daily: ['DAILY', 'ЗАДАНИЯ', 'UZDEVUMI'],
   cup: ['WEEKLY CUP', 'КУБОК НЕДЕЛИ', 'NEDĒĻAS KAUSS'],
   practice: ['PRACTICE', 'ТРЕНИРОВКА', 'TRENIŅŠ'],
-  online: ['ONLINE', 'ОНЛАЙН', 'TIEŠSAISTĒ'],
+  online: ['ONLINE', 'ОНЛАЙН', 'TIEŠSAISTĒ'], rooms: ['ROOMS', 'КОМНАТЫ', 'ISTABAS'], leaders: ['LEADERS', 'ЛИДЕРЫ', 'LĪDERI'],
   player: ['PLAYER', 'ИГРОК', 'SPĒLĒTĀJS'],
   help: ['HOW TO PLAY', 'КАК ИГРАТЬ', 'KĀ SPĒLĒT'],
   options: ['OPTIONS', 'НАСТРОЙКИ', 'IESTATĪJUMI'],
