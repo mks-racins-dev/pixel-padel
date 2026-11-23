@@ -25,7 +25,7 @@ const D = {
   h_controls: ['CONTROLS', 'УПРАВЛЕНИЕ', 'VADĪBA'], h_shots: ['SHOTS', 'УДАРЫ', 'SITIENI'], h_rules: ['RULES', 'ПРАВИЛА', 'NOTEIKUMI'],
   h_hold: ['hold = power', 'держать = сила', 'turēt = spēks'], h_pause: ['PAUSE', 'ПАУЗА', 'PAUZE'],
   s_drive: ['DRIVE', 'ДРАЙВ', 'DRAIVS'], s_drive_d: ['Hold HIT, release as the ball comes. Longer hold = harder and deeper.', 'Держите УДАР и отпустите, когда подлетит мяч. Дольше — сильнее и глубже.', 'Turi SITIENU, atlaid, kad bumba ir klāt. Ilgāk — stiprāk un dziļāk.'],
-  s_drop: ['DROP', 'УКОРОТКА', 'ĪSAIS'], s_drop_d: ['Just tap HIT: a soft ball that dies just over the net.', 'Коротко нажмите УДАР: мягкий мяч падает сразу за сеткой.', 'Īsi piesit SITIENU: mīksta bumba nokrīt aiz tīkla.'],
+  s_drop: ['CHIQUITA', 'ЧИКИТА', 'ČIKITA'], s_drop_d: ['Just tap HIT from the back: a soft, dipping ball at the feet of players at the net.', 'Коротко нажмите УДАР с задней линии: мягкий мяч падает в ноги игрокам у сетки.', 'Īsi piesit SITIENU no aizmugures: mīksta bumba krīt pie kājām spēlētājiem pie tīkla.'],
   s_lob: ['LOB', 'СВЕЧА', 'SVECE'], s_lob_d: ['High and deep over players at the net. Lands past the service line.', 'Высоко и глубоко за спину игрокам у сетки.', 'Augstu un dziļi pāri spēlētājiem pie tīkla.'],
   s_bandeja: ['BANDEJA', 'БАНДЕХА', 'BANDEHA'], s_bandeja_d: ['High ball + soft HIT: a sliced shot that stays low after the glass.', 'Высокий мяч + мягкий УДАР: резаный, остаётся низким после стекла.', 'Augsta bumba + mīksts SITIENS: griezts, paliek zems pēc stikla.'],
   s_smash: ['SMASH', 'СМЭШ', 'SMEŠS'], s_smash_d: ['High ball + strong HIT: hammer it down.', 'Высокий мяч + сильный УДАР: бейте вниз.', 'Augsta bumba + stiprs SITIENS: sit lejā.'],

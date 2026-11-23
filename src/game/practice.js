@@ -11,7 +11,7 @@ import { launch } from './rules.js';
  * and what counts as a good shot (`ok` gets the last shot type and whether it came off the back glass).
  */
 export const DRILLS = [
-  { id: 'rally', name: 'RALLY', tip: 'Hit 5 balls back into the far court. Hold to power up, tap for a soft drop.', need: 5,
+  { id: 'rally', name: 'RALLY', tip: 'Hit 5 balls back into the far court. Hold to power up, tap for a soft chiquita.', need: 5,
     feed: () => ({ tx: (rand() - 0.5) * 5, ty: -5.5 - rand(), spd: 10, clear: 1.4 }), ok: () => true },
   { id: 'glass', name: 'BACK GLASS', tip: 'Let it bounce and come off the back glass, then hit it. Hold back to play a contrapared.', need: 3,
     feed: () => ({ tx: (rand() - 0.5) * 4, ty: -8.6, spd: 15, clear: 1.2 }), ok: s => s.offWall || s.shot === 'contrapared' },
