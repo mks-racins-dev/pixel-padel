@@ -65,13 +65,13 @@ export function drawNetPause(){
 /** Asks the server for this player's one pause of the match. */
 export function askNetPause(){if(!S.net||!S.net.server||S.net.pauseUsed)return false;S.net.pauseUsed=true;netSend({t:'pause'});return true}
 /** In a room (or searching): hide the host / join choices, show only the room. */
-export function onBusy(b){const bx=$('onBox');if(bx)bx.classList.toggle('busy',!!b);if(!b&&$('lobby2'))$('lobby2').hidden=true}
+export function onBusy(b){const bx=$('onBox');if(bx)bx.classList.toggle('busy',!!b);const lb=$('lobby2');if(lb&&(!b||!S.net||S.net.size!==4)){lb.hidden=true;lb.innerHTML=''}}
 export function netClose(){onBusy(false);if(!S.net)return;netSend({t:'bye'});const n=S.net;S.net=null;setTimeout(()=>{try{n.conn&&n.conn.close()}catch(e){}try{n.peer&&n.peer.destroy()}catch(e){}},150)}
 export function handleLeft(){if(!S.net)return;const n=S.net;S.net=null;drawNetPause();try{n.peer&&n.peer.destroy()}catch(e){}try{n.conn&&n.conn.close()}catch(e){}
   if(n.forfeit)return; // the win screen is already up
   if(!S.demo){S.paused=true;$('msgBig').textContent='RIVAL LEFT';$('msgSmall').textContent='back to menu…';$('msg').classList.add('show');setTimeout(()=>{$('msg').classList.remove('show');toMenu()},2200)}
   else{$('codeShow').textContent='';onStatus('Connection closed.')}}
-export function bindConn(c){c.on('data',onNet);c.on('close',()=>{if(S.net&&S.net.conn===c)handleLeft()});c.on('error',()=>{})}
+export function bindConn(c){c.on('data',m=>{if(S.net&&S.net.conn===c)onNet(m)});c.on('close',()=>{if(S.net&&S.net.conn===c)handleLeft()});c.on('error',()=>{})}
 /** 2 vs 2 room on the game server: friends join with the code, the host starts, bots fill empty slots. */
 export function host2v2(){const code=mkCode();joinServerRoom(code,'create','2v2');$('codeShow').textContent=code;onStatus('Opening a 2 vs 2 room…')}
 export function hostGame(){
@@ -127,7 +127,7 @@ export function onNet(m){
 }
 /** The 2 vs 2 waiting room: two teams of two slots. Click an empty slot to move there. */
 export function renderLobby(m){
-  if(!S.net)return;S.net.team=m.you<2?0:1;S.net.slot=m.you;
+  if(!S.net||S.net.size!==4)return; // only 2 vs 2 rooms have places to pickS.net.team=m.you<2?0:1;S.net.slot=m.you;
   const el=$('lobby2');el.hidden=false;$('end').hidden=true;
   if(!S.demo){$('hud').hidden=true;$('online').hidden=false;newMatch(true)}
   const slot=i=>{const s=m.slots[i],me=i===m.you;return `<button class="lslot${me?' me':''}${s?'':' free'}" data-slot="${i}" ${s&&!me?'disabled':''}>${s?(me?'YOU':s.name)+(i===m.host?' ★':''):'+ JOIN SLOT (BOT)'}</button>`};
