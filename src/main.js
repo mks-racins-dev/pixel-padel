@@ -43,12 +43,13 @@ setupNetOnline();
 export function fit(){const s0=Math.min(innerWidth/W,innerHeight/H);const s=s0>=2?Math.floor(s0):s0;const st=$('stage');st.style.width=W*s+'px';st.style.height=H*s+'px';document.documentElement.style.setProperty('--u',s+'px')}
 addEventListener('resize',fit);
 fit();
+if(curLoc().street)S.grade=settings.loc==='ware'?3:1;
 S.BG=buildBg();
 S.NET=buildNet();
 $('sub').textContent=curLoc().sub+' · glass walls in play';
 S.FRONT=buildFront();
 S.rnd=mulberry(5);
-setCrowd(0);
+setCrowd(S.grade);
 setHelp();
 newMatch(true);
 S.last=performance.now();

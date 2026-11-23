@@ -77,4 +77,11 @@ export function pot(o){o.r(-0.3,0,0.6,0.5,'#c9734f');o.r(-0.34,0.45,0.68,0.08,'#
 export function bikes(o){for(const off of[-0.5,0.5]){const s=o.s;const b=o.at(off,0);ring(o.g,b.x-0.45*s,b.y-0.33*s,0.33*s,'#2b2633');ring(o.g,b.x+0.45*s,b.y-0.33*s,0.33*s,'#2b2633');L(o.g,b.x-0.45*s,b.y-0.33*s,b.x,b.y-0.7*s,off<0?'#e4572e':'#3fa7a8');L(o.g,b.x,b.y-0.7*s,b.x+0.45*s,b.y-0.33*s,off<0?'#e4572e':'#3fa7a8');L(o.g,b.x-0.1*s,b.y-0.85*s,b.x+0.3*s,b.y-0.85*s,'#2b2633')}}
 export function basket(o){o.r(-0.4,0.3,0.8,0.5,'#3a3a44');for(let k=0;k<14;k++)o.dot(-0.32+S.rnd()*0.64,0.62+S.rnd()*0.2,'#e2ef3c');o.r(-0.4,0.3,0.8,0.04,'#6d6680');o.r(-0.36,0,0.05,0.3,'#3a3a44');o.r(0.31,0,0.05,0.3,'#3a3a44')}
 export function lamp(g,x,y,dir){WL(g,[x,y,0],[x,y,6.5],'#2f2d38',2);WL(g,[x,y,6.5],[x+dir*0.8,y,6.5],'#2f2d38',1);const p=P(x+dir*0.8,y,6.4);R(g,p.x-3,p.y-1,7,3,'#2f2d38');R(g,p.x-2,p.y+1,5,1,'#fff1c1');g.fillStyle='rgba(255,241,193,0.12)';g.fillRect(Math.round(p.x-4),Math.round(p.y+2),9,2)}
+/** A sagging wire of bulbs between world points (club nights). */
+export function stringLights(g,pts){const cols=['#ffd27a','#ff8a5c','#9be37a','#6fe8ff','#ff6ad5'];let k=0;
+  for(let i=0;i+1<pts.length;i++){const a=P(...pts[i]),b=P(...pts[i+1]);const n=Math.max(4,Math.round(Math.hypot(b.x-a.x,b.y-a.y)/2));let px=a.x,py=a.y;
+    for(let j=1;j<=n;j++){const t=j/n,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t+Math.sin(t*Math.PI)*6;L(g,px,py,x,y,'#2b2633');px=x;py=y;if(j%3===0){R(g,x,y+1,2,2,cols[k%5]);g.fillStyle='rgba(255,230,160,0.18)';g.fillRect(Math.round(x-1),Math.round(y),3,4);k++}}}}
+/** Triangle flags strung across the plaza for the opens. */
+export function bunting(g,y0){const cols=['#e4572e','#f2c14e','#3fa7a8','#f4ead2','#8e6cc1','#4f9a5b'];let k=0;
+  for(let x0=0;x0<480;x0+=96){for(let x=0;x<96;x+=2){const y=y0+Math.sin(x/96*Math.PI)*7;R(g,x0+x,y,2,1,'#2b2633');if(x%8===0){const c=cols[k++%6];for(let r=0;r<5;r++)R(g,x0+x-2+Math.ceil(r/2),y+1+r,5-r,1,c)}}}}
 export function obj(g,x,y){const p=P(x,y,0),s=p.s;return{g,s,at:(xm,zm)=>({x:p.x+xm*s,y:p.y-zm*s}),r:(xm,zm,wm,hm,c)=>R(g,p.x+xm*s,p.y-(zm+hm)*s,wm*s,hm*s,c),c:(xm,zm,rm,c)=>circ(g,p.x+xm*s,p.y-zm*s,rm*s,c),dot:(xm,zm,c)=>R(g,p.x+xm*s,p.y-zm*s,1,1,c)}}

@@ -11,6 +11,7 @@ import { settings } from '../game/settings.js';
 import { drawMascot } from './mascot.js';
 import { getSprite } from './sprites.js';
 import { gradeFrame } from './grades.js';
+import { drawAmbient } from './ambient.js';
 
 export function drawPlayer(p){
   const g0=P(p.x,p.y,0);const x=Math.round(g0.x),y=Math.round(g0.y);
@@ -64,6 +65,7 @@ export function render(){
   {const o=cameraOffset();if(o.x||o.y)ctx.translate(o.x,o.y)}
   if(S.shake>0)ctx.translate(Math.round((Math.random()-0.5)*3),Math.round((Math.random()-0.5)*3));
   ctx.drawImage(S.BG,0,0);
+  drawAmbient(ctx);
   drawSpectators();drawMascot();
   if(!S.ball.held){const p=P(S.ball.x,S.ball.y,S.ball.z);S.trail.push({x:Math.round(p.x),y:Math.round(p.y)-2});{const sp=Math.hypot(S.ball.vx,S.ball.vy);while(S.trail.length>(sp>17?9:sp>13?7:5))S.trail.shift()}if(Math.hypot(S.ball.vx,S.ball.vy)<9&&!S.ball.vib)S.trail.length=0}
   drawMarker();drawServeAim();
