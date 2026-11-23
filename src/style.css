@@ -1,4 +1,6 @@
 :root{--u:2px}
+/* hidden always wins over a display set on an id (e.g. #lobby2, #couchBox) */
+[hidden]{display:none!important}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:#17131c;overflow:hidden;color:#f4ead2;font-family:VT323,"Pixelify Sans",monospace;-webkit-user-select:none;user-select:none;touch-action:none}
 #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
