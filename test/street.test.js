@@ -13,3 +13,12 @@ describe('street courts', () => {
     S.grade = 0; settings.loc = 'sunset';
   });
 });
+
+import { LOCS } from '../src/content/venues.js';
+import { VENUE_RULES, VENUE_TWIST } from '../src/game/venueRules.js';
+describe('street house rules', () => {
+  it('every street venue has a house rule and a line for the match card', () => {
+    for (const [k, l] of Object.entries(LOCS)) if (l.street) { expect(VENUE_RULES[k]).toBeTruthy(); expect(VENUE_TWIST[k]).toBeTruthy() }
+    for (const k of Object.keys(VENUE_RULES)) expect(LOCS[k]?.street).toBe(true);
+  });
+});

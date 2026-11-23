@@ -13,6 +13,7 @@ import { rand, seedSim } from '../core/rng.ts';
 import { S } from '../state.js';
 import { DIFF, G, HL, REACH, STYLES, SVC, overhit, powK, sweet } from './constants.js';
 import { stepBall, setCourt } from './physics.js';
+import { VENUE_RULES, QUICK_RULE_MODES } from './venueRules.js';
 import { mkLook, mkPlayer } from './player.js';
 
 export function newMatch(isDemo,seed){
@@ -21,7 +22,7 @@ export function newMatch(isDemo,seed){
   S.demo=isDemo;
   if(!isDemo)H.matchStart({career:career?CAREER.event.id:null,mode:career?CAREER.kind:settings.mode,diff:settings.diff,venue:settings.loc,games:settings.games,style:settings.style});
   stopPractice();
-  setCourt(career&&CAREER.event.court||null);
+  setCourt(career?(CAREER.event.court||null):(!isDemo&&QUICK_RULE_MODES.includes(settings.mode)?VENUE_RULES[settings.loc]||null:null));
   const dbl=career&&!!CAREER.event.doubles;
   const m=S.demo?'2v2':career?(dbl?'2v2':'1v1'):settings.mode;const me=career?gearLook(mkLook(S.myLookData)):mkLook(S.myLookData);
   if(m==='practice')S.players=[mkPlayer(0,me,'h1',0)];

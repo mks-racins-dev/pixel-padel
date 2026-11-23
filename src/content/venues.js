@@ -10,12 +10,15 @@ export const TOWNS={
   us:{flat:true,roof:'deco',land:'palms',neon:'#ff6ad5',neon2:'#6fe8ff',far:'#5a3f8a',farL:'#3a2f6a',pals:[{wall:'#f6b6c8',brick:'#eaaabc',dark:'#c8889a',trim:'#fff0f4'},{wall:'#9fe0d6',brick:'#93d4ca',dark:'#72b2a8',trim:'#effcf8'},{wall:'#fbe3a0',brick:'#efd794',dark:'#ccb472',trim:'#fffaea'},{wall:'#c8b4f0',brick:'#bca8e4',dark:'#9a86c2',trim:'#f4eeff'}],w:[58,30],h:[36,20]},
   ru:{roof:'merlon',roofC:'#8a3430',land:'onion',far:'#3a3560',farL:'#4c4878',pals:[{wall:'#a8483c',brick:'#983c32',dark:'#7a2e26',trim:'#d8a090'},{wall:'#e6d8b8',brick:'#d8caa8',dark:'#b4a684',trim:'#f8eed8'},{wall:'#d6b04c',brick:'#c8a240',dark:'#a4822c',trim:'#f0dc98'},{wall:'#8aa0b8',brick:'#7e94ac',dark:'#62788e',trim:'#c4d0dc'}],w:[46,26],h:[22,12]}
 };
-for(const k of ['roof','market','camp','ware'])TOWNS[k]=TOWNS.sunset;
+for(const k of ['roof','market','camp','ware','yard','beach','docks'])TOWNS[k]=TOWNS.sunset;
 /* ---------------- venues ---------------- */
 export const LOCS={
   roof:{street:true,name:'ROOFTOP',sub:'parking garage · level 5',city:'ROOFTOP',flag:null,court:'#5d6470',sun:['#fff3c8','#fffbe6'],sky:['#4f7fb8','#5f8cc0','#709ac8','#83a8d0','#97b6d8','#acc4df','#c2d2e6','#d9e2ec']},
   market:{street:true,name:'SUPERMARKET',sub:'behind the supermarket',city:'BACK LOT',flag:null,court:'#3f7a4a',sun:['#fbd99a','#fde7b3'],sky:['#6a6f9a','#7b7aa0','#8e86a6','#a393aa','#b8a1ab','#cdb0aa','#dfc0a8','#eed2aa']},
   camp:{street:true,name:'CAMPSITE',sub:'campsite court · sandy',city:'CAMPSITE',flag:null,court:'#b8935a',sun:['#fff0a8','#fffbd8'],sky:['#3f8fc8','#4c99cd','#5ba3d2','#6cadd7','#7fb8dc','#94c3e1','#aacee6','#c2daeb']},
+  yard:{street:true,name:'COURTYARD',sub:'between the panel blocks',city:'COURTYARD',flag:null,court:'#8a4a3e',sun:['#f4ecd8','#fbf6ea'],sky:['#7f97b0','#8da3ba','#9cafc3','#acbccc','#bcc8d4','#cbd3dc','#d9dde2','#e6e6e6']},
+  beach:{street:true,name:'BEACH',sub:'dunes by the sea',city:'BEACH',flag:null,court:'#2f8fa8',sun:['#fff6c8','#fffdea'],sky:['#2f86d6','#3d91da','#4d9cdf','#5fa8e3','#73b4e8','#88c0ec','#9fcdf0','#b8daf4']},
+  docks:{street:true,name:'DOCKS',sub:'container port · harbour wind',city:'DOCKS',flag:null,court:'#4a6a8a',sun:['#ffc27a','#ffe0a8'],sky:['#3a4f78','#4a5a82','#5f668a','#7a7290','#987e92','#b88a8e','#d49a88','#e8b086']},
   ware:{street:true,name:'WAREHOUSE',sub:'old warehouse · mind the beams',city:'WAREHOUSE',flag:null,court:'#7a4a3a',sun:['#e8d8b0','#f4ead0'],night:true,sky:['#2a2230','#332a3a','#3d3244','#483b4e','#544558','#614f62','#6f5a6c','#7e6676']},
   sunset:{name:'SUNSET',sub:'sunset club',city:'SUNSET',flag:null,court:'#2f63b0',sun:['#fbd99a','#fde7b3'],sky:['#6b5b96','#7f639d','#9a6c9f','#b8789d','#d48896','#e89c8f','#f2b28c','#f7c993']},
   lv:{name:'LATVIA',sub:'riga · old town courts',city:'RIGA',flag:{s:[['#9e3039',2],['#ffffff',1],['#9e3039',2]]},court:'#2f63b0',sun:['#f3dfc8','#fbeee0'],sky:['#4a5d8f','#5b6fa0','#6f82b0','#8596bf','#9fabcb','#bcc2d6','#d8d3dc','#efe2d8']},

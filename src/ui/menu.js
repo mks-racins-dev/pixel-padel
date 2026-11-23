@@ -4,6 +4,8 @@ import { S } from '../state.js';
 import { settings } from '../game/settings.js';
 import { STYLES } from '../game/constants.js';
 import { LOCS } from '../content/venues.js';
+import { VENUE_TWIST } from '../game/venueRules.js';
+import { venueThumb } from '../render/venue.js';
 import { profile, xpToNext, MAX_LEVEL } from '../meta/profile.ts';
 import { chState, dailySet } from '../meta/challenges.ts';
 import { leaveCareer } from '../meta/career.ts';
@@ -75,7 +77,7 @@ function renderQuick() {
   for (const el of document.querySelectorAll('#menu .step')) el.querySelector('.sv').textContent = STEPS[el.dataset.key].label(settings[el.dataset.key]);
   const st = STYLES[settings.style];
   renderCouch();
-  $('qSummary').innerHTML = [MODE_NAME[settings.mode], 'CPU: ' + settings.diff.toUpperCase(), 'FIRST TO ' + settings.games + ' GAMES', 'YOUR STYLE: ' + st.name, 'BOUNCE MARK: ' + (settings.assist === 'on' ? 'ON' : 'OFF')].join('<br>');
+  $('qSummary').innerHTML = [MODE_NAME[settings.mode], 'CPU: ' + settings.diff.toUpperCase(), 'FIRST TO ' + settings.games + ' GAMES', 'YOUR STYLE: ' + st.name, 'BOUNCE MARK: ' + (settings.assist === 'on' ? 'ON' : 'OFF')].concat(VENUE_TWIST[settings.loc] ? ['<span class="qtwist">COURT: ' + VENUE_TWIST[settings.loc] + '</span>'] : []).join('<br>');
 }
 
 let ladderAt = 0, ladderData = null;
@@ -122,16 +124,26 @@ function buildSteppers() {
   }
 }
 
+let venueTab = null, thumbJob = 0;
+/** Venue cards, split into the tour cities and the home-made street courts. Each card gets a real picture of the court once it is drawn. */
 function buildVenueCards() {
-  $('venueCards').innerHTML = Object.entries(LOCS).filter(([, l]) => !l.street).map(([k, l]) => {
+  if (!venueTab) venueTab = LOCS[settings.loc]?.street ? 'street' : 'tour';
+  document.querySelectorAll('#venueTabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === venueTab ? 'true' : 'false'));
+  const list = Object.entries(LOCS).filter(([, l]) => !!l.street === (venueTab === 'street'));
+  $('venueCards').innerHTML = list.map(([k, l]) => {
     const sky = [l.sky[1], l.sky[4], l.sky[7]].map(c => `<span style="background:${c}"></span>`).join('');
-    return `<button data-v="${k}" aria-label="${l.city}"><span class="vsky" aria-hidden="true">${sky}<span style="background:${l.court}" class="vcourt"></span></span><span class="vname">${l.city}</span></button>`;
+    return `<button data-v="${k}" aria-label="${l.city}" aria-pressed="${k === settings.loc}"><span class="vsky" aria-hidden="true">${sky}<span style="background:${l.court}" class="vcourt"></span></span><span class="vname">${l.city}</span></button>`;
   }).join('');
+  const job = ++thumbJob, keys = list.map(([k]) => k);
+  const step = () => { if (job !== thumbJob || !keys.length) return; const k = keys.shift(), url = venueThumb(k), el = document.querySelector(`#venueCards [data-v="${k}"] .vsky`); if (el && url) { el.style.backgroundImage = `url(${url})`; el.classList.add('thumb') } setTimeout(step, 16) };
+  setTimeout(step, 60);
 }
 
 /** Called by ui.js setup before it wires the generic .seg buttons. */
 export function buildMenu() {
   buildVenueCards();
+  document.querySelectorAll('#venueTabs button').forEach(b => b.onclick = () => { venueTab = b.dataset.t; buildVenueCards() });
+  $('venueCards').addEventListener('click', () => setTimeout(renderQuick, 0));
   buildSteppers();
   for (const b of items()) b.addEventListener('click', () => showPanel(b.dataset.p));
   $('quickStart').onclick = () => { initAudio(); leaveCareer(); if (!QUICK_MODES.includes(settings.mode)) settings.mode = '1v1'; startGame() };

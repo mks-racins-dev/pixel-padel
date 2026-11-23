@@ -7,7 +7,7 @@ import { settings } from '../game/settings.js';
 import { L, P, R, W, H, WL, WQ, circ, mulberry, ring, shade, txt, txtW } from '../core/gfx.js';
 import { obj } from './background.js';
 
-export const STREET = ['roof', 'market', 'camp'];
+export const STREET = ['roof', 'market', 'camp', 'yard', 'beach', 'docks'];
 /** Which street scene to draw, or null for every other venue. */
 export const streetKind = () => (S.grade === 1 && STREET.includes(settings.loc) ? settings.loc : null);
 
@@ -177,14 +177,16 @@ function campBack(g) {
   for (let x = -4; x < W; x += 6 + rnd() * 6) pineS(x, 60, 14 + rnd() * 10, '#2f5a45', '#264c3a');
   for (let x = -6; x < W; x += 8 + rnd() * 8) pineS(x, 68, 18 + rnd() * 12, '#244a3a', '#1c3d30');
 }
+const SEED = { roof: 1, market: 2, camp: 3, yard: 4, beach: 5, docks: 6 };
 export function streetBack(g, kind) {
-  rnd = mulberry(kind === 'roof' ? 101 : kind === 'market' ? 202 : 303);
-  if (kind === 'roof') roofBack(g); else if (kind === 'market') marketBack(g); else campBack(g);
+  rnd = mulberry(100 + SEED[kind]);
+  ({ roof: roofBack, market: marketBack, camp: campBack, yard: yardBack, beach: beachBack, docks: docksBack })[kind](g);
 }
 
 /* ================= ground around the court ================= */
 export function streetGround(g, kind) {
-  rnd = mulberry(kind === 'roof' ? 111 : kind === 'market' ? 222 : 333);
+  rnd = mulberry(200 + SEED[kind]);
+  if (kind === 'yard' || kind === 'beach' || kind === 'docks') return ({ yard: yardGround, beach: beachGround, docks: docksGround })[kind](g);
   if (kind === 'roof') {
     R(g, 0, 68, W, H - 68, '#8f8d89'); noise(g, 0, 68, W, H - 68, '#8f8d89', 7, 0.22);
     for (let gx = -30; gx <= 30; gx += 5) WL(g, [gx, -13, 0], [gx, 16.4, 0], '#7d7b77');
@@ -218,16 +220,18 @@ export function streetGround(g, kind) {
     for (let k = 0; k < 90; k++) { const s = rnd() < 0.5 ? -1 : 1, p = P(s * (7.3 + rnd() * 0.6), -12 + rnd() * 24.6, 0); R(g, p.x, p.y - 2, 1, 2, '#5f8f3a') }
   }
 }
-export const curbColor = kind => kind === 'camp' ? '#8a6a48' : kind === 'market' ? '#6e6a70' : '#9a968e';
+export const curbColor = kind => ({ camp: '#8a6a48', market: '#6e6a70', yard: '#7a767c', beach: '#c9ae78', docks: '#6f6d6a' })[kind] || '#9a968e';
 
 /* ================= the court itself: patches, faded lines, worn walls ================= */
 export function streetFloor(g, kind, court) {
-  rnd = mulberry(kind === 'roof' ? 121 : kind === 'market' ? 232 : 343);
+  rnd = mulberry(300 + SEED[kind]);
   for (let k = 0; k < 7; k++) { const x = (rnd() - 0.5) * 8, y = (rnd() - 0.5) * 18, w = 0.5 + rnd() * 1.2, h = 0.4 + rnd() * 1.1; WQ(g, [[x, y, 0], [x + w, y, 0], [x + w, y + h, 0], [x, y + h, 0]], shade(court, rnd() < 0.5 ? -14 : 10)) }
   for (const y of [-8.8, 8.8]) for (const x of [-2.4, 2.4]) ground(g, x, y, 1.4, 1.2, 'rgba(255,255,240,0.07)');
   if (kind === 'roof') { ground(g, 4.1, -9.2, 0.9, 0.6, '#7f93a8'); ground(g, 4.0, -9.1, 0.6, 0.4, '#9db3c8') }
   if (kind === 'market') for (let k = 0; k < 8; k++) { const p = P((rnd() - 0.5) * 9, (rnd() - 0.5) * 19, 0); R(g, p.x, p.y, 1, 1, pick(['#f4f4f0', '#f2c14e', '#8a8f94'])) }
-  if (kind === 'camp') {
+  if (kind === 'yard') for (let k = 0; k < 6; k++) { const p = P((rnd() - 0.5) * 9, (rnd() - 0.5) * 19, 0); R(g, p.x, p.y, 2, 1, pick(['#c9a64a', '#8a6a44', '#5f8a3a'])) }
+  if (kind === 'docks') for (let k = 0; k < 5; k++) ground(g, (rnd() - 0.5) * 8, (rnd() - 0.5) * 18, 0.5 + rnd() * 0.5, 0.5, 'rgba(120,70,40,0.18)');
+  if (kind === 'camp' || kind === 'beach') {
     for (let k = 0; k < 260; k++) { const s = rnd() < 0.5 ? -1 : 1, x = s * (5 - Math.pow(rnd(), 2) * 1.6), y = (rnd() - 0.5) * 20, p = P(x, y, 0); R(g, p.x, p.y, 1, 1, rnd() < 0.5 ? '#d6ba82' : '#c9ab72') }
     for (let k = 0; k < 18; k++) { const p = P((rnd() - 0.5) * 9.6, (rnd() - 0.5) * 19.6, 0); R(g, p.x, p.y, 2, 1, pick(['#3a281c', '#2a5a42', '#8a6a44'])) }
   }
@@ -241,7 +245,11 @@ export function streetLines(g) {
 /** The far wall: home-made boards instead of sponsors, a cracked pane, tape. */
 export function streetWall(g, kind) {
   rnd = mulberry(77);
-  const boards = kind === 'camp' ? [['#b8875a', 'CAMP'], ['#a5774c', ''], ['#b8875a', 'PADEL'], ['#a5774c', ''], ['#b8875a', '']] : kind === 'market' ? [['#e9e2d0', 'MAXI'], ['#8f9aa4', ''], ['#c4313e', 'SALE'], ['#8f9aa4', ''], ['#e9e2d0', '-50']] : [['#9a968e', ''], ['#c4313e', 'P5'], ['#9a968e', ''], ['#3b6fb0', ''], ['#9a968e', '']];
+  if (kind === 'market') { // chain-link fence instead of glass: zip-tied banners, no cracks to show
+    for (const [a, c, t] of [[-4.4, '#c4313e', 'SALE'], [1.6, '#f2c14e', 'MAXI']]) { WQ(g, [[a, 10, 0.6], [a + 2.2, 10, 0.6], [a + 2.2, 10, 1.3], [a, 10, 1.3]], c); const p = P(a + 1.1, 10, 1.12); txt(g, t, Math.round(p.x - txtW(t) / 2), Math.round(p.y), c === '#c4313e' ? '#fff4cf' : '#2b2016') }
+    return;
+  }
+  const boards = kind === 'camp' ? [['#b8875a', 'CAMP'], ['#a5774c', ''], ['#b8875a', 'PADEL'], ['#a5774c', ''], ['#b8875a', '']] : kind === 'market' ? [['#e9e2d0', 'MAXI'], ['#8f9aa4', ''], ['#c4313e', 'SALE'], ['#8f9aa4', ''], ['#e9e2d0', '-50']] : kind === 'yard' ? [['#7f9a6a', ''], ['#c9c2b0', 'DOM 12'], ['#7f9a6a', ''], ['#c4313e', ''], ['#7f9a6a', '']] : kind === 'beach' ? [['#f4ead2', 'SURF'], ['#3fa7a8', ''], ['#f2c14e', 'KIOSK'], ['#3fa7a8', ''], ['#f4ead2', '']] : kind === 'docks' ? [['#c4313e', ''], ['#3b6fb0', 'PORT'], ['#e8b23a', ''], ['#3f7a4a', 'PIER 4'], ['#c4313e', '']] : [['#9a968e', ''], ['#c4313e', 'P5'], ['#9a968e', ''], ['#3b6fb0', ''], ['#9a968e', '']];
   for (let k = 0; k < 5; k++) {
     const a = -5 + k * 2, [c, t] = boards[k]; WQ(g, [[a + 0.05, 10, 0], [a + 1.95, 10, 0], [a + 1.95, 10, 0.42], [a + 0.05, 10, 0.42]], c);
     for (let j = 0; j < 3; j++) { const p = P(a + 0.2 + rnd() * 1.6, 10, 0.05 + rnd() * 0.3); R(g, p.x, p.y, 1 + rnd() * 2, 1, shade(c, 30)) }
@@ -254,9 +262,10 @@ export const streetFence = { post: '#4e3e34', mesh: 'rgba(104,72,52,', glass: 'r
 
 /* ================= props per scene (world space, sorted far to near) ================= */
 export function streetProps(g, kind) {
-  rnd = mulberry(kind === 'roof' ? 131 : kind === 'market' ? 242 : 353);
-  let list;
-  if (kind === 'roof') list = [
+  rnd = mulberry(400 + SEED[kind]);
+  let list = ({ yard: yardProps, beach: beachProps, docks: docksProps })[kind]?.();
+  if (list) { /* scene list above */ }
+  else if (kind === 'roof') list = [
     { x: -12.4, y: 11.5, f: o => car(o, '#c4313e') }, { x: 12.4, y: 7, f: o => car(o, '#3b6fb0') }, { x: -12.8, y: -3.8, f: o => car(o, '#e8d8b0') },
     { x: 7.2, y: 12.2, f: streetLamp },
     { x: -9.15, y: 6.2, f: o => folding(o, '#3fa7a8') }, { x: -8.35, y: 5.7, f: o => folding(o, '#e4572e') }, { x: -9.0, y: 3.2, f: o => folding(o, '#f2c14e') },
@@ -286,5 +295,127 @@ export function streetFront(g, kind) {
   rnd = mulberry(91);
   if (kind === 'roof') { cone(obj(g, -6.3, -10.8)); cone(obj(g, 6.5, -11.1)) }
   else if (kind === 'market') { worklight(obj(g, -6.5, -10.9)); worklight(obj(g, 6.5, -10.9)) }
+  else if (kind === 'docks') { bollard(obj(g, -6.4, -10.9)); drum(obj(g, 6.6, -11), '#3b6fb0') }
+  else if (kind === 'yard') { const o = obj(g, 6.6, -11); o.r(-0.35, 0, 0.7, 0.9, '#3b6fb0'); o.r(-0.38, 0.86, 0.76, 0.08, '#2f5a8a'); o.r(-0.2, 0.5, 0.4, 0.06, '#f4f4f0') }
+  else if (kind === 'beach') { surfboard(obj(g, -6.6, -11), '#3fa7a8') }
   else for (const s of [-1, 1]) for (let k = 0; k < 18; k++) { const p = P(s * (6 + rnd() * 2.5), -10.6 - rnd() * 0.8, 0); const h = 2 + Math.floor(rnd() * 4); R(g, p.x, p.y - h, 1, h, rnd() < 0.5 ? '#4f7f30' : '#6f9f45') }
 }
+
+/* ================= courtyard between the panel blocks ================= */
+function block(g, x, w, top, c) {
+  const d = shade(c, -14);
+  R(g, x, top, w, 66 - top, c); for (let y = top + 9; y < 66; y += 9) R(g, x, y, w, 1, d); for (let xx = x + 16; xx < x + w; xx += 16) R(g, xx, top, 1, 66 - top, d);
+  R(g, x, top - 2, w, 2, shade(c, -30)); R(g, x + w - 2, top, 2, 66 - top, shade(c, -22));
+  for (let wy = top + 2; wy < 52; wy += 9) for (let wx = x + 2; wx + 13 < x + w; wx += 16) {
+    const balc = Math.round((wx - x) / 16) % 3 === 1;
+    for (const ox of [0, 7]) { const lit = rnd() < 0.18; R(g, wx + ox, wy, 5, 5, lit ? pick(['#ffd27a', '#f6b25e']) : '#465269'); R(g, wx + ox, wy, 5, 1, '#e6e2d8'); if (!lit && rnd() < 0.3) R(g, wx + ox + 1, wy + 1, 1, 3, '#7d8ca6'); if (rnd() < 0.2) R(g, wx + ox, wy + 1, 2, 4, pick(['#d98ca0', '#e9d8b4', '#9fc0d6'])) }
+    if (balc && wy > top + 6) {
+      const k = rnd(); R(g, wx - 1, wy + 6, 15, 1, shade(c, -40));
+      if (k < 0.35) { R(g, wx - 1, wy + 3, 15, 3, 'rgba(150,175,190,0.85)'); R(g, wx + 4, wy + 3, 1, 3, '#e6e2d8') }
+      else if (k < 0.7) { R(g, wx - 1, wy + 3, 15, 3, shade(c, -26)); for (let j = 0; j < 4; j++) R(g, wx + j * 3, wy + 1, 2, 2 + (j % 2), pick(['#e4572e', '#f4f4f0', '#3fa7a8', '#f2c14e', '#8e6cc1'])) }
+      else { R(g, wx - 1, wy + 3, 15, 3, '#8a6a44'); R(g, wx + 2, wy + 1, 3, 2, '#4f8a4b'); R(g, wx + 9, wy + 1, 2, 2, '#e86a6a') }
+      if (rnd() < 0.25) { circ(g, wx + 12, wy - 1, 2, '#e6e2d8'); R(g, wx + 11, wy, 1, 2, '#9a968e') }
+    }
+  }
+  for (let ex = x + 10, n = 1; ex + 12 < x + w; ex += 48, n++) { R(g, ex, 56, 10, 10, '#6b4a35'); R(g, ex + 1, 57, 8, 9, '#7a5642'); R(g, ex - 2, 54, 14, 2, '#8f8b84'); R(g, ex + 2, 49, 6, 5, '#2f5a8a'); txt(g, String(n), ex + 4, 49, '#f4f4f0') }
+}
+function birch(g, x, base, h) {
+  R(g, x, base - h, 2, h, '#eeeae0'); for (let y = base - h + 2; y < base; y += 3 + ((y * 7) % 3)) R(g, x + (y % 2), y, 1, 1, '#2b2633');
+  for (const [dx, dy, r] of [[0, -h, 6], [-4, -h + 5, 5], [5, -h + 4, 5], [1, -h - 4, 4]]) circ(g, x + 1 + dx, base + dy, r, '#5f9a4a');
+  for (let k = 0; k < 18; k++) R(g, x - 6 + rnd() * 14, base - h - 8 + rnd() * 14, 1, 1, rnd() < 0.5 ? '#86c060' : '#3f6b35');
+}
+function yardBack(g) {
+  block(g, -6, 170, 10, '#bdb8ac'); block(g, 164, 158, 2, '#c9c2b0'); block(g, 322, 168, 14, '#aab2b6');
+  for (const x of [150, 318, 470]) birch(g, x, 66, 26 + Math.floor(rnd() * 10));
+  txt(g, 'ANNA + IGOR', 22, 60, 'rgba(232,106,213,0.85)'); txt(g, 'PADEL', 364, 60, 'rgba(111,232,255,0.85)');
+}
+function yardGround(g) {
+  R(g, 0, 66, W, H - 66, '#6e6b70'); noise(g, 0, 66, W, H - 66, '#6e6b70', 8, 0.28);
+  for (const [x, y, rx, c] of [[-11, 9, 2.6, '#7a6a4e'], [11.5, 6, 2.8, '#6f8f4a'], [-12, -7, 2.2, '#6f8f4a'], [12.4, -6.5, 1.8, '#7a6a4e']]) { ground(g, x, y, rx, rx * 0.9, c); for (let k = 0; k < 30; k++) { const p = P(x + (rnd() - 0.5) * rx * 1.6, y + (rnd() - 0.5) * rx * 1.6, 0); R(g, p.x, p.y - 1, 1, 1 + (rnd() < 0.5 ? 1 : 0), shade(c, rnd() < 0.5 ? 16 : -16)) } }
+  for (let c = 0; c < 16; c++) { let x = (rnd() - 0.5) * 30, y = -12 + rnd() * 28; if (Math.abs(x) < 6 && Math.abs(y) < 11) continue; for (let st = 0; st < 5; st++) { const nx = x + (rnd() - 0.5) * 1.2, ny = y + (rnd() - 0.5) * 1.2; WL(g, [x, y, 0], [nx, ny, 0], 'rgba(30,26,34,0.5)'); x = nx; y = ny } }
+  for (const [x, y] of [[8.6, -3], [-12.5, 3.2]]) { ground(g, x, y, 0.7, 0.6, '#5a5760'); ground(g, x, y, 0.45, 0.35, '#7d93a6') }
+  const ch = 'rgba(244,240,232,0.75)';
+  for (let i = 0; i < 6; i++) { const y = -9.6 + i * 0.7, x = -9.4; WL(g, [x - 0.35, y, 0], [x + 0.35, y, 0], ch); WL(g, [x - 0.35, y, 0], [x - 0.35, y + 0.7, 0], ch); WL(g, [x + 0.35, y, 0], [x + 0.35, y + 0.7, 0], ch) }
+}
+function swingFrame(o) { shadow(o, 2.6); const tl = o.at(-1.2, 2.2), tr = o.at(1.2, 2.2); for (const [a, b] of [[-1.5, -1.2], [-0.9, -1.2], [1.5, 1.2], [0.9, 1.2]]) { const p = o.at(a, 0), q = o.at(b, 2.2); L(o.g, p.x, p.y, q.x, q.y, a < 0 ? '#c4313e' : '#3b6fb0', 2) } L(o.g, tl.x, tl.y, tr.x, tr.y, '#f2c14e', 2) }
+function slide(o) { shadow(o, 2.2); o.r(-1, 0, 0.08, 1.5, '#3b6fb0'); o.r(-0.6, 0, 0.08, 1.5, '#3b6fb0'); o.r(-1.05, 1.45, 0.55, 0.08, '#f2c14e'); for (let k = 0; k < 5; k++) o.r(-1, 0.25 + k * 0.28, 0.48, 0.04, '#9aa0a6'); for (let i = 0; i < 10; i++) o.r(-0.55 + i * 0.15, 1.45 - i * 0.15, 0.18, 0.1, '#e4572e') }
+function sandbox(o) { shadow(o, 1.9); o.r(-0.9, 0, 1.8, 0.22, '#8a6a44'); o.r(-0.85, 0.18, 1.7, 0.06, '#e3cc98'); o.r(-0.3, 0.24, 0.2, 0.12, '#e4572e'); o.r(0.3, 0.22, 0.3, 0.06, '#3fa7a8') }
+function beater(o) { o.r(-1.1, 0, 0.06, 1.6, '#5a6a7a'); o.r(1.04, 0, 0.06, 1.6, '#5a6a7a'); o.r(-1.1, 1.55, 2.2, 0.06, '#5a6a7a'); o.r(-1.1, 1.0, 2.2, 0.04, '#5a6a7a'); o.r(-0.7, 0.55, 1.2, 1.0, '#a8332a'); for (let k = 0; k < 4; k++) o.r(-0.6 + k * 0.3, 0.7, 0.14, 0.7, k % 2 ? '#e8b23a' : '#2f5a8a'); o.r(-0.7, 0.55, 1.2, 0.06, '#f4ead2') }
+function bins(o) { shadow(o, 2.2); for (const [x, c] of [[-0.75, '#3f7a4a'], [0.05, '#3b6fb0']]) { o.r(x, 0, 0.7, 0.95, c); o.r(x - 0.03, 0.92, 0.76, 0.08, shade(c, -30)); o.r(x + 0.1, 0.4, 0.5, 0.05, shade(c, 25)) } }
+function yardBench(o) { shadow(o, 1.9); o.r(-0.9, 0.4, 1.8, 0.1, '#3f7a5a'); o.r(-0.9, 0.5, 1.8, 0.04, '#5a9a72'); o.r(-0.85, 0, 0.1, 0.4, '#2b2633'); o.r(0.75, 0, 0.1, 0.4, '#2b2633'); o.r(-0.9, 0.62, 1.8, 0.08, '#3f7a5a'); o.r(-0.9, 0.78, 1.8, 0.08, '#3f7a5a') }
+function yardProps() { return [
+  { x: -11.6, y: 10.8, f: beater }, { x: 11.2, y: 9.6, f: swingFrame }, { x: 9.6, y: 6.2, f: sandbox }, { x: 12, y: 3.6, f: slide },
+  { x: -12.8, y: 4.5, f: o => car(o, '#e9e4d8') }, { x: 13, y: -3.8, f: o => car(o, '#6a8f5a') },
+  { x: -8.7, y: 6, f: yardBench }, { x: -8.7, y: 3, f: yardBench }, { x: 11.6, y: -8.6, f: bins }, { x: -11.2, y: -4.6, f: washing },
+] }
+
+/* ================= beach in the dunes ================= */
+function beachBack(g) {
+  R(g, 0, 28, W, 26, '#2f7fc0'); for (let y = 30; y < 54; y += 4) R(g, 0, y, W, 2, y < 40 ? '#3a8ccb' : '#4a9dd4'); R(g, 0, 28, W, 1, '#9fd0f0');
+  for (let k = 0; k < 60; k++) R(g, rnd() * W, 32 + rnd() * 20, 2 + rnd() * 3, 1, '#bfe4f8');
+  R(g, 96, 20, 1, 8, '#2b2633'); for (let i = 0; i < 7; i++) R(g, 97, 21 + i, 1 + i, 1, '#f4f4f0'); R(g, 90, 28, 14, 2, '#c4313e');
+  R(g, 372, 24, 30, 4, '#4a4458'); R(g, 382, 19, 10, 5, '#e6e2d8'); R(g, 386, 15, 2, 4, '#c4313e');
+  R(g, 0, 52, W, 6, '#ead7a6'); R(g, 0, 52, W, 1, '#f8f4ea');
+  for (let x = 0; x < W; x++) { const h = 6 + 4 * Math.sin(x / 23) + 2 * Math.sin(x / 7 + 1); R(g, x, 66 - h, 1, h, '#d9c08a'); R(g, x, 66 - h, 1, 1, '#e8d4a0') }
+  for (let k = 0; k < 140; k++) { const x = rnd() * W, y = 58 + rnd() * 8; R(g, x, y - 3, 1, 3, rnd() < 0.5 ? '#9ab06a' : '#7a9a52'); R(g, x + 1, y - 2, 1, 2, '#9ab06a') }
+  const bpine = (x, h) => { for (let y = 66 - h; y < 64; y++) R(g, x + Math.round(Math.sin(y / 6) * 1.5), y, 2, 1, '#b0603e'); const ty = 66 - h; for (const [dx, dy, r] of [[0, 0, 7], [-6, 3, 5], [6, 2, 5], [-2, -4, 5]]) { circ(g, x + dx, ty + dy, r, '#2f5a42'); circ(g, x + dx - 1, ty + dy - 1, r - 2, '#3f7050') } };
+  for (const [x, h] of [[24, 30], [150, 26], [312, 32], [452, 28]]) bpine(x, h);
+  R(g, 58, 40, 1, 24, '#e6e2d8'); R(g, 74, 40, 1, 24, '#e6e2d8'); L(g, 58, 50, 74, 60, '#e6e2d8'); R(g, 54, 28, 24, 12, '#c4313e'); R(g, 54, 32, 24, 3, '#f4f4f0'); R(g, 57, 30, 18, 1, '#3d4656'); R(g, 52, 26, 28, 2, '#f4f4f0'); R(g, 66, 12, 1, 14, '#2b2633');
+}
+function beachGround(g) {
+  R(g, 0, 66, W, H - 66, '#e3cc98'); noise(g, 0, 66, W, H - 66, '#e3cc98', 10, 0.3);
+  for (let k = 0; k < 40; k++) { let x = (rnd() - 0.5) * 30, y = -12 + rnd() * 28; if (Math.abs(x) < 6.2 && Math.abs(y) < 11) continue; for (let st = 0; st < 5; st++) { x += 0.45; y += (rnd() - 0.5) * 0.3; const p = P(x, y + (st % 2) * 0.25, 0); R(g, p.x, p.y, 2, 1, '#c9ae78') } }
+  for (let k = 0; k < 50; k++) { const x = (rnd() - 0.5) * 32, y = -12 + rnd() * 28; if (Math.abs(x) < 6.2 && Math.abs(y) < 11) continue; const p = P(x, y, 0); R(g, p.x, p.y, 1, 1, pick(['#f4f4f0', '#f0c0b0', '#6a7a4a', '#a8885a'])) }
+  for (const [x, y, c, c2] of [[-11.4, -2.4, '#e4572e', '#f4ead2'], [11.6, -7.2, '#3fa7a8', '#f2c14e']]) { const p = P(x, y, 0), w = Math.round(1.8 * p.s), h = Math.max(2, Math.round(0.9 * p.s * 0.45)); R(g, p.x - w / 2, p.y - h, w, h, c); for (let k = 0; k < w; k += 4) R(g, p.x - w / 2 + k, p.y - h, 2, h, c2) }
+}
+function surfboard(o, c) { shadow(o, 0.6); for (let i = 0; i < 14; i++) { const z = i * 0.15, w = 0.5 * Math.sqrt(Math.max(0.05, 1 - Math.pow((z - 1) / 1.05, 2))); o.r(-w / 2, z, w, 0.15, c) } o.r(-0.03, 0.1, 0.06, 1.9, '#f4f4f0') }
+function kiosk(o) { shadow(o, 2.6); o.r(-1.2, 0, 2.4, 1.1, '#3fa7a8'); o.r(-1.2, 1.1, 2.4, 0.08, '#f4f4f0'); o.r(-1.1, 1.18, 2.2, 0.6, '#2b2633'); o.r(-1.0, 1.24, 2.0, 0.48, '#ffd890'); for (let k = 0; k < 6; k++) o.r(-1.35 + k * 0.45, 1.78, 0.45, 0.3, k % 2 ? '#f4f4f0' : '#e4572e'); o.r(-1.35, 2.08, 2.7, 0.06, '#c4402a'); const p = o.at(0, 0.85); txt(o.g, 'KIOSK', Math.round(p.x - txtW('KIOSK') / 2), Math.round(p.y), '#f4f4f0') }
+function sandcastle(o) { o.r(-0.4, 0, 0.8, 0.25, '#d6ba82'); o.r(-0.3, 0.25, 0.25, 0.2, '#d6ba82'); o.r(0.08, 0.25, 0.22, 0.28, '#d6ba82'); o.r(0.17, 0.53, 0.02, 0.2, '#2b2633'); o.r(0.19, 0.66, 0.12, 0.06, '#e4572e'); o.r(0.6, 0, 0.2, 0.18, '#e4572e') }
+function lounger(o, c) { shadow(o, 1.4); o.r(-0.6, 0, 0.05, 0.3, '#6b4a35'); o.r(0.55, 0, 0.05, 0.3, '#6b4a35'); o.r(-0.6, 0.3, 1.2, 0.08, c); o.r(-0.6, 0.38, 0.4, 0.4, c); for (let k = 0; k < 4; k++) o.r(-0.6 + k * 0.3, 0.3, 0.12, 0.08, '#f4f4f0') }
+function umbrellaB(o, c1, c2) { o.r(-0.6, -0.04, 1.2, 0.06, 'rgba(20,16,32,0.2)'); o.r(-0.04, 0, 0.08, 2.2, '#e8e0d0'); for (let i = 0; i < 6; i++) { const w = 2.2 - i * 0.34; o.r(-w / 2, 2.1 + i * 0.08, w, 0.09, i % 2 ? c1 : c2) } for (let i = 0; i < 5; i++) o.r(-1.1 + i * 0.44, 2.02, 0.22, 0.08, c1) }
+function beachProps() { return [
+  { x: -12.4, y: 11.6, f: kiosk }, { x: 12.6, y: 10, f: o => surfboard(o, '#f2c14e') }, { x: 13.2, y: 9.4, f: o => surfboard(o, '#e4572e') },
+  { x: 10.4, y: 7.8, f: o => umbrellaB(o, '#e4572e', '#f4ead2') }, { x: 11.8, y: 1.6, f: o => umbrellaB(o, '#3fa7a8', '#f4ead2') },
+  { x: -9.15, y: 6.2, f: o => lounger(o, '#3fa7a8') }, { x: -8.35, y: 5.7, f: o => lounger(o, '#e4572e') }, { x: -9.0, y: 3.2, f: o => lounger(o, '#f2c14e') },
+  { x: 9.4, y: -6.6, f: sandcastle }, { x: -8, y: 4.4, f: o => cooler(o, '#e4572e') }, { x: -12.6, y: -8, f: o => surfboard(o, '#3fa7a8') },
+] }
+
+/* ================= container docks ================= */
+function container(g, x, y, w, h, c, label) {
+  R(g, x, y, w, h, c); for (let k = x + 1; k < x + w - 1; k += 2) R(g, k, y + 1, 1, h - 2, shade(c, -16)); R(g, x, y, w, 1, shade(c, 28)); R(g, x, y + h - 1, w, 1, shade(c, -36)); R(g, x, y, 1, h, shade(c, -30)); R(g, x + w - 1, y, 1, h, shade(c, -30));
+  if (label && w > 18) { R(g, x + 3, y + 2, txtW(label) + 2, 7, shade(c, -45)); txt(g, label, x + 4, y + 3, '#f4f4f0') }
+}
+function docksBack(g) {
+  R(g, 0, 32, W, 12, '#5a6a84'); for (let x = 0; x < W; x += 6 + rnd() * 10) { const h = 2 + rnd() * 8; R(g, x, 44 - h, 4 + rnd() * 6, h, '#4e5c74') }
+  for (const x of [60, 230]) { R(g, x, 18, 1, 26, '#6a7690'); R(g, x - 12, 18, 26, 1, '#6a7690') }
+  R(g, 0, 44, W, 14, '#2e5f7a'); for (let y = 45; y < 58; y += 3) R(g, 0, y, W, 1, '#3a7090'); for (let k = 0; k < 50; k++) R(g, rnd() * W, 45 + rnd() * 12, 2 + rnd() * 3, 1, '#8fc0d8');
+  R(g, -4, 40, 196, 12, '#7a2e2a'); R(g, -4, 50, 196, 2, '#4a1e1c'); R(g, -4, 40, 196, 1, '#f4f4f0'); txt(g, 'PIXEL STAR', 120, 43, '#f4f4f0');
+  const cc = ['#c4313e', '#3b6fb0', '#e8b23a', '#3f7a4a', '#e4572e', '#8e6cc1', '#9aa0a6'];
+  for (let row = 0; row < 3; row++) for (let x = 34; x < 186; x += 16) if (rnd() < 0.85) container(g, x, 32 - row * 8, 16, 8, pick(cc));
+  R(g, 4, 18, 22, 22, '#f4f4f0'); R(g, 6, 21, 18, 3, '#3d4656'); R(g, 6, 27, 18, 3, '#3d4656'); R(g, 14, 8, 3, 10, '#c4313e'); R(g, 14, 6, 3, 2, '#2b2633');
+  const C = '#c4313e', D = '#8a2228';
+  for (const x of [372, 432]) { R(g, x, 4, 4, 62, C); R(g, x + 1, 4, 1, 62, '#e05a5a') }
+  for (let y = 8; y < 60; y += 10) L(g, 376, y, 432, y + 8, D);
+  R(g, 300, 2, 180, 5, C); R(g, 300, 2, 180, 1, '#e05a5a'); for (let x = 302; x < 478; x += 6) L(g, x, 6, x + 3, 3, D); R(g, 440, -2, 30, 4, D); R(g, 448, 7, 12, 7, '#f4f4f0'); R(g, 450, 9, 8, 2, '#3d4656');
+  for (let row = 0; row < 3; row++) for (let x = 310; x < 480; x += 22) if (row < 2 || rnd() < 0.5) container(g, x, 56 - row * 10, 22, 10, pick(cc), row === 0 && rnd() < 0.4 ? pick(['PXL', 'PADL', 'SMSH']) : '');
+  R(g, 0, 58, 310, 8, '#8a8884'); R(g, 0, 58, 310, 1, '#b0aea8'); for (let x = 8; x < 300; x += 26) { R(g, x, 59, 5, 6, '#1c1a22'); R(g, x + 1, 60, 3, 4, '#2b2633') }
+}
+function docksGround(g) {
+  R(g, 0, 66, W, H - 66, '#8a8884'); noise(g, 0, 66, W, H - 66, '#8a8884', 8, 0.25);
+  for (let gx = -30; gx <= 30; gx += 4) WL(g, [gx, -13, 0], [gx, 16.4, 0], '#7c7a76');
+  for (let gy = -12; gy <= 16; gy += 4) WL(g, [-34, gy, 0], [34, gy, 0], '#7c7a76');
+  for (const s of [-1, 1]) for (let yy = -12; yy < 16; yy += 1.4) WL(g, [s * 6.6, yy, 0], [s * 6.6, yy + 0.8, 0], 'rgba(242,193,78,0.75)', 2);
+  for (let y = -12.5; y < 16; y += 0.8) WL(g, [-12.9, y, 0], [-11.1, y, 0], '#6e5a44');
+  for (const x of [-12.6, -11.4]) WL(g, [x, -13, 0], [x, 16.4, 0], '#4a4652');
+  for (let k = 0; k < 10; k++) { const s = rnd() < 0.5 ? -1 : 1; ground(g, s * (8 + rnd() * 5), -10 + rnd() * 25, 0.6 + rnd() * 0.6, 0.6, 'rgba(120,70,40,0.25)') }
+}
+function forklift(o) { shadow(o, 1.8); o.r(-0.7, 0.25, 1.2, 0.8, '#e8b23a'); o.r(-0.7, 1.05, 1.2, 0.08, '#2b2633'); o.r(-0.6, 1.1, 0.06, 0.9, '#2b2633'); o.r(0.4, 1.1, 0.06, 0.9, '#2b2633'); o.r(-0.65, 1.95, 1.1, 0.08, '#2b2633'); o.r(0.55, 0, 0.08, 2.2, '#4a4652'); o.r(0.55, 0.1, 0.5, 0.06, '#9aa0a6'); o.r(-0.7, 0, 0.36, 0.3, '#1c1a22'); o.r(0.14, 0, 0.36, 0.3, '#1c1a22'); o.r(-0.3, 0.5, 0.5, 0.3, '#3d4656') }
+function drum(o, c) { shadow(o, 0.7); o.r(-0.3, 0, 0.6, 0.85, c); for (const z of [0.25, 0.55]) o.r(-0.3, z, 0.6, 0.04, shade(c, -30)); o.r(-0.3, 0.82, 0.6, 0.05, shade(c, 30)); o.r(-0.2, 0.05, 0.08, 0.75, shade(c, 25)) }
+function bollard(o) { shadow(o, 0.6); o.r(-0.22, 0, 0.44, 0.45, '#2b2633'); o.r(-0.3, 0.45, 0.6, 0.12, '#3a3640'); o.r(-0.2, 0.2, 0.4, 0.05, '#e8b23a') }
+function rope(o) { for (let k = 0; k < 4; k++) o.r(-0.45 + k * 0.05, 0.06 * k, 0.9 - k * 0.1, 0.06, k % 2 ? '#c9a06a' : '#b08a5a') }
+function docksProps() { return [
+  { x: 11, y: 8.6, f: forklift }, { x: -11.4, y: 9.8, f: o => pallets(o, 3) }, { x: -9.8, y: 11.4, f: rope },
+  { x: -9.15, y: 6.2, f: o => crate(o, '#3b6fb0') }, { x: -8.35, y: 5.7, f: o => crate(o, '#c4313e') }, { x: -7.9, y: 7.4, f: o => drum(o, '#c4313e') }, { x: -9.0, y: 3.2, f: o => crate(o, '#a5774c') },
+  { x: 12.4, y: -2.6, f: o => drum(o, '#3f7a4a') }, { x: 12.9, y: -3.4, f: o => drum(o, '#3b6fb0') }, { x: 8.2, y: 1.6, f: bollard }, { x: 8.2, y: -5.4, f: bollard },
+  { x: -12, y: 2, f: streetLamp }, { x: 10.4, y: -8.8, f: o => crate(o, '#a5774c') }, { x: 11.1, y: -9.2, f: o => crate(o, '#8a6a44') },
+] }
