@@ -567,3 +567,12 @@ button:focus-visible{outline:calc(var(--u)*1.5) solid var(--gold);outline-offset
 .mi{padding-top:calc(var(--u)*3.6);padding-bottom:calc(var(--u)*3.6)}
 .mi.small{padding-top:calc(var(--u)*2.6);padding-bottom:calc(var(--u)*2.6)}
 .mi[data-p="rooms"]{--mc:#ff6ad5}.mi[data-p="leaders"]{--mc:#f7c993}
+/* online screen: once in a room, only the room shows */
+#onBox.busy #quickBtn,#onBox.busy #hostFmt,#onBox.busy #hostFmtHelp,#onBox.busy #hostBtn,#onBox.busy>.btns{display:none}
+/* online pause banner */
+#netPause{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);z-index:60;background:rgba(18,14,24,.94);border:calc(var(--u)*2) solid #0c0a10;box-shadow:inset 0 var(--u) 0 #4d4160,0 0 0 9999px rgba(10,8,14,.35);padding:calc(var(--u)*7) calc(var(--u)*12);display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*4)}
+#netPause[hidden]{display:none}
+#netPause b{color:#f2c14e;font-size:calc(var(--u)*7);font-weight:normal}
+#netPause span{color:#f4ead2;font-size:calc(var(--u)*22)}
+#netPause i{font-family:VT323,monospace;font-style:normal;color:#a99db8;font-size:calc(var(--u)*8)}
+#netPauseBtn[disabled]{filter:grayscale(1) brightness(.6);cursor:default}

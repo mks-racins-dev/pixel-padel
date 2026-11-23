@@ -51,6 +51,9 @@ const clamp1 = v => Math.max(-1, Math.min(1, +v || 0));
 /** Room names: letters, digits, spaces and a few symbols, up to 24 characters. */
 export const cleanRoomName = n => (typeof n === 'string' ? n.replace(/[^\p{L}\p{N} .,!?#&+\-|]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 24) : '');
 
+/** Online pause: each player may pause once per match, for up to this many seconds. */
+export const PAUSE_SECS = 30;
+
 export class MatchRoom {
   /**
    * @param {{ code: string, kind: 'quick'|'private', seed?: number,
@@ -113,7 +116,10 @@ export class MatchRoom {
     if (!gone) return; // already removed (e.g. refused with a wrong password)
     if (this.size === 4) return this.leave4(gone);
     // quitting a ranked match that is still running counts as a loss
-    if (gone && this.started && this.run(() => S.state) !== 'over') { const other = this.players.find(p => p !== gone); if (other) this.report(other, gone, 'left') }
+    if (gone && this.started && this.run(() => S.state) !== 'over') {
+      const other = this.players.find(p => p !== gone);
+      if (other) { this.report(other, gone, 'left'); other.send(JSON.stringify({ t: 'forfeit', winner: other.team, by: gone.name || 'RIVAL' })) }
+    }
     this.players = this.players.filter(p => p !== gone);
     for (const p of this.players) p.send(JSON.stringify({ t: 'bye' }));
     this.started = false;
@@ -182,7 +188,7 @@ export class MatchRoom {
       p.style = STYLES[m.style] ? m.style : 'allround';
       p.look = m.look ? cleanLook(m.look) : null;
       if (VENUES.includes(m.loc)) p.loc = m.loc;
-      p.send(JSON.stringify({ t: 'joined', team: p.team, slot: p.slot, size: this.size, code: this.code }));
+      p.send(JSON.stringify({ t: 'joined', team: p.team, slot: p.slot, size: this.size, code: this.code, cid: p.cid }));
       if (this.size === 4) { if (!this.started) this.lobby(); return }
       if (this.players.length === 2 && this.players.every(q => q.hello)) this.start();
       return;
@@ -196,6 +202,9 @@ export class MatchRoom {
     }
     if (m.t === 'again') { if (this.started && this.run(() => S.state) === 'over') this.start(); return }
     if (!this.started) return;
+    if (m.t === 'pause') return this.askPause(p);
+    if (m.t === 'resume') { if (this.pause && this.pause.cid === p.cid) this.endPause(); return }
+    if (this.pause && !this.pause.pending) return; // frozen: ignore moves and swings
     this.run(() => {
       const pl = S.players[p.slot];
       if (pl && pl.ctrl === 'ai') return; // a bot plays this slot
@@ -207,7 +216,21 @@ export class MatchRoom {
     });
   }
 
+  /* ---- pauses ---- */
+  askPause(p) {
+    if (this.pause || this.run(() => S.state) === 'over') return;
+    this.pausesUsed ||= new Set();
+    if (this.pausesUsed.has(p.cid)) { p.send(JSON.stringify({ t: 'msg', b: 'NO PAUSES LEFT', s: 'one pause per player per match' })); return }
+    this.pausesUsed.add(p.cid);
+    const pending = this.run(() => S.state) === 'play'; // wait for the rally to end
+    this.pause = { cid: p.cid, by: p.name || 'PLAYER ' + (p.slot + 1), left: PAUSE_SECS, shown: PAUSE_SECS, pending };
+    this.sendPause();
+  }
+  sendPause() { const q = this.pause; this.broadcast({ t: 'pause', by: q.by, left: Math.ceil(q.left), pending: q.pending, cid: q.cid }) }
+  endPause() { this.pause = null; this.broadcast({ t: 'resume' }) }
+
   start() {
+    this.pause = null; this.pausesUsed = new Set();
     if (this.size === 4) return this.start4();
     const [a, b] = [0, 1].map(i => this.players.find(p => p.slot === i));
     const loc = this.kind === 'private' ? a.loc : VENUES[Math.floor(Math.random() * VENUES.length)];
@@ -242,6 +265,13 @@ export class MatchRoom {
   /** Advance real time by `dt` seconds: fixed simulation steps plus snapshots at 30 Hz. */
   tick(dt) {
     if (!this.started) return;
+    if (this.pause && !this.pause.pending) {
+      this.pause.left -= Math.min(dt, 0.25);
+      if (this.pause.left <= 0) return this.endPause();
+      if (Math.ceil(this.pause.left) !== this.pause.shown) { this.pause.shown = Math.ceil(this.pause.left); this.sendPause() }
+      return;
+    }
+    if (this.pause && this.pause.pending && this.run(() => S.state) !== 'play') { this.pause.pending = false; this.sendPause() }
     this.run(() => {
       if (S.state === 'over') return;
       this.acc += Math.min(dt, 0.25);

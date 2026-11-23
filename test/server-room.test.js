@@ -2,6 +2,8 @@
 import { describe, it, expect } from 'vitest';
 import { MatchRoom } from '../server/room.js';
 import { STEP } from '../src/game/update.js';
+import { S } from '../src/state.js';
+const S_time = () => S.time;
 
 function client(room) {
   const c = { got: [], last: t => [...c.got].reverse().find(m => m.t === t) };
@@ -154,5 +156,36 @@ describe('public rooms', () => {
     const ok = client(room); hello(ok, { mode: 'join', pass: 'pad3l' });
     expect(ok.last('start')).toBeTruthy();
     expect(room.info().playing).toBe(true);
+  });
+});
+
+describe('online pause and forfeit', () => {
+  const pair = seed => { const room = new MatchRoom({ code: 'PAUS', kind: 'private', seed }); const a = client(room), b = client(room); hello(a); hello(b); return { room, a, b } };
+  it('each player gets one 30-second pause; the match is frozen while paused', () => {
+    const { room, a, b } = pair(7);
+    run(room, 1);
+    a.say({ t: 'pause' });
+    const p = a.last('pause'); expect(p).toBeTruthy(); expect(b.last('pause').by).toBeTruthy();
+    run(room, 6); // a running rally first ends, then the pause starts
+    const before = room.run(() => S_time());
+    run(room, 5);
+    expect(room.run(() => S_time())).toBe(before); // frozen
+    b.say({ t: 'resume' }); expect(room.pause).toBeTruthy(); // only the one who paused can resume early
+    a.say({ t: 'resume' }); expect(a.last('resume')).toBeTruthy();
+    a.say({ t: 'pause' }); expect(room.pause).toBe(null); // already used
+    expect(a.last('msg').b).toBe('NO PAUSES LEFT');
+  });
+  it('a pause ends by itself after 30 seconds', () => {
+    const { room, a } = pair(8);
+    room.run(() => {}); a.say({ t: 'pause' });
+    run(room, 45);
+    expect(room.pause).toBe(null);
+    expect(a.last('resume')).toBeTruthy();
+  });
+  it('leaving a running 1 vs 1 gives the other player the win', () => {
+    const { room, a, b } = pair(9);
+    run(room, 1);
+    room.leaveRoom(b.team);
+    expect(a.last('forfeit')).toMatchObject({ winner: a.last('start').team });
   });
 });

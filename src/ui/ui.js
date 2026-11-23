@@ -22,7 +22,9 @@ import { addXp, profile } from '../meta/profile.ts';
 import { earnCoins, matchCoins } from '../meta/gear.ts';
 const coinLine=n=>'<div class="coinln">+'+n+' COINS</div>';
 import { actRelease, actStart, actVib, touchIn } from '../input/input.js';
-import { myTeam, netClose, netSend, onStatus, startOnline } from '../net/online.js';
+import { myTeam, netClose, netSend, onStatus, startOnline, askNetPause } from '../net/online.js';
+/** Online pause menu: the match does not stop here; PAUSE MATCH asks the server for this player's pause. */
+function netPauseMenu(){const srv=!!(S.net&&S.net.server&&S.state!=='over');$('netPauseBtn').hidden=!srv;$('netPauseHelp').hidden=!srv;$('netPauseBtn').disabled=!!(S.net&&S.net.pauseUsed);$('netPauseBtn').textContent=S.net&&S.net.pauseUsed?'PAUSE USED':'PAUSE MATCH · 30 S';$('quitBtn').textContent=srv&&S.net.size!==4?'QUIT (COUNTS AS A LOSS)':'QUIT TO MENU'}
 import { prevG } from './preview.js';
 import { renderHelp } from './help.js';
 import { t } from './i18n.js';
@@ -88,7 +90,7 @@ export function startGame(){
   if(CAREER.active)setLoc(CAREER.event.venue,gradeFor(CAREER.event));else if(S.grade)setLoc(settings.loc,0);
   showGameUI();newMatch(false)}
 export function toMenu(){if(S.grade)setLoc(settings.loc,0);matchQuit();leaveCareer();netClose();$('online').hidden=true;S.paused=false;$('pause').hidden=true;$('end').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('menu').hidden=false;hideMsg();newMatch(true);renderMenu()}
-export function togglePause(){if(S.net&&!S.demo){$('pause').hidden=!$('pause').hidden;return}S.paused=!S.paused;$('pause').hidden=!S.paused}
+export function togglePause(){if(S.net&&!S.demo){const open=$('pause').hidden;$('pause').hidden=!open;if(open)netPauseMenu();return}S.paused=!S.paused;$('pause').hidden=!S.paused}
 
 function cupSummary(r){
   const bits=[r.won?r.round+' WON!':'OUT IN THE '+r.round,'+'+r.xp+' XP'];
@@ -150,6 +152,11 @@ export function setup(){
   $('menuBtn').onclick=toMenu;
   $('quitBtn').onclick=toMenu;
   $('resumeBtn').onclick=togglePause;
+  $('netPauseBtn').onclick=()=>{if(askNetPause())$('pause').hidden=true;netPauseMenu()};
+  // fullscreen from the pause menu
+  const fsLabel=()=>{$('fsPauseBtn').textContent=document.fullscreenElement?'EXIT FULLSCREEN':'FULLSCREEN'};
+  $('fsPauseBtn').onclick=()=>{try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen().catch(()=>{})}catch(e){}};
+  document.addEventListener('fullscreenchange',fsLabel);
   $('pauseBtn').onclick=togglePause;
   $('soundBtn').onclick=()=>{S.muted=!S.muted;$('soundBtn').textContent='SOUND: '+(S.muted?'OFF':'ON');initAudio()};
   (function(){const st=$('stick'),nub=$('nub');let id=null,cx=0,cy=0;
