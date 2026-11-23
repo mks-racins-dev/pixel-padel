@@ -93,6 +93,10 @@ export function aimVel(x0,y0,z0,tx,ty,spd,clear){
 }
 export function gauss(){return(rand()+rand()+rand()-1.5)*1.15}
 export function launch(tx,ty,spd,clear){const v=aimVel(S.ball.x,S.ball.y,S.ball.z,tx,ty,spd,clear);S.ball.vx=v.vx;S.ball.vy=v.vy;S.ball.vz=v.vz;S.ball.held=false;S.ball.rolling=false;S.ball.out=false;S.ball.ext=false;S.ball.spin=0;S.ball.vib=false;S.ball.kick=false;S.ball.slice=false;S.ball.porTres=false}
+/** Serve aim 0..1 covers the service box (centre line to side line); beyond it the serve is a fault. */
+export const SERVE_AIM_MIN=-0.4,SERVE_AIM_MAX=1.4;
+/** True when the aim point is inside the service box. */
+export const serveAimIn=p=>p.serveAim>=-0.13&&p.serveAim<=1.25;
 export function serveTarget(p,power){const dir=p.team===0?1:-1,bx=S.R0.boxX;return{tx:bx*(0.5+p.serveAim*3.6),ty:dir*(3.8+power*2.8)}}
 export function doServe(p,power){
   const dir=p.team===0?1:-1;

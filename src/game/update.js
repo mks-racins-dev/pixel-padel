@@ -5,6 +5,7 @@ import { aiPlan, aiShot } from '../ai/ai.js';
 import { SPEED_H, SVC, movK } from './constants.js';
 import { stepBall } from './physics.js';
 import { stepChase, stepReturn } from './chase.js';
+import { SERVE_AIM_MIN, SERVE_AIM_MAX } from './rules.js';
 import { canHit, diffOf, doServe, endPoint, isHuman, onEvent, performHit, soundOnly, teamOf } from './rules.js';
 
 /* ---------------- update ---------------- */
@@ -33,7 +34,7 @@ export function update(dt){
     if(isHuman(p)){
       const i=H.inputOf(p);const l=Math.hypot(i.mx,i.my)||1;const sc=Math.min(1,Math.hypot(i.mx,i.my));
       const serving=S.state==='serve'&&S.R0.server===p,locked=serving&&p.charging;
-      if(locked&&i.mx)p.serveAim=Math.max(0,Math.min(1,p.serveAim+i.mx*S.R0.boxX*dt*1.1));
+      if(locked&&i.mx)p.serveAim=Math.max(SERVE_AIM_MIN,Math.min(SERVE_AIM_MAX,p.serveAim+i.mx*S.R0.boxX*dt*1.5));
       p.vx=locked?0:i.mx/l*SPEED_H*movK(p)*sc;p.vy=locked?0:i.my/l*SPEED_H*movK(p)*sc;
       if(p.charging)p.charge=Math.min(1,p.charge+dt/0.75);
       if(S.state==='play'&&p.swingReq&&p.swingT<=0.06){if(p.swingReq==='vibora'&&p.energy<100){p.swingReq=null}else{p.swingT=0.3;p.swingType=p.swingReq;p.power=p.reqPower;p.hitDone=false;p.swingReq=null}}

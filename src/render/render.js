@@ -7,7 +7,7 @@ import { cv } from '../core/gfx.js';
 import { S } from '../state.js';
 import { L, P, R, ctx, shade, txt, txtW } from '../core/gfx.js';
 import { sweet } from '../game/constants.js';
-import { isHuman, serveTarget } from '../game/rules.js';
+import { isHuman, serveTarget, serveAimIn } from '../game/rules.js';
 import { settings } from '../game/settings.js';
 import { drawMascot } from './mascot.js';
 import { getSprite } from './sprites.js';
@@ -57,7 +57,7 @@ export function drawServeAim(){
   if(S.demo||S.state!=='serve'||!S.R0||!S.R0.server||!/^h[1-4]$/.test(S.R0.server.ctrl))return;const p=S.R0.server;
   const pw=p.charging?Math.max(0.06,p.charge):sweet(p);const t=serveTarget(p,pw);
   const a=P(S.ball.x,S.ball.y,0),b=P(t.tx,t.ty,0);const over=p.charging&&p.charge>sweet(p);
-  const c=over?'#e4572e':(p.ctrl==='h1'?'#ff8a5c':'#6fd3d2');
+  const c=over||!serveAimIn(p)?'#e4572e':(p.ctrl==='h1'?'#ff8a5c':'#6fd3d2');
   const n=Math.max(2,Math.floor(Math.hypot(b.x-a.x,b.y-a.y)/3));
   for(let k=1;k<n;k++){if(((k+Math.floor(S.time*12))%2))continue;const u=k/n;R(ctx,a.x+(b.x-a.x)*u,a.y+(b.y-a.y)*u,1,1,c)}
   const ang=Math.atan2(b.y-a.y,b.x-a.x);for(const s of[-1,1]){const q=ang+Math.PI+s*0.55;L(ctx,b.x,b.y,b.x+Math.cos(q)*5,b.y+Math.sin(q)*5,c)}
