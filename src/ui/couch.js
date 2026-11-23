@@ -37,7 +37,7 @@ export function renderCouch() {
   const el = document.getElementById('couchBox'); if (!el) return;
   el.hidden = settings.mode !== 'couch'; if (el.hidden) return;
   const s = slots(), cell = i => `<div class="cslot${s[i] ? ' on' : ''}"><b class="px">${s[i] ? 'P' + (s.slice(0, i + 1).filter(Boolean).length) : 'BOT'}</b><span>${s[i] ? devName(s[i].dev) : 'press hit to join'}</span></div>`;
-  el.innerHTML = `<div class="cteam"><span class="px">TEAM A</span>${cell(0)}${cell(1)}</div><div class="cteam"><span class="px">TEAM B</span>${cell(2)}${cell(3)}</div>
+  el.innerHTML = `<div class="cteam"><span class="px" title="Team A">A</span>${cell(0)}${cell(1)}</div><div class="cteam"><span class="px" title="Team B">B</span>${cell(2)}${cell(3)}</div>
     <div class="help">Join: <b>A</b> on a pad, <b>F</b> or <b>K</b> on the keyboard. Press again to switch team, <b>B</b> / <b>G</b> / <b>L</b> to leave. Start with <b>START</b> or the button below.</div>`;
 }
 

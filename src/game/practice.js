@@ -32,6 +32,8 @@ const drillNow = () => PR.custom ? PR.custom.drill : DRILLS[PR.drill];
 function saved() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') } catch (e) { return {} } }
 function save(o) { try { localStorage.setItem(KEY, JSON.stringify({ ...saved(), ...o })) } catch (e) {} }
 export function practiceProgress() { return saved() }
+/** 3 stars for a clean drill, 2 if it took up to twice the balls, else 1. */
+export const drillStars = (need, tries) => tries <= need + 1 ? 3 : tries <= need * 2 ? 2 : 1;
 
 export const isPractice = () => PR.on && !S.demo;
 
@@ -45,7 +47,7 @@ export function startPractice() {
 export function stopPractice() { PR.on = false }
 
 function beginDrill(i) {
-  PR.drill = i; PR.done = 0;
+  PR.drill = i; PR.done = 0; PR.tries = 0;
   const d = drillNow();
   S.state = 'between'; S.afterState = () => feed(); S.stateT = 2.6;
   S.ball.held = true;
@@ -60,6 +62,7 @@ function feed() {
   PR.x = (rand() - 0.5) * 4;
   Object.assign(S.ball, { x: PR.x, y: 9.4, z: 1.1, held: false });
   S.R0 = { serve: false, lastTeam: 1, bounces: 0, faults: 0, boxX: -1, net: false, hits: (S.R0?.hits || 0) + 1, server: p, backWall: -1 };
+  PR.tries = (PR.tries || 0) + 1;
   const f = d.feed();
   launch(f.tx, f.ty, f.spd, f.clear);
   S.state = 'play';
@@ -89,7 +92,9 @@ function next() {
   if (PR.custom) { const cb = PR.custom.onDone; PR.custom = null; S.state = 'between'; S.stateT = 1e9; S.afterState = () => {}; H.showMsg('NICE!', ''); return cb && cb() }
   H.track('drill_done', { drill: d.id });
   H.emit({ type: 'drill', id: d.id });
-  const done = new Set(saved().done || []); done.add(d.id); save({ done: [...done] });
+  const done = new Set(saved().done || []); done.add(d.id);
+  const stars = { ...(saved().stars || {}) }, got = drillStars(d.need, PR.tries); stars[d.id] = Math.max(stars[d.id] || 0, got);
+  save({ done: [...done], stars });
   if (PR.drill + 1 < DRILLS.length) return beginDrill(PR.drill + 1);
   H.track('practice_complete', {});
   S.state = 'between'; S.stateT = 3; S.afterState = () => beginDrill(Math.floor(rand() * DRILLS.length));

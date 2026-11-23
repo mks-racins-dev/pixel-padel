@@ -1,6 +1,9 @@
 // The DAILY tab: today's and this week's challenges, and the Weekly Cup.
 import { S } from '../state.js';
-import { chState, dailySet, weeklySet, msToNextDay, onChallengeComplete } from '../meta/challenges.ts';
+import { chState, dailySet, weeklySet, msToNextDay, onChallengeComplete, streak, CHEST, weekNumber } from '../meta/challenges.ts';
+import { mulberry } from '../core/gfx.js';
+import { venueThumb } from '../render/venue.js';
+import { t } from './i18n.js';
 import { cupFor, cupState, startCup, RUN, ROUNDS } from '../meta/cup.ts';
 import { LOCS } from '../content/venues.js';
 import { startGame } from './ui.js';
@@ -14,31 +17,51 @@ function row(c, slot) {
     + `<span class="dbar"><span style="width:${Math.round(100 * n / c.need)}%"></span></span><span>${n}/${c.need}</span><b>+${c.xp}</b></div>`;
 }
 
+function chest(open) { // a pixel chest drawn with boxes
+  return `<span class="chest${open ? ' open' : ''}" aria-hidden="true"><i class="lid"></i><i class="body"></i><i class="lock"></i></span>`;
+}
 export function renderDailyTab() {
   const box = document.getElementById('dailyBox');
   if (!box) return;
-  const st = chState();
+  const st = chState(), sk = streak(), set = dailySet(st.day), n = set.filter(c => st.daily[c.id]?.done).length;
+  const dots = Array.from({ length: 7 }, (_, i) => `<i class="${i < Math.min(7, sk.n) ? 'on' : ''}${i === 6 ? ' big' : ''}"></i>`).join('');
   box.innerHTML = `
-    <div class="dhead"><span class="px">DAILY</span><span>NEW IN ${hm(msToNextDay())}</span></div>
-    ${dailySet(st.day).map(c => row(c, st.daily[c.id])).join('')}
-    <div class="dhead"><span class="px">WEEKLY</span><span>RESETS MONDAY</span></div>
+    <div class="dtop">
+      <div class="dstreak"><span class="px">${t('d_streak')}</span><b class="px">${sk.n} ${t('d_days')}</b><span class="ddots">${dots}</span></div>
+      <div class="dchest ${sk.chest ? 'done' : ''}">${chest(sk.chest)}<span>${sk.chest ? t('d_opened') : t('d_chest')}</span><b class="px">${n}/3</b></div>
+    </div>
+    <div class="dhead"><span class="px">${t('d_daily')}</span><span>${t('d_new')} ${hm(msToNextDay())}</span></div>
+    ${set.map(c => row(c, st.daily[c.id])).join('')}
+    <div class="dhead"><span class="px">${t('d_weekly')}</span><span>${t('d_reset')}</span></div>
     ${weeklySet(st.week).map(c => row(c, st.weekly[c.id])).join('')}
-    <div class="help">Challenges count in every mode (online: for the host only). Rewards are added automatically.</div>`;
+    <div class="help small">${t('d_note')}</div>`;
 }
 
+const EXTRA = ['KAI', 'MILA', 'TOMAS', 'ELIF', 'RUBEN', 'NORA', 'YUKI', 'PAVEL', 'AINO', 'BRUNO'];
 export function renderCupTab() {
   const box = document.getElementById('cupBox');
   if (!box) return;
   const cup = cupFor(), cs = cupState();
   const city = (LOCS[cup[0].venue] || {}).city || '';
-  const best = cs.champion ? 'CHAMPION ★' : cs.best ? ROUNDS[cs.best - 1] + ' WON' : 'NOT PLAYED YET';
+  const best = cs.champion ? 'CHAMPION ★' : cs.best ? ROUNDS[cs.best - 1] + ' ✓' : t('c_none');
+  const r = mulberry(weekNumber() * 7 + 3), pool = EXTRA.filter(x => !cup.some(e => e.opp === x));
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]] }
+  const [o0, o1, o2] = cup.map(e => e.opp), [n1, n2, n3, n4] = pool, you = t('c_you'), at = RUN.round;
+  const m = (a, b, cls) => `<div class="bm ${cls || ''}"><span class="${a === you ? 'me' : ''}">${a}</span><span class="${b === you ? 'me' : ''}">${b}</span></div>`;
+  const st = i => (i < at ? 'won' : i === at ? 'next' : 'later');
   box.innerHTML = `
-    <div class="mtitle px">WEEKLY CUP · ${city}</div>
-    <div class="help">Three knockout rounds, the same for every player this week. Lose once and the run ends; try again any time. Win it for a 150 XP bonus.</div>
-    <div class="dcup">${cup.map((e, i) => `<span class="cev ${i < RUN.round ? 'won' : i === RUN.round ? 'next' : ''}">${e.round}<i>${e.opp}</i></span>`).join('')}</div>
-    <div class="dhead"><span>BEST THIS WEEK</span><span class="px">${best}</span></div>
-    <button class="big" data-primary id="cupPlay">${RUN.round ? 'CONTINUE: ' + cup[RUN.round].round : 'PLAY THE CUP'} ▸</button>`;
+    <div class="mtitle px">${t('c_title')} · ${city}</div>
+    <div class="help small">${t('c_info')}</div>
+    <div class="bracket">
+      <div class="bcol"><span class="px">QF</span>${m(you, o0, 'mine ' + st(0))}${m(o1, n1)}${m(o2, n2)}${m(n3, n4)}</div>
+      <div class="bcol"><span class="px">SF</span>${m(you, o1, 'mine ' + st(1))}${m(o2, n3)}</div>
+      <div class="bcol"><span class="px">FINAL</span>${m(you, o2, 'mine ' + st(2))}</div>
+      <div class="bcol prize"><span class="px">${t('c_prize')}</span><span class="trophy" aria-hidden="true"><i></i><i></i><i></i></span><b class="px">+150 XP</b><span class="vthumb" id="cupThumb"></span></div>
+    </div>
+    <div class="dhead"><span>${t('c_best')}</span><span class="px">${best}</span></div>
+    <button class="big" data-primary id="cupPlay">${at ? t('c_cont') + ': ' + cup[at].round + ' ▸' : t('c_play')}</button>`;
   document.getElementById('cupPlay').onclick = () => { initAudio(); startCup(false); startGame() };
+  setTimeout(() => { const u = venueThumb(cup[0].venue), el = document.getElementById('cupThumb'); if (u && el) el.style.backgroundImage = `url(${u})` }, 30);
 }
 
 // a small pop-up on court when a challenge completes mid-match

@@ -6,7 +6,7 @@
 <title>Pixel Padel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Pixelify+Sans&display=swap" rel="stylesheet">
 </head>
 <body>
 <div id="wrap"><div id="stage">
@@ -35,42 +35,43 @@
   <div id="menu" class="overlay">
     <nav class="mnav" aria-label="Main menu">
       <h1 class="px">PIXEL<br>PADEL</h1>
-      <div class="mlv"><span class="px" id="mLevel">LV 1</span><span class="cxp"><span id="mXp"></span></span></div>
-      <button class="mi px" data-p="career">CAREER</button>
-      <button class="mi px" data-p="quick">QUICK MATCH</button>
-      <button class="mi px" data-p="daily">DAILY<i id="mDaily"></i></button>
-      <button class="mi px" data-p="cup">WEEKLY CUP</button>
-      <button class="mi px" data-p="practice">PRACTICE<i id="mPractice"></i></button>
-      <button class="mi px" data-p="online">ONLINE</button>
+      <div class="mprof"><canvas id="navAva" width="16" height="12" aria-hidden="true"></canvas><div><b class="px" id="mName">PLAYER</b><span id="mStats"></span></div></div>
+      <div class="mlv"><span class="px" id="mLevel">LV 1</span><span class="cxp"><span id="mXp"></span></span><i id="mXpN"></i></div>
+      <button class="mi px" data-p="career"><span data-i18n="career">CAREER</span><i id="mCareer"></i></button>
+      <button class="mi px" data-p="quick"><span data-i18n="quick">QUICK MATCH</span></button>
+      <button class="mi px" data-p="daily"><span data-i18n="daily">DAILY</span><i id="mDaily"></i></button>
+      <button class="mi px" data-p="cup"><span data-i18n="cup">WEEKLY CUP</span><i id="mCup"></i></button>
+      <button class="mi px" data-p="practice"><span data-i18n="practice">PRACTICE</span><i id="mPractice"></i></button>
+      <button class="mi px" data-p="online"><span data-i18n="online">ONLINE</span></button>
       <div class="msep"></div>
-      <button class="mi px small" data-p="player">PLAYER</button>
-      <button class="mi px small" data-p="help">HOW TO PLAY</button>
-      <button class="mi px small" data-p="options">OPTIONS</button>
+      <button class="mi px small" data-p="player"><span data-i18n="player">PLAYER</span></button>
+      <button class="mi px small" data-p="help"><span data-i18n="help">HOW TO PLAY</span></button>
+      <button class="mi px small" data-p="options"><span data-i18n="options">OPTIONS</span></button>
     </nav>
     <section class="mpanel">
       <div class="mp" data-p="career"><div id="careerBox"></div></div>
 
       <div class="mp" data-p="quick" hidden>
-        <div class="mtitle px">QUICK MATCH</div>
+        <div class="mtitle px" data-i18n="quick">QUICK MATCH</div>
         <div class="qgrid">
           <div class="qopts">
-            <div class="opt"><span class="px">MODE</span>
+            <div class="opt stack"><span class="px" data-i18n="q_mode">MODE</span>
               <div class="seg" data-key="mode">
                 <button data-v="1v1">1 VS 1</button><button data-v="2v2">2 VS 2</button><button data-v="pvp">2 PLAYERS</button><button data-v="couch">COUCH 2V2</button>
               </div></div>
-            <div class="opt"><span class="px">CPU</span><div class="step" data-key="diff"></div></div>
-            <div class="opt"><span class="px">LENGTH</span><div class="step" data-key="games"></div></div>
-            <div class="qlabrow"><span class="px qlab">VENUE</span><div class="vtabs" id="venueTabs"><button data-t="tour">TOUR</button><button data-t="street">STREET COURTS</button></div></div>
+            <div class="opt"><span class="px" data-i18n="q_cpu">CPU</span><div class="step" data-key="diff"></div></div>
+            <div class="opt"><span class="px" data-i18n="q_len">LENGTH</span><div class="step" data-key="games"></div></div>
+            <div class="qlabrow"><span class="px qlab" data-i18n="q_venue">VENUE</span><div class="vtabs" id="venueTabs"><button data-t="tour" data-i18n="q_tour">TOUR</button><button data-t="street" data-i18n="q_street">STREET COURTS</button></div></div>
             <div class="seg cards" data-key="loc" id="venueCards"></div>
           </div>
           <div class="qside">
             <div class="mcard">
-              <span class="px mcard-t">MATCH CARD</span>
+              <span class="px mcard-t" data-i18n="q_card">MATCH CARD</span>
               <div id="couchBox" hidden></div>
               <div class="help" id="qSummary"></div>
               <div class="help" id="sub">sunset club · glass walls in play</div>
             </div>
-            <button class="big" data-primary id="quickStart">START ▸</button>
+            <button class="big" data-primary id="quickStart" data-i18n="q_start">START ▸</button>
           </div>
         </div>
       </div>
@@ -80,10 +81,12 @@
       <div class="mp" data-p="practice" hidden><div id="practiceBox"></div></div>
 
       <div class="mp" data-p="online" hidden>
-        <div class="mtitle px">ONLINE</div>
-        <div class="help" id="onlineInfo">Play 1 vs 1 against a friend over the internet. One of you hosts and gets a 4-letter code, the other types it in to join. The host plays the near side.</div>
+        <div class="mtitle px" data-i18n="n_title">ONLINE</div>
+        <div class="ncards" id="onlineCards"></div>
+        <div class="help" id="onlineInfo" hidden>Play 1 vs 1 against a friend over the internet. One of you hosts and gets a 4-letter code, the other types it in to join. The host plays the near side.</div>
         <div id="ladderBox"></div>
-        <button class="big" data-primary id="onlineStart">PLAY ONLINE ▸</button>
+        <div id="recentBox"></div>
+        <button class="big" data-primary id="onlineStart" data-i18n="n_play">PLAY ONLINE ▸</button>
       </div>
 
       <div class="mp" data-p="player" hidden>
@@ -120,17 +123,27 @@
         <div class="help" id="styleInfo"></div>
       </div>
 
-      <div class="mp" data-p="help" hidden><div class="mtitle px">HOW TO PLAY</div><div class="help" id="help"></div></div>
+      <div class="mp" data-p="help" hidden><div class="mtitle px" data-i18n="help">HOW TO PLAY</div><div id="help"></div></div>
 
       <div class="mp" data-p="options" hidden>
-        <div class="mtitle px">OPTIONS</div>
-        <div class="opt"><span class="px">ASSIST</span>
-          <div class="seg" data-key="assist"><button data-v="on">BOUNCE MARK</button><button data-v="off">OFF</button></div></div>
-        <div class="opt"><span class="px">SOUND</span>
-          <div class="seg" id="soundSeg"><button data-v="on">ON</button><button data-v="off">OFF</button></div></div>
+        <div class="mtitle px" data-i18n="options">OPTIONS</div>
+        <div class="ogrid">
+          <div class="opt"><span class="px" data-i18n="o_assist">ASSIST</span>
+            <div class="seg" data-key="assist"><button data-v="on" data-i18n="o_bounce">BOUNCE MARK</button><button data-v="off" data-i18n="off">OFF</button></div></div>
+          <div class="opt"><span class="px" data-i18n="o_sound">SOUND</span>
+            <div class="seg" id="soundSeg"><button data-v="on" data-i18n="on">ON</button><button data-v="off" data-i18n="off">OFF</button></div></div>
+          <div class="opt"><span class="px" data-i18n="o_sfx">EFFECTS</span><div class="step ostep" data-o="sfx"><button aria-label="Quieter">◂</button><span class="sv"></span><button aria-label="Louder">▸</button></div></div>
+          <div class="opt"><span class="px" data-i18n="o_music">MUSIC</span><div class="step ostep" data-o="music"><button aria-label="Quieter">◂</button><span class="sv"></span><button aria-label="Louder">▸</button></div></div>
+          <div class="opt"><span class="px" data-i18n="o_shake">SHAKE</span>
+            <div class="seg" id="shakeSeg"><button data-v="on" data-i18n="on">ON</button><button data-v="off" data-i18n="off">OFF</button></div></div>
+          <div class="opt"><span class="px" data-i18n="o_lang">LANGUAGE</span>
+            <div class="seg" id="langSeg"><button data-v="en">ENGLISH</button><button data-v="ru">РУССКИЙ</button><button data-v="lv">LATVIEŠU</button></div></div>
+          <div class="opt"><span class="px" data-i18n="o_screen">SCREEN</span><div class="seg"><button id="fsBtn" data-i18n="o_full">FULLSCREEN</button></div></div>
+          <div class="opt top"><span class="px" data-i18n="o_keys">KEYS</span><div id="keyBox"></div></div>
+        </div>
       </div>
 
-      <div class="mhint">▲▼ CHOOSE · ENTER / A PLAY</div>
+      <div class="mhint" id="mhint">▲▼ CHOOSE · ENTER PLAY · ESC BACK</div>
     </section>
   </div>
 

@@ -17,6 +17,9 @@ export const SCHEMES={
   p1:{up:['KeyW'],down:['KeyS'],left:['KeyA'],right:['KeyD'],drive:['KeyF'],lob:['KeyG'],vib:['KeyR']},
   p2:{up:['ArrowUp'],down:['ArrowDown'],left:['ArrowLeft'],right:['ArrowRight'],drive:['KeyK','Enter'],lob:['KeyL'],vib:['KeyO']}
 };
+/** Custom keys from the options (solo scheme): the chosen key goes first, the defaults stay as spares. */
+const SOLO_DEF={drive:['Space','KeyJ'],lob:['KeyK','ShiftLeft','ShiftRight'],vib:['KeyL','KeyE']};
+export function applyKeys(custom){const used=Object.values(custom||{});for(const a of['drive','lob','vib']){const k=custom&&custom[a];SCHEMES.solo[a]=[...(k?[k]:[]),...SOLO_DEF[a].filter(x=>x!==k&&!used.includes(x))]}}
 const NOKEYS={up:[],down:[],left:[],right:[],drive:[],lob:[],vib:[]};
 export function schemeOf(p){if(p.dev)return p.dev==='kb1'?SCHEMES.p1:p.dev==='kb2'?SCHEMES.p2:NOKEYS;if(settings.mode==='pvp')return p.ctrl==='h1'?SCHEMES.p1:SCHEMES.p2;return SCHEMES.solo}
 export function inputOf(p){if(p.ctrl==='net')return(S.net&&S.net.remoteIn)||{mx:0,my:0};const s=schemeOf(p);const on=a=>a.some(k=>keys[k]);let mx=(on(s.right)?1:0)-(on(s.left)?1:0),my=(on(s.up)?1:0)-(on(s.down)?1:0);if(p.ctrl==='h1'&&(touchIn.mx||touchIn.my)){mx=touchIn.mx;my=touchIn.my}const g=padMove(padOf(p));if(g){mx=g.mx;my=g.my}return{mx,my}}

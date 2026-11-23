@@ -23,6 +23,12 @@ import { setHelp } from './ui/ui.js';
 import { setup as setupCoreGfx } from './core/gfx.js';
 import { setup as setupGameSettings } from './game/settings.js';
 import { setLoc, settings } from './game/settings.js';
+import { setupOptions } from './ui/options.js';
+import { setLang } from './ui/i18n.js';
+import { OPTS } from './game/opts.js';
+import { drawHelp } from './ui/help.js';
+import { playMusic } from './audio/music.js';
+import { initAudio as initAudio2 } from './audio/sfx.js';
 import { setup as setupGamePlayer } from './game/player.js';
 import { setup as setupInputInput } from './input/input.js';
 import { setup as setupUiUi } from './ui/ui.js';
@@ -50,14 +56,18 @@ $('sub').textContent=curLoc().sub+' · glass walls in play';
 S.FRONT=buildFront();
 S.rnd=mulberry(5);
 setCrowd(S.grade);
+setupOptions();
+setLang(OPTS.lang);
 setHelp();
 newMatch(true);
+// browsers only allow sound after a click or key press: start the audio (and the menu music) then
+for(const ev of['pointerdown','keydown'])addEventListener(ev,()=>initAudio2(),{once:true,capture:true});
 S.last=performance.now();
 export function frame(now){const dt=Math.min(0.05,(now-S.last)/1000);S.last=now;
   if(S.net&&S.net.role==='guest'&&!S.demo)guestTick(dt);
   else if((!S.paused||(S.net&&!S.demo))&&S.state!=='over'){S.acc+=simTime(dt);while(S.acc>=STEP){update(STEP);S.acc-=STEP}}
   if(S.net&&S.net.role==='host'&&!S.demo&&S.net.conn&&S.net.conn.open){S.net.sendT-=dt;if(S.net.sendT<=0){S.net.sendT=1/30;netSend(mkSnap())}}
-  pollPads();updMascot(dt);updateFx(dt);updateDrama(dt,matchGames());render();drawPreview();requestAnimationFrame(frame)}
+  pollPads();updMascot(dt);updateFx(dt);updateDrama(dt,matchGames());render();drawPreview();drawHelp();playMusic(!$('menu').hidden?'menu':!S.demo&&S.state!=='over'&&!S.paused?'match':'none');requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 // dev only: ?grade=7&loc=es shows that court grade without the menu (for checking the look)
 if(import.meta.env.DEV){const q=new URLSearchParams(location.search);if(q.has('grade')){setLoc(q.get('loc')||settings.loc,+q.get('grade'));$('menu').hidden=true}}

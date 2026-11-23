@@ -3,6 +3,7 @@
 import { mulberry } from '../core/gfx.js';
 import { profile, saveProfile, addXp } from './profile.ts';
 import { on, GameEvent } from './events.ts';
+import { earnCoins } from './gear.ts';
 
 export interface Challenge { id: string; text: string; need: number; xp: number; count: (e: GameEvent) => number }
 
@@ -78,9 +79,27 @@ let onComplete: ((c: Challenge) => void) | null = null;
 /** Lets the game show a pop-up when a challenge completes mid-match. */
 export function onChallengeComplete(fn: (c: Challenge) => void) { onComplete = fn }
 
+/** Daily streak and the bonus chest for finishing all three daily challenges. */
+export const CHEST = { xp: 100, coins: 50 };
+let onChest: ((n: number) => void) | null = null;
+export function onDailyChest(fn: (streak: number) => void) { onChest = fn }
+export function streak(t = now()): { n: number; last: number; chest: boolean } {
+  const p = profile() as any, d = dayNumber(t);
+  const s = p.dstreak && typeof p.dstreak === 'object' ? p.dstreak : { n: 0, last: -9 };
+  return { n: s.last >= d - 1 ? s.n : 0, last: s.last, chest: s.last === d };
+}
+function checkChest(st: ChallengeState, t: number) {
+  const p = profile() as any, d = dayNumber(t);
+  if (!dailySet(st.day).every(c => st.daily[c.id]?.done)) return;
+  const s = p.dstreak && typeof p.dstreak === 'object' ? p.dstreak : { n: 0, last: -9 };
+  if (s.last === d) return;
+  p.dstreak = { n: s.last === d - 1 ? s.n + 1 : 1, last: d };
+  recent.push({ text: 'DAILY CHEST', xp: CHEST.xp }); earnCoins(CHEST.coins); addXp(CHEST.xp); onChest?.(p.dstreak.n);
+}
 export function handle(e: GameEvent, t = now()) {
   const st = chState(t);
   for (const c of dailySet(st.day)) bump(DAILY, st.daily, c, c.count(e));
+  checkChest(st, t);
   for (const c of weeklySet(st.week)) {
     let by = c.count(e);
     if (c.id === 'w_venues' && e.type === 'match' && e.won) {

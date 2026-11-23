@@ -48,7 +48,7 @@ Last updated: 2026-11-22 (story career: Acts 1–4, endless seasons)
 | Gamepad support | ✅ |
 | Practice mode with 5 drills (also the tutorial) | ✅ |
 | Country backgrounds, Moscow fixed | ✅ |
-| Key remapping | ⬜ |
+| Key remapping (hit, lob, vibora in Options) | ✅ |
 | "Simple controls" option | ⬜ |
 | Doubles partner AI (both up / both back, covering the middle) | ⬜ dropped for now |
 

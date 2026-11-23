@@ -12,6 +12,7 @@ import { drawMascot } from './mascot.js';
 import { getSprite } from './sprites.js';
 import { gradeFrame } from './grades.js';
 import { drawAmbient } from './ambient.js';
+import { OPTS } from '../game/opts.js';
 
 export function drawPlayer(p){
   const g0=P(p.x,p.y,0);const x=Math.round(g0.x),y=Math.round(g0.y);
@@ -62,8 +63,8 @@ export function drawServeAim(){
 }
 export function render(){
   ctx.save();
-  {const o=cameraOffset();if(o.x||o.y)ctx.translate(o.x,o.y)}
-  if(S.shake>0)ctx.translate(Math.round((Math.random()-0.5)*3),Math.round((Math.random()-0.5)*3));
+  {const o=OPTS.shake?cameraOffset():{x:0,y:0};if(o.x||o.y)ctx.translate(o.x,o.y)}
+  if(S.shake>0&&OPTS.shake)ctx.translate(Math.round((Math.random()-0.5)*3),Math.round((Math.random()-0.5)*3));
   ctx.drawImage(S.BG,0,0);
   drawAmbient(ctx);
   drawSpectators();drawMascot();

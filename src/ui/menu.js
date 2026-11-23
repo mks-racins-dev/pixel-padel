@@ -6,10 +6,19 @@ import { STYLES } from '../game/constants.js';
 import { LOCS } from '../content/venues.js';
 import { VENUE_TWIST } from '../game/venueRules.js';
 import { venueThumb } from '../render/venue.js';
+import { setLoc } from '../game/settings.js';
+import { t, onLang } from './i18n.js';
+import { renderOptions } from './options.js';
+import { uiSfx } from '../audio/sfx.js';
+import { worldRank } from '../meta/career.ts';
+import { coins } from '../meta/gear.ts';
+import { getSprite } from '../render/sprites.js';
+import { mkLook } from '../game/player.js';
 import { profile, xpToNext, MAX_LEVEL } from '../meta/profile.ts';
 import { chState, dailySet } from '../meta/challenges.ts';
 import { leaveCareer } from '../meta/career.ts';
 import { DRILLS, practiceProgress } from '../game/practice.js';
+import { cupState } from '../meta/cup.ts';
 import { renderCareerTab } from './careerTab.js';
 import { renderDailyTab, renderCupTab } from './dailyTab.js';
 import { initAudio } from '../audio/sfx.js';
@@ -31,6 +40,7 @@ const items = () => [...document.querySelectorAll('#menu .mi')];
 const menuOpen = () => { const m = $('menu'); return m && !m.hidden };
 
 export function showPanel(id) {
+  if (current !== id) uiSfx('nav');
   current = id;
   for (const b of items()) b.setAttribute('aria-current', b.dataset.p === id ? 'true' : 'false');
   document.querySelectorAll('#menu .mp').forEach(p => (p.hidden = p.dataset.p !== id));
@@ -54,6 +64,7 @@ function renderPanel(id) {
   else if (id === 'practice') renderPractice();
   else if (id === 'quick') renderQuick();
   else if (id === 'online') renderOnline();
+  else if (id === 'options') renderOptions();
   else if (id === 'player') { const n = $('nameIn'); if (n && document.activeElement !== n) n.value = profile().name || '' }
 }
 
@@ -61,8 +72,14 @@ function renderPanel(id) {
 export function renderMenu() {
   ladderAt = 0; // results may have changed since the last visit (e.g. a ranked match)
   const p = profile();
-  $('mLevel').textContent = 'LV ' + p.level;
+  $('mLevel').textContent = t('lv') + ' ' + p.level;
   $('mXp').style.width = (p.level >= MAX_LEVEL ? 100 : Math.round(100 * p.xp / xpToNext(p.level))) + '%';
+  $('mXpN').textContent = p.level >= MAX_LEVEL ? 'MAX' : `${p.xp}/${xpToNext(p.level)}`;
+  $('mName').textContent = p.name || account()?.name || t('player');
+  $('mStats').innerHTML = `<span title="${t('coins')}"><i class="coin"></i>${coins()}</span><span title="${t('rank')}">#${worldRank()}</span>`;
+  drawAvatar();
+  $('mCareer').textContent = '#' + worldRank();
+  const cs = cupState(); $('mCup').textContent = cs.champion ? '★' : cs.best ? `${cs.best}/3` : ''; $('mCup').className = cs.champion ? 'ok' : '';
   const st = chState(), done = dailySet(st.day).filter(c => st.daily[c.id]?.done).length;
   $('mDaily').textContent = `${done}/3`;
   $('mDaily').className = done === 3 ? 'ok' : '';
@@ -74,7 +91,7 @@ export function renderMenu() {
 function renderQuick() {
   if (!QUICK_MODES.includes(settings.mode)) settings.mode = '1v1';
   document.querySelectorAll('#menu .seg[data-key="mode"] button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === settings.mode ? 'true' : 'false'));
-  for (const el of document.querySelectorAll('#menu .step')) el.querySelector('.sv').textContent = STEPS[el.dataset.key].label(settings[el.dataset.key]);
+  for (const el of document.querySelectorAll('#menu .step[data-key]')) el.querySelector('.sv').textContent = STEPS[el.dataset.key].label(settings[el.dataset.key]);
   const st = STYLES[settings.style];
   renderCouch();
   $('qSummary').innerHTML = [MODE_NAME[settings.mode], 'CPU: ' + settings.diff.toUpperCase(), 'FIRST TO ' + settings.games + ' GAMES', 'YOUR STYLE: ' + st.name, 'BOUNCE MARK: ' + (settings.assist === 'on' ? 'ON' : 'OFF')].concat(VENUE_TWIST[settings.loc] ? ['<span class="qtwist">COURT: ' + VENUE_TWIST[settings.loc] + '</span>'] : []).join('<br>');
@@ -83,8 +100,10 @@ function renderQuick() {
 let ladderAt = 0, ladderData = null;
 function renderOnline() {
   const box = $('ladderBox');
+  $('onlineCards').innerHTML = [['n_ranked', '◆'], ['n_friends', '✉'], ['n_2v2', '⚑']].map(([k, ic]) => `<div class="ncard"><b class="px"><i>${ic}</i>${t(k)}</b><span>${t(k + '_d')}</span></div>`).join('');
+  let rec = []; try { rec = JSON.parse(localStorage.getItem('pixelpadel-recent') || '[]') } catch (e) {}
+  $('recentBox').innerHTML = `<div class="dhead"><span class="px">${t('n_recent')}</span></div>` + (rec.length ? `<div class="nrec">${rec.slice(0, 4).map(r => `<span class="${r.won ? 'w' : 'l'}"><b>${r.won ? 'W' : 'L'}</b>${r.name}<i>${r.score}${r.ranked ? ' · RANKED' : ''}</i></span>`).join('')}</div>` : `<div class="help small">${t('n_norecent')}</div>`);
   if (!useServer()) { box.innerHTML = ''; return }
-  $('onlineInfo').innerHTML = '<b>FIND AN OPPONENT</b> plays a <b>ranked</b> match against a random player. <b>HOST</b> / <b>JOIN</b> with a code are friendly matches.';
   const draw = () => {
     const d = ladderData;
     if (!d) { box.innerHTML = '<div class="help">Loading the ladder…</div>'; return }
@@ -103,15 +122,16 @@ function renderOnline() {
 function renderPractice() {
   const done = practiceProgress().done || [];
   const next = DRILLS.findIndex(d => !done.includes(d.id));
-  $('practiceBox').innerHTML = `<div class="mtitle px">PRACTICE</div>
-    <div class="help">A ball machine feeds you balls. Five short drills teach every shot; finished drills are saved.</div>
-    <div class="plist">${DRILLS.map((d, i) => `<div class="pd ${done.includes(d.id) ? 'won' : i === next ? 'next' : ''}"><span class="px">${i + 1}</span>${done.includes(d.id) ? '✓ ' : ''}${d.name}<i>${d.tip}</i></div>`).join('')}</div>
+  const stars = practiceProgress().stars || {}, star = id => { const n = stars[id] || (done.includes(id) ? 1 : 0); return `<b class="pstars" aria-label="${n} of 3 stars">${'★'.repeat(n)}<u>${'★'.repeat(3 - n)}</u></b>` };
+  $('practiceBox').innerHTML = `<div class="mtitle px">${t('practice')}</div>
+    <div class="help small">A ball machine feeds you balls. Five short drills teach every shot; finished drills are saved. Fewer balls = more stars.</div>
+    <div class="plist">${DRILLS.map((d, i) => `<div class="pd ${done.includes(d.id) ? 'won' : i === next ? 'next' : ''}"><span class="px">${i + 1}</span><span class="pname">${d.name}${i === next ? `<em>${t('p_next')}</em>` : ''}${star(d.id)}</span><i>${d.tip}</i></div>`).join('')}</div>
     <button class="big" data-primary id="practiceStart">${next < 0 ? 'FREE PRACTICE' : done.length ? 'CONTINUE: ' + DRILLS[next].name : 'START PRACTICE'} ▸</button>`;
   $('practiceStart').onclick = () => { initAudio(); leaveCareer(); settings.mode = 'practice'; if (settings.mode === 'couch') couchReady(); startGame() };
 }
 
 function buildSteppers() {
-  for (const el of document.querySelectorAll('#menu .step')) {
+  for (const el of document.querySelectorAll('#menu .step[data-key]')) {
     const k = el.dataset.key, cfg = STEPS[k];
     el.innerHTML = `<button aria-label="Previous">◂</button><span class="sv px"></span><button aria-label="Next">▸</button>`;
     const [prev, next] = el.querySelectorAll('button');
@@ -139,11 +159,28 @@ function buildVenueCards() {
   setTimeout(step, 60);
 }
 
+/** The player's head in the top-left profile chip. */
+function drawAvatar() {
+  const c = $('navAva'); if (!c) return; const g = c.getContext('2d'); if (!g) return;
+  g.imageSmoothingEnabled = false; g.clearRect(0, 0, 16, 12); g.drawImage(getSprite(mkLook(S.myLookData), 'front', 'idle', 0), 4, 0, 16, 12, 0, 0, 16, 12);
+}
 /** Called by ui.js setup before it wires the generic .seg buttons. */
 export function buildMenu() {
   buildVenueCards();
   document.querySelectorAll('#venueTabs button').forEach(b => b.onclick = () => { venueTab = b.dataset.t; buildVenueCards() });
   $('venueCards').addEventListener('click', () => setTimeout(renderQuick, 0));
+  // hovering a venue card shows that court behind the menu; leaving puts the chosen one back
+  let picked = settings.loc;
+  $('venueCards').addEventListener('click', e => { const b = e.target.closest('button'); if (b) picked = b.dataset.v });
+  $('venueCards').addEventListener('mouseover', e => { const b = e.target.closest('button'); if (!b || b.dataset.v === settings.loc) return; setLoc(b.dataset.v); markVenue(picked) });
+  $('venueCards').addEventListener('mouseleave', () => { if (settings.loc !== picked) { setLoc(picked); markVenue(picked); renderQuick() } });
+  const markVenue = v => document.querySelectorAll('#venueCards button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === v ? 'true' : 'false'));
+  // menu sounds and the hint line (keyboard or gamepad)
+  for (const b of items()) b.addEventListener('mouseenter', () => uiSfx('hover'));
+  $('menu').addEventListener('click', e => { if (e.target.closest('.mp button')) uiSfx('ok') });
+  const hint = () => { let pad = false; try { pad = [...(navigator.getGamepads ? navigator.getGamepads() : [])].some(g => g && g.connected) } catch (e) {} $('mhint').textContent = t(pad ? 'hint_pad' : 'hint_nav') };
+  addEventListener('gamepadconnected', hint); addEventListener('gamepaddisconnected', hint); hint();
+  onLang(() => { hint(); renderMenu(); buildVenueCards(); setHelp() });
   buildSteppers();
   for (const b of items()) b.addEventListener('click', () => showPanel(b.dataset.p));
   $('quickStart').onclick = () => { initAudio(); leaveCareer(); if (!QUICK_MODES.includes(settings.mode)) settings.mode = '1v1'; startGame() };

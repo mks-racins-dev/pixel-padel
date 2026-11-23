@@ -24,6 +24,8 @@ const coinLine=n=>'<div class="coinln">+'+n+' COINS</div>';
 import { actRelease, actStart, actVib, touchIn } from '../input/input.js';
 import { myTeam, netClose, netSend, onStatus, startOnline } from '../net/online.js';
 import { prevG } from './preview.js';
+import { renderHelp } from './help.js';
+import { t } from './i18n.js';
 
 export const PT=['0','15','30','40'];
 export function updateEnergy(){
@@ -50,6 +52,7 @@ export function showEnd(){
   S.state='over';const w=S.score.winner;
   const on=settings.mode==='online';const human=on?w===myTeam():(settings.mode!=='pvp'&&settings.mode!=='couch'&&w===0);
   matchEnd({won:human,games:S.score.games.slice()});
+  if(on)try{const me=myTeam(),rec=JSON.parse(localStorage.getItem('pixelpadel-recent')||'[]');rec.unshift({name:teamName(1-me),won:human,score:S.score.games[me]+'-'+S.score.games[1-me],ranked:!!(S.net&&S.net.ranked),at:Date.now()});localStorage.setItem('pixelpadel-recent',JSON.stringify(rec.slice(0,8)))}catch(e){}
   if(S.net&&S.net.role==='host')netSend({t:'end'});
   $('endTitle').textContent=settings.mode==='couch'?(w===0?'TEAM A WINS!':'TEAM B WINS!'):settings.mode==='pvp'?(w===0?'PLAYER 1 WINS!':'PLAYER 2 WINS!'):(human?'YOU WIN!':(on?'RIVAL WINS':'CPU WINS'));
   $('endScore').textContent=S.score.games[0]+' – '+S.score.games[1];
@@ -66,11 +69,10 @@ export function showEnd(){
   $('end').hidden=false;$('touch').hidden=true;sfx(human||settings.mode==='pvp'?'win':'lose');if(human||settings.mode==='pvp'||settings.mode==='couch')confetti();
 }
 export function setHelp(){
-  const m=settings.mode,st=STYLES[settings.style],bar=v=>'■'.repeat(v)+'□'.repeat(5-v);
-  $('styleInfo').innerHTML='<b>'+st.name+'</b> &nbsp;SPD '+bar(st.spd)+' PWR '+bar(st.pow)+' ACC '+bar(st.acc)+'<br>'+(S.myLookData.hand==='left'?'Left':'Right')+'-handed · saved on this device';
-  $('help').innerHTML=(m==='pvp'
-    ?'<b>P1</b> (near): WASD · F hit · G lob · R vibora &nbsp; <b>P2</b> (far): arrows · K hit · L lob · O vibora<br>Hold to power up, tap for a soft drop. Past the white line = risk of overhit. Full energy = vibora. Serve: move, then hold hit + left/right to aim.<br>Ball must bounce before their walls; then glass is in play: let it come off the back glass for a boosted wall shot. 2nd bounce = point.'
-    :'<b>Move</b> WASD / arrows · <b>Hit</b> Space/J · <b>Lob</b> K/Shift · <b>Vibora</b> L/E · hold left/right to aim<br><b>Hold</b> hit for power, tap for a soft drop. Past the white line = risk of overhit. <b>Serve:</b> move into place, hold hit + left/right to aim, release. Hits fill energy; full bar = vibora (gives the other side +30).<br>Ball must bounce before their walls; then glass is in play: let it come off the back glass for a boosted wall shot. 2nd bounce = point. Golden point at 40–40.'+(m==='2v2'?' Mia covers the left side.':''))+'<br><b>Shots:</b> high ball + hit = <b>bandeja</b> (sliced, stays low); high ball + strong hit = smash; max-power smash near the net = <b>por tres</b> (kicks out over the fence); soft hit from the back = <b>chiquita</b>. <b>Gamepad:</b> A hit · B lob · Y vibora · Start pause.'+(m==='practice'?'<br><b>Practice:</b> a ball machine feeds you balls through 5 short drills: rally, back glass, lob, overheads, vibora. Progress is saved on this device.':'')+(m==='online'?'<br><b>Online:</b> host shares a 4-letter code, the other player joins. Host plays the near side.':'');
+  const st=STYLES[settings.style];
+  const bar=(k,v)=>`<span class="sbar"><i>${t(k)}</i><b>${'<u class="on"></u>'.repeat(Math.round(v))}${'<u></u>'.repeat(5-Math.round(v))}</b></span>`;
+  $('styleInfo').innerHTML=`<div class="srow"><b class="px">${st.name}</b>${bar('pl_spd',st.spd)}${bar('pl_pow',st.pow)}${bar('pl_acc',st.acc)}</div><div class="sdesc">${t('st_'+settings.style)} · ${S.myLookData.hand==='left'?'Left':'Right'}-handed · saved on this device</div>`;
+  renderHelp();
 }
 export function press(seg,v){seg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===String(v)?'true':'false'))}
 export const coarse=matchMedia('(pointer:coarse)').matches;
